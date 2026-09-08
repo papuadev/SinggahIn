@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { sendSuccess } from './shared/utils/response.util';
 import { notFoundHandler } from './shared/middleware/not-found.middleware';
 import { errorHandler } from './shared/middleware/error.middleware';
+import { identityRoutes } from './modules/identity/identity.routes';
 
 dotenv.config();
 
@@ -29,6 +30,9 @@ app.get('/api/v1/health', (_req: Request, res: Response) => {
   );
 });
 
+// Domain Module Routes
+app.use('/api/v1/identity', identityRoutes);
+
 // 404 Handler for undefined routes
 app.use(notFoundHandler);
 
@@ -37,6 +41,6 @@ app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
-    console.log(`SinggahIn Backend running on port ${PORT}`);
+    // Server running on configured PORT
   });
 }
