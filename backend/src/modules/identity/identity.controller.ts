@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import * as identityService from './identity.service';
+import * as profileService from './profile.service';
 import { sendSuccess } from '../../shared/utils/response.util';
+import { AppError } from '../../shared/utils/app-error';
 
 function setAuthCookie(res: Response, token: string): void {
   res.cookie('token', token, {
@@ -84,3 +86,33 @@ export async function getMe(
     next(error);
   }
 }
+
+export async function uploadAvatar(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.file) {
+      throw AppError.badRequest('File avatar tidak ditemukan.');
+    }
+    const result = await profileService.updateAvatar(req.user!.userId, req.file);
+    sendSuccess(res, result, 'Avatar berhasil diperbarui.');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateProfile(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const user = await profileService.updateProfile(req.user!.userId, req.body);
+    sendSuccess(res, { user }, 'Profil berhasil diperbarui.');
+  } catch (error) {
+    next(error);
+  }
+}
+

@@ -6,6 +6,7 @@ import {
   VerifyInput,
   LoginInput,
   LoginResponseData,
+  UpdateProfileInput,
 } from '../../../types/auth.types';
 
 export const identityApi = {
@@ -40,6 +41,25 @@ export const identityApi = {
 
   async getMe(): Promise<ApiResponse<LoginResponseData>> {
     const res = await apiClient.get<ApiResponse<LoginResponseData>>('/identity/me');
+    return res.data;
+  },
+
+  async uploadAvatar(file: File): Promise<ApiResponse<{ avatarUrl: string }>> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const res = await apiClient.post<ApiResponse<{ avatarUrl: string }>>(
+      '/identity/avatar',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return res.data;
+  },
+
+  async updateProfile(data: UpdateProfileInput): Promise<ApiResponse<LoginResponseData>> {
+    const res = await apiClient.patch<ApiResponse<LoginResponseData>>(
+      '/identity/profile',
+      data
+    );
     return res.data;
   },
 };

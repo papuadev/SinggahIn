@@ -26,3 +26,12 @@ export const LoginSchema = z.object({
     errorMap: () => ({ message: 'Peran akun harus USER atau TENANT' })
   })
 });
+
+export const UpdateProfileSchema = z.object({
+  name: z.string().min(2, 'Nama minimal 2 karakter').optional(),
+  phoneNumber: z
+    .string()
+    .regex(/^(\+62|62|0)[0-9]{8,15}$/, 'Format nomor telepon tidak valid')
+    .optional()
+});
+
