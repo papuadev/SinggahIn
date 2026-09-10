@@ -18,11 +18,20 @@ function UserMenu(): React.JSX.Element {
 
   return (
     <div className="flex items-center gap-3">
+      <Link to="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300 bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">
+          {user.avatarUrl ? (
+            <img src={user.avatarUrl} alt={user.name || 'Avatar'} className="w-full h-full object-cover" />
+          ) : (
+            <span>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</span>
+          )}
+        </div>
+        <div className="text-right hidden sm:block">
+          <p className="text-sm font-semibold text-gray-800">{user.name || 'Pengguna'}</p>
+          <p className="text-xs text-gray-500">{user.email}</p>
+        </div>
+      </Link>
       <RoleBadge role={user.role} />
-      <div className="text-right hidden sm:block">
-        <p className="text-sm font-semibold text-gray-800">{user.name || 'Pengguna'}</p>
-        <p className="text-xs text-gray-500">{user.email}</p>
-      </div>
       <Button
         variant="ghost"
         size="sm"

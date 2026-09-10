@@ -26,3 +26,9 @@ export interface UserResponseDto {
   avatarUrl: string | null;
   phoneNumber?: string | null;
 }
+
+export interface UpdateProfileInput {
+  name?: string;
+  phoneNumber?: string;
+}
+

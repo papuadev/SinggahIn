@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { identityApi } from '../modules/identity/services/identity.api';
-import { User, LoginInput, RegisterInput, VerifyInput, Role } from '../types/auth.types';
+import {
+  User,
+  LoginInput,
+  RegisterInput,
+  VerifyInput,
+  Role,
+  UpdateProfileInput,
+} from '../types/auth.types';
 
 export interface ConflictState {
   currentRole: Role;
@@ -20,6 +27,8 @@ interface AuthState {
   verify: (input: VerifyInput) => Promise<User>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  uploadAvatar: (file: File) => Promise<string>;
+  updateProfile: (input: UpdateProfileInput) => Promise<User>;
   setConflict: (conflict: ConflictState | null) => void;
   clearError: () => void;
 }
@@ -98,6 +107,37 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user: res.data.user, isAuthenticated: true, isInitialized: true, isLoading: false });
     } catch {
       set({ user: null, isAuthenticated: false, isInitialized: true, isLoading: false });
+    }
+  },
+
+  uploadAvatar: async (file: File) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await identityApi.uploadAvatar(file);
+      const currentUser = get().user;
+      if (currentUser) {
+        set({ user: { ...currentUser, avatarUrl: res.data.avatarUrl }, isLoading: false });
+      } else {
+        set({ isLoading: false });
+      }
+      return res.data.avatarUrl;
+    } catch (err) {
+      const message = extractErrorMessage(err);
+      set({ error: message, isLoading: false });
+      throw err;
+    }
+  },
+
+  updateProfile: async (input: UpdateProfileInput) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await identityApi.updateProfile(input);
+      set({ user: res.data.user, isLoading: false });
+      return res.data.user;
+    } catch (err) {
+      const message = extractErrorMessage(err);
+      set({ error: message, isLoading: false });
+      throw err;
     }
   },
 }));

@@ -32,3 +32,15 @@ export const loginSchema = z.object({
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
+
+export const profileSchema = z.object({
+  name: z.string().min(2, 'Nama minimal 2 karakter').optional().or(z.literal('')),
+  phoneNumber: z
+    .string()
+    .regex(/^(\+62|62|0)[0-9]{8,15}$/, 'Format nomor telepon tidak valid (contoh: 08123456789)')
+    .optional()
+    .or(z.literal('')),
+});
+
+export type ProfileFormData = z.infer<typeof profileSchema>;
+

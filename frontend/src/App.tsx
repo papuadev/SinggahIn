@@ -1,19 +1,23 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { useAuthStore } from './stores/auth.store';
-import { Navbar } from './components/organisms/Navbar';
-import { AccountSwitchModal } from './components/organisms/AccountSwitchModal';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { VerifyTokenPage } from './pages/VerifyTokenPage';
-import { ProtectedRoute } from './components/molecules/ProtectedRoute';
+import React, { useEffect } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useAuthStore } from "./stores/auth.store";
+import { Navbar } from "./components/organisms/Navbar";
+import { AccountSwitchModal } from "./components/organisms/AccountSwitchModal";
+import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
+import { VerifyTokenPage } from "./pages/VerifyTokenPage";
+import { ProfilePage } from "./pages/ProfilePage";
+import { ProtectedRoute } from "./components/molecules/ProtectedRoute";
 
 function HomePage(): React.JSX.Element {
   return (
     <div className="text-center py-20">
-      <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Selamat Datang di SinggahIn</h2>
+      <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
+        Selamat Datang di SinggahIn
+      </h2>
       <p className="text-gray-600 max-w-xl mx-auto">
-        Platform sewa properti, villa, hotel, apartemen, dan guesthouse terpercaya di seluruh Nusantara.
+        Platform sewa properti, villa, hotel, apartemen, dan guesthouse
+        terpercaya di seluruh Nusantara.
       </p>
     </div>
   );
@@ -22,8 +26,12 @@ function HomePage(): React.JSX.Element {
 function TenantPlaceholder(): React.JSX.Element {
   return (
     <div className="py-12 text-center">
-      <h3 className="text-2xl font-bold text-gray-900">Dasbor Pemilik Properti (Tenant)</h3>
-      <p className="text-gray-600 mt-2">Area khusus untuk mengelola properti, kamar, dan tarif sewa.</p>
+      <h3 className="text-2xl font-bold text-gray-900">
+        Dasbor Pemilik Properti (Tenant)
+      </h3>
+      <p className="text-gray-600 mt-2">
+        Area khusus untuk mengelola properti, kamar, dan tarif sewa.
+      </p>
     </div>
   );
 }
@@ -46,6 +54,14 @@ export default function App(): React.JSX.Element {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/verify" element={<VerifyTokenPage />} />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/tenant/dashboard"
               element={

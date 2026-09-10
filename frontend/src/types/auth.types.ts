@@ -37,3 +37,9 @@ export interface RegisterResponseData {
   email: string;
   role: Role;
 }
+
+export interface UpdateProfileInput {
+  name?: string;
+  phoneNumber?: string;
+}
+
