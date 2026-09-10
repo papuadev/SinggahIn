@@ -30,6 +30,11 @@ describe('Frontend Formatter Utilities', () => {
       expect(formatCompactRupiah(2000000)).toBe('Rp 2jt');
     });
 
+    it('should format billions to "M"', () => {
+      expect(formatCompactRupiah(1000000000)).toBe('Rp 1M');
+      expect(formatCompactRupiah(2500000000)).toBe('Rp 2,5M');
+    });
+
     it('should format values under 1000 with raw number', () => {
       expect(formatCompactRupiah(500)).toBe('Rp 500');
     });
@@ -44,6 +49,12 @@ describe('Frontend Formatter Utilities', () => {
 
     it('should format ISO date string correctly', () => {
       const result = formatDateID('2026-09-02T10:00:00.000Z');
+      expect(result).toBe('02 September 2026');
+    });
+
+    it('should format number timestamp correctly', () => {
+      const date = new Date(2026, 8, 2);
+      const result = formatDateID(date.getTime());
       expect(result).toBe('02 September 2026');
     });
 
