@@ -7,6 +7,7 @@ import { notFoundHandler } from './shared/middleware/not-found.middleware';
 import { errorHandler } from './shared/middleware/error.middleware';
 import { identityRoutes } from './modules/identity/identity.routes';
 import { propertyRoutes } from './modules/property/property.routes';
+import { roomRoutes } from './modules/room/room.routes';
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.get('/api/v1/health', (_req: Request, res: Response) => {
 // Domain Module Routes
 app.use('/api/v1/identity', identityRoutes);
 app.use('/api/v1/properties', propertyRoutes);
+app.use('/api/v1/rooms', roomRoutes);
 
 
 // 404 Handler for undefined routes

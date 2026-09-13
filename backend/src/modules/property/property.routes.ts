@@ -7,6 +7,7 @@ import {
 } from '../../shared/middleware/auth.middleware';
 import { validateRequest } from '../../shared/middleware/validate.middleware';
 import { uploadMultipleImages } from '../../shared/middleware/upload.middleware';
+import { propertyRoomRoutes } from '../room/room.routes';
 import {
   CreatePropertySchema,
   UpdatePropertySchema,
@@ -101,5 +102,8 @@ router.patch(
   validateRequest({ params: PropertyImageParamSchema }),
   propertyController.setCover
 );
+
+// Nested Sub-resource: Property Rooms
+router.use('/:propertyId/rooms', propertyRoomRoutes);
 
 export const propertyRoutes = router;
