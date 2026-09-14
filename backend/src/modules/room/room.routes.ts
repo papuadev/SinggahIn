@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Role } from '@prisma/client';
 import * as roomController from './room.controller';
+import * as pricingController from './pricing.controller';
 import {
   authenticate,
   requireRole,
@@ -14,6 +15,9 @@ import {
   RoomUnavailabilityParamSchema,
   CreateRoomUnavailabilitySchema,
   CheckRoomAvailabilityQuerySchema,
+  CreatePeakRateSchema,
+  RoomRateParamSchema,
+  CalculateStayPricingQuerySchema,
 } from './room.schema';
 
 // Router for sub-resource under property: /api/v1/properties/:propertyId/rooms
@@ -34,6 +38,18 @@ propertyRoomRoutes.get(
   '/',
   validateRequest({ params: PropertyIdParamSchema }),
   roomController.getByProperty
+);
+
+// Tenant-Only: Bulk Create Rates for all rooms in property
+propertyRoomRoutes.post(
+  '/rates',
+  authenticate,
+  requireRole(Role.TENANT),
+  validateRequest({
+    params: PropertyIdParamSchema,
+    body: CreatePeakRateSchema,
+  }),
+  pricingController.bulkCreateRates
 );
 
 // Router for direct room resource: /api/v1/rooms
@@ -105,6 +121,46 @@ router.get(
     query: CheckRoomAvailabilityQuerySchema,
   }),
   roomController.checkAvailability
+);
+
+// Tenant-Only: Create Peak Season Rate for Room
+router.post(
+  '/:id/rates',
+  authenticate,
+  requireRole(Role.TENANT),
+  validateRequest({
+    params: RoomIdParamSchema,
+    body: CreatePeakRateSchema,
+  }),
+  pricingController.createRate
+);
+
+// Tenant-Only: List Peak Season Rates for Room
+router.get(
+  '/:id/rates',
+  authenticate,
+  requireRole(Role.TENANT),
+  validateRequest({ params: RoomIdParamSchema }),
+  pricingController.getRates
+);
+
+// Tenant-Only: Delete Peak Season Rate
+router.delete(
+  '/:id/rates/:rateId',
+  authenticate,
+  requireRole(Role.TENANT),
+  validateRequest({ params: RoomRateParamSchema }),
+  pricingController.removeRate
+);
+
+// Public / User / Tenant: Calculate Stay Pricing
+router.get(
+  '/:id/pricing',
+  validateRequest({
+    params: RoomIdParamSchema,
+    query: CalculateStayPricingQuerySchema,
+  }),
+  pricingController.calculatePricing
 );
 
 export const roomRoutes = router;
