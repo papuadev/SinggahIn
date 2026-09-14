@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AdjustmentType } from '@prisma/client';
 
 export const CreateRoomSchema = z.object({
   name: z
@@ -82,6 +83,49 @@ export const CheckRoomAvailabilityQuerySchema = z
     path: ['checkOutDate'],
   });
 
+export const CreatePeakRateSchema = z
+  .object({
+    startDate: z
+      .string({ required_error: 'Tanggal mulai wajib diisi' })
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal mulai harus YYYY-MM-DD'),
+    endDate: z
+      .string({ required_error: 'Tanggal selesai wajib diisi' })
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal selesai harus YYYY-MM-DD'),
+    adjustmentType: z.nativeEnum(AdjustmentType, {
+      required_error: 'Tipe penyesuaian wajib diisi',
+    }),
+    adjustmentValue: z
+      .number({ required_error: 'Nilai penyesuaian wajib diisi' })
+      .int('Nilai penyesuaian harus berupa bilangan bulat'),
+    reason: z
+      .string()
+      .max(255, 'Alasan maksimal 255 karakter')
+      .optional(),
+  })
+  .refine((data) => new Date(data.startDate) <= new Date(data.endDate), {
+    message: 'Tanggal mulai tidak boleh melebihi tanggal selesai',
+    path: ['endDate'],
+  });
+
+export const RoomRateParamSchema = z.object({
+  id: z.string().cuid('Format ID kamar tidak valid'),
+  rateId: z.string().cuid('Format ID penyesuaian tarif tidak valid'),
+});
+
+export const CalculateStayPricingQuerySchema = z
+  .object({
+    checkInDate: z
+      .string({ required_error: 'Tanggal check-in wajib diisi' })
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal check-in harus YYYY-MM-DD'),
+    checkOutDate: z
+      .string({ required_error: 'Tanggal check-out wajib diisi' })
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal check-out harus YYYY-MM-DD'),
+  })
+  .refine((data) => new Date(data.checkInDate) < new Date(data.checkOutDate), {
+    message: 'Tanggal check-out harus setelah tanggal check-in',
+    path: ['checkOutDate'],
+  });
+
 export type CreateRoomInput = z.infer<typeof CreateRoomSchema>;
 export type UpdateRoomInput = z.infer<typeof UpdateRoomSchema>;
 export type PropertyIdParam = z.infer<typeof PropertyIdParamSchema>;
@@ -89,3 +133,6 @@ export type RoomIdParam = z.infer<typeof RoomIdParamSchema>;
 export type RoomUnavailabilityParam = z.infer<typeof RoomUnavailabilityParamSchema>;
 export type CreateRoomUnavailabilityInput = z.infer<typeof CreateRoomUnavailabilitySchema>;
 export type CheckRoomAvailabilityQuery = z.infer<typeof CheckRoomAvailabilityQuerySchema>;
+export type CreatePeakRateInput = z.infer<typeof CreatePeakRateSchema>;
+export type RoomRateParam = z.infer<typeof RoomRateParamSchema>;
+export type CalculateStayPricingQuery = z.infer<typeof CalculateStayPricingQuerySchema>;
