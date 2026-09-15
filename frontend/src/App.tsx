@@ -2,6 +2,8 @@ import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useAuthStore } from "./stores/auth.store";
 import { Navbar } from "./components/organisms/Navbar";
+import { MobileBottomNav } from "./components/organisms/MobileBottomNav";
+import { TenantLayout } from "./components/organisms/TenantLayout";
 import { AccountSwitchModal } from "./components/organisms/AccountSwitchModal";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
@@ -46,10 +48,12 @@ function AppRoutes(): React.JSX.Element {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/verify" element={<VerifyTokenPage />} />
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-      <Route path="/tenant/dashboard" element={<ProtectedRoute requiredRole="TENANT"><TenantPlaceholder /></ProtectedRoute>} />
-      <Route path="/tenant/properties" element={<ProtectedRoute requiredRole="TENANT"><TenantPropertyListPage /></ProtectedRoute>} />
-      <Route path="/tenant/properties/new" element={<ProtectedRoute requiredRole="TENANT"><TenantPropertyCreatePage /></ProtectedRoute>} />
-      <Route path="/tenant/properties/:id/edit" element={<ProtectedRoute requiredRole="TENANT"><TenantPropertyEditPage /></ProtectedRoute>} />
+      <Route path="/tenant" element={<ProtectedRoute requiredRole="TENANT"><TenantLayout /></ProtectedRoute>}>
+        <Route path="dashboard" element={<TenantPlaceholder />} />
+        <Route path="properties" element={<TenantPropertyListPage />} />
+        <Route path="properties/new" element={<TenantPropertyCreatePage />} />
+        <Route path="properties/:id/edit" element={<TenantPropertyEditPage />} />
+      </Route>
     </Routes>
   );
 }
@@ -68,11 +72,12 @@ export default function App(): React.JSX.Element {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen flex flex-col justify-between bg-gray-50 text-gray-900">
+      <div className="min-h-screen flex flex-col justify-between bg-gray-50 text-gray-900 pb-16 md:pb-0">
         <Navbar />
         <AccountSwitchModal />
         <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8"><AppRoutes /></main>
         <AppFooter />
+        <MobileBottomNav />
       </div>
     </BrowserRouter>
   );
