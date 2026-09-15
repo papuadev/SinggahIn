@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -48,10 +49,23 @@ async function seedCategory(
   });
 }
 
+async function seedDemoUsers(): Promise<void> {
+  const hash = await bcrypt.hash('Password123!', 10);
+  const users = [
+    { email: 'user@example.com', name: 'Rian Pratama', role: Role.USER },
+    { email: 'tenant@example.com', name: 'Sarah Wijaya', role: Role.TENANT },
+  ];
+  for (const u of users) {
+    const data = { ...u, isVerified: true, passwordHash: hash };
+    await prisma.user.upsert({ where: { email: u.email }, update: data, create: data });
+  }
+}
+
 async function main(): Promise<void> {
   for (const category of INITIAL_CATEGORIES) {
     await seedCategory(category);
   }
+  await seedDemoUsers();
 }
 
 if (process.env.NODE_ENV !== 'test') {
