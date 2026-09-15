@@ -8,6 +8,9 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { VerifyTokenPage } from "./pages/VerifyTokenPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ProtectedRoute } from "./components/molecules/ProtectedRoute";
+import { TenantPropertyListPage } from "./pages/tenant/TenantPropertyListPage";
+import { TenantPropertyCreatePage } from "./pages/tenant/TenantPropertyCreatePage";
+import { TenantPropertyEditPage } from "./pages/tenant/TenantPropertyEditPage";
 
 function HomePage(): React.JSX.Element {
   return (
@@ -16,8 +19,7 @@ function HomePage(): React.JSX.Element {
         Selamat Datang di SinggahIn
       </h2>
       <p className="text-gray-600 max-w-xl mx-auto">
-        Platform sewa properti, villa, hotel, apartemen, dan guesthouse
-        terpercaya di seluruh Nusantara.
+        Platform sewa properti, hotel, dan villa terpercaya di seluruh Nusantara.
       </p>
     </div>
   );
@@ -36,45 +38,41 @@ function TenantPlaceholder(): React.JSX.Element {
   );
 }
 
+function AppRoutes(): React.JSX.Element {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/verify" element={<VerifyTokenPage />} />
+      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="/tenant/dashboard" element={<ProtectedRoute requiredRole="TENANT"><TenantPlaceholder /></ProtectedRoute>} />
+      <Route path="/tenant/properties" element={<ProtectedRoute requiredRole="TENANT"><TenantPropertyListPage /></ProtectedRoute>} />
+      <Route path="/tenant/properties/new" element={<ProtectedRoute requiredRole="TENANT"><TenantPropertyCreatePage /></ProtectedRoute>} />
+      <Route path="/tenant/properties/:id/edit" element={<ProtectedRoute requiredRole="TENANT"><TenantPropertyEditPage /></ProtectedRoute>} />
+    </Routes>
+  );
+}
+
+function AppFooter(): React.JSX.Element {
+  return (
+    <footer className="bg-white border-t border-gray-200 py-6 text-center text-sm text-gray-500">
+      &copy; {new Date().getFullYear()} SinggahIn. Hak cipta dilindungi.
+    </footer>
+  );
+}
+
 export default function App(): React.JSX.Element {
   const { checkAuth } = useAuthStore();
-
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+  useEffect(() => { checkAuth(); }, [checkAuth]);
 
   return (
     <BrowserRouter>
       <div className="min-h-screen flex flex-col justify-between bg-gray-50 text-gray-900">
         <Navbar />
         <AccountSwitchModal />
-        <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/verify" element={<VerifyTokenPage />} />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/tenant/dashboard"
-              element={
-                <ProtectedRoute requiredRole="TENANT">
-                  <TenantPlaceholder />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </main>
-        <footer className="bg-white border-t border-gray-200 py-6 text-center text-sm text-gray-500">
-          &copy; {new Date().getFullYear()} SinggahIn. Hak cipta dilindungi.
-        </footer>
+        <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8"><AppRoutes /></main>
+        <AppFooter />
       </div>
     </BrowserRouter>
   );

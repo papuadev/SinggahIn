@@ -5,40 +5,40 @@ import { useAuthStore } from '../../stores/auth.store';
 import { RoleBadge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 
+function UserAvatar({ user }: { user: { avatarUrl?: string | null; name?: string | null } }) {
+  if (user.avatarUrl) {
+    return <img src={user.avatarUrl} alt={user.name || 'Avatar'} className="w-full h-full object-cover" />;
+  }
+  return <span>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</span>;
+}
+
+function UserProfileLink({ user }: { user: NonNullable<ReturnType<typeof useAuthStore.getState>['user']> }) {
+  return (
+    <Link to="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+      <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300 bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">
+        <UserAvatar user={user} />
+      </div>
+      <div className="text-right hidden sm:block">
+        <p className="text-sm font-semibold text-gray-800">{user.name || 'Pengguna'}</p>
+        <p className="text-xs text-gray-500">{user.email}</p>
+      </div>
+    </Link>
+  );
+}
+
 function UserMenu(): React.JSX.Element {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-
   const handleLogout = async () => {
     await logout();
     navigate('/');
   };
-
   if (!user) return <div />;
-
   return (
     <div className="flex items-center gap-3">
-      <Link to="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-        <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300 bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">
-          {user.avatarUrl ? (
-            <img src={user.avatarUrl} alt={user.name || 'Avatar'} className="w-full h-full object-cover" />
-          ) : (
-            <span>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</span>
-          )}
-        </div>
-        <div className="text-right hidden sm:block">
-          <p className="text-sm font-semibold text-gray-800">{user.name || 'Pengguna'}</p>
-          <p className="text-xs text-gray-500">{user.email}</p>
-        </div>
-      </Link>
+      <UserProfileLink user={user} />
       <RoleBadge role={user.role} />
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleLogout}
-        leftIcon={<LogOut className="w-4 h-4" />}
-        aria-label="Keluar"
-      >
+      <Button variant="ghost" size="sm" onClick={handleLogout} leftIcon={<LogOut className="w-4 h-4" />} aria-label="Keluar">
         Keluar
       </Button>
     </div>
@@ -62,23 +62,40 @@ function GuestButtons(): React.JSX.Element {
   );
 }
 
+function BrandLogo(): React.JSX.Element {
+  return (
+    <Link to="/" className="flex items-center gap-2">
+      <span className="text-2xl font-black tracking-tight text-primary-600">
+        SinggahIn
+      </span>
+    </Link>
+  );
+}
+
+function NavLinks(): React.JSX.Element {
+  const { user } = useAuthStore();
+  return (
+    <nav className="hidden md:flex items-center gap-4 text-sm font-medium text-gray-600">
+      <Link to="/" className="hover:text-primary-600 transition-colors">
+        Cari Penginapan
+      </Link>
+      {user?.role === 'TENANT' && (
+        <Link to="/tenant/properties" className="hover:text-primary-600 transition-colors">
+          Kelola Properti
+        </Link>
+      )}
+    </nav>
+  );
+}
+
 export function Navbar(): React.JSX.Element {
   const { isAuthenticated } = useAuthStore();
-
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl font-black tracking-tight text-primary-600">
-              SinggahIn
-            </span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-4 text-sm font-medium text-gray-600">
-            <Link to="/" className="hover:text-primary-600 transition-colors">
-              Cari Penginapan
-            </Link>
-          </nav>
+          <BrandLogo />
+          <NavLinks />
         </div>
         <div>{isAuthenticated ? <UserMenu /> : <GuestButtons />}</div>
       </div>
