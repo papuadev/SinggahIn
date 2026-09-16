@@ -1,0 +1,16 @@
+.agents/
+docs/
+plan/
+spec/
+
+
+backend/node_modules/
+frontend/node_modules/
+
+backend/.env
+frontend/.env
+
+# note.md
+# backend/uploads/
+backend/dist/
+frontend/dist/
