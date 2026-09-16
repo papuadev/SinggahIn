@@ -3,6 +3,7 @@ import { ApiResponse } from '../../../types/api.types';
 import {
   PropertyCategory,
   PropertyItem,
+  PropertyImage,
   CreatePropertyPayload,
   UpdatePropertyPayload,
   ReverseGeocodeResult,
@@ -63,6 +64,40 @@ export const propertyApi = {
     const res = await apiClient.get<ApiResponse<ReverseGeocodeResult>>(
       '/properties/geocode/reverse',
       { params: { latitude, longitude } }
+    );
+    return res.data;
+  },
+
+  async uploadImages(
+    propertyId: string,
+    files: File[]
+  ): Promise<ApiResponse<PropertyImage[]>> {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('images', file));
+    const res = await apiClient.post<ApiResponse<PropertyImage[]>>(
+      `/properties/${propertyId}/images`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return res.data;
+  },
+
+  async deleteImage(
+    propertyId: string,
+    imageId: string
+  ): Promise<ApiResponse<null>> {
+    const res = await apiClient.delete<ApiResponse<null>>(
+      `/properties/${propertyId}/images/${imageId}`
+    );
+    return res.data;
+  },
+
+  async setCoverImage(
+    propertyId: string,
+    imageId: string
+  ): Promise<ApiResponse<PropertyImage>> {
+    const res = await apiClient.patch<ApiResponse<PropertyImage>>(
+      `/properties/${propertyId}/images/${imageId}/cover`
     );
     return res.data;
   },

@@ -41,6 +41,18 @@ vi.mock('../../../modules/property/components/PropertyForm', () => ({
   ),
 }));
 
+vi.mock('../../../modules/property/components/PropertyGalleryManager', () => ({
+  PropertyGalleryManager: ({ propertyId }: { propertyId: string }) => (
+    <div data-testid="mock-gallery-manager">Gallery for {propertyId}</div>
+  ),
+}));
+
+vi.mock('../../../modules/room/components/RoomListSection', () => ({
+  RoomListSection: ({ propertyId }: { propertyId: string }) => (
+    <div data-testid="mock-rooms-section">Rooms for {propertyId}</div>
+  ),
+}));
+
 vi.mock('../../../modules/property/services/property.api', () => ({
   propertyApi: {
     createProperty: vi.fn(),
@@ -117,5 +129,38 @@ describe('Tenant Property Create & Edit Pages', () => {
       expect(propertyApi.updateProperty).toHaveBeenCalledWith('prop-123', expect.any(Object));
       expect(mockNavigate).toHaveBeenCalledWith('/tenant/properties');
     });
+  });
+
+  it('switches tabs between info, gallery, and rooms in TenantPropertyEditPage', async () => {
+    vi.mocked(propertyApi.getPropertyById).mockResolvedValue({
+      success: true,
+      message: 'OK',
+      data: {
+        id: 'prop-123',
+        tenantId: 'tenant-1',
+        title: 'Villa Nuansa Asri',
+        description: 'Villa sejuk di pegunungan',
+        categoryId: 'cat-villa',
+        address: 'Jl. Lembang No. 10',
+        city: 'Bandung',
+        latitude: -6.8,
+        longitude: 107.6,
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+        images: [],
+      },
+    });
+
+    renderWithProviders(<TenantPropertyEditPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Informasi Dasar')).toBeInTheDocument();
+      expect(screen.getByTestId('mock-property-form')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Galeri Foto/i }));
+    expect(screen.getByTestId('mock-gallery-manager')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Tipe & Tarif Kamar/i }));
+    expect(screen.getByTestId('mock-rooms-section')).toBeInTheDocument();
   });
 });
