@@ -11,6 +11,8 @@ import {
 import { RoomCard } from './RoomCard';
 import { RoomFormModal } from './RoomFormModal';
 import { RoomDeleteConfirmModal } from './RoomDeleteConfirmModal';
+import { PeakSeasonRateModal } from './PeakSeasonRateModal';
+import { RoomUnavailabilityModal } from './RoomUnavailabilityModal';
 import { Button } from '../../../components/atoms/Button';
 import { Spinner } from '../../../components/atoms/Spinner';
 import { Alert } from '../../../components/atoms/Alert';
@@ -46,20 +48,27 @@ function RoomListEmpty({ onAdd }: { onAdd: () => void }): React.JSX.Element {
 }
 
 function RoomCardsView({
-  rooms,
-  onEdit,
-  onDelete,
-  isPending,
+  rooms, onEdit, onDelete, onRates, onUnavail, isPending,
 }: {
   rooms: Room[];
   onEdit: (r: Room) => void;
   onDelete: (r: Room) => void;
+  onRates: (r: Room) => void;
+  onUnavail: (r: Room) => void;
   isPending: boolean;
 }): React.JSX.Element {
   return (
     <div className="space-y-3">
       {rooms.map((room) => (
-        <RoomCard key={room.id} room={room} onEdit={onEdit} onDelete={onDelete} disabled={isPending} />
+        <RoomCard
+          key={room.id}
+          room={room}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onManageRates={onRates}
+          onManageUnavailability={onUnavail}
+          disabled={isPending}
+        />
       ))}
     </div>
   );
@@ -70,6 +79,8 @@ export function RoomListSection({ propertyId }: RoomListSectionProps): React.JSX
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [deletingRoom, setDeletingRoom] = useState<Room | null>(null);
+  const [rateRoom, setRateRoom] = useState<Room | null>(null);
+  const [unavailRoom, setUnavailRoom] = useState<Room | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const createMutation = useCreateRoom(propertyId);
@@ -110,7 +121,14 @@ export function RoomListSection({ propertyId }: RoomListSectionProps): React.JSX
       {actionError && <Alert variant="error">{actionError}</Alert>}
       {error && <Alert variant="error">{(error as Error).message}</Alert>}
       {rooms.length === 0 ? <RoomListEmpty onAdd={handleOpenCreate} /> : (
-        <RoomCardsView rooms={rooms} onEdit={handleOpenEdit} onDelete={setDeletingRoom} isPending={deleteMutation.isPending} />
+        <RoomCardsView
+          rooms={rooms}
+          onEdit={handleOpenEdit}
+          onDelete={setDeletingRoom}
+          onRates={setRateRoom}
+          onUnavail={setUnavailRoom}
+          isPending={deleteMutation.isPending}
+        />
       )}
       <RoomFormModal
         isOpen={isFormOpen}
@@ -126,6 +144,19 @@ export function RoomListSection({ propertyId }: RoomListSectionProps): React.JSX
         onClose={() => setDeletingRoom(null)}
         onConfirm={handleDeleteConfirm}
         isLoading={deleteMutation.isPending}
+      />
+      <PeakSeasonRateModal
+        roomId={rateRoom?.id || ''}
+        roomName={rateRoom?.name || ''}
+        propertyId={propertyId}
+        isOpen={Boolean(rateRoom)}
+        onClose={() => setRateRoom(null)}
+      />
+      <RoomUnavailabilityModal
+        roomId={unavailRoom?.id || ''}
+        roomName={unavailRoom?.name || ''}
+        isOpen={Boolean(unavailRoom)}
+        onClose={() => setUnavailRoom(null)}
       />
     </div>
   );

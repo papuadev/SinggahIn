@@ -39,13 +39,29 @@ describe('RoomCard Component', () => {
   it('renders room details and triggers callbacks', () => {
     const onEdit = vi.fn();
     const onDelete = vi.fn();
-    render(<RoomCard room={mockRoom} onEdit={onEdit} onDelete={onDelete} />);
+    const onRates = vi.fn();
+    const onUnavail = vi.fn();
+    render(
+      <RoomCard
+        room={mockRoom}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onManageRates={onRates}
+        onManageUnavailability={onUnavail}
+      />
+    );
 
     expect(screen.getByText('Deluxe Queen Room')).toBeInTheDocument();
     expect(screen.getByText(/350\.000/)).toBeInTheDocument();
     expect(screen.getByText('2 Tamu')).toBeInTheDocument();
     expect(screen.getByText('5 Unit Tersedia')).toBeInTheDocument();
     expect(screen.getByText('Kamar nyaman dengan pemandangan taman.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Tarif'));
+    expect(onRates).toHaveBeenCalledWith(mockRoom);
+
+    fireEvent.click(screen.getByText('Blokir'));
+    expect(onUnavail).toHaveBeenCalledWith(mockRoom);
 
     fireEvent.click(screen.getByText('Ubah'));
     expect(onEdit).toHaveBeenCalledWith(mockRoom);

@@ -84,14 +84,11 @@ describe('Pricing Service Tests', () => {
   describe('deleteRoomRate', () => {
     it('should verify ownership and delete rate modifier', async () => {
       vi.mocked(roomService.verifyRoomOwnership).mockResolvedValueOnce({} as any);
-      vi.mocked(prisma.roomPriceModifier.findUnique).mockResolvedValueOnce({
-        id: 'rate-1',
-        roomId: 'room-1',
-      } as any);
+      vi.mocked(prisma.roomPriceModifier.findUnique).mockResolvedValueOnce({ id: 'r-1', roomId: 'room-1' } as any);
       vi.mocked(prisma.roomPriceModifier.delete).mockResolvedValueOnce({} as any);
 
-      await deleteRoomRate('tenant-1', 'room-1', 'rate-1');
-      expect(prisma.roomPriceModifier.delete).toHaveBeenCalledWith({ where: { id: 'rate-1' } });
+      await deleteRoomRate('tenant-1', 'room-1', 'r-1');
+      expect(prisma.roomPriceModifier.delete).toHaveBeenCalledWith({ where: { id: 'r-1' } });
     });
 
     it('should throw notFound if rate modifier does not exist', async () => {
@@ -111,11 +108,8 @@ describe('Pricing Service Tests', () => {
       vi.mocked(prisma.roomPriceModifier.createMany).mockResolvedValueOnce({ count: 2 });
 
       const input = {
-        startDate: '2026-12-20',
-        endDate: '2026-12-31',
-        adjustmentType: AdjustmentType.NOMINAL,
-        adjustmentValue: 150000,
-        reason: 'End of year holiday',
+        startDate: '2026-12-20', endDate: '2026-12-31',
+        adjustmentType: AdjustmentType.NOMINAL, adjustmentValue: 150000, reason: 'Holiday',
       };
       const result = await bulkCreatePropertyRates('tenant-1', 'prop-1', input);
 
@@ -125,31 +119,76 @@ describe('Pricing Service Tests', () => {
   });
 
   describe('calculateStayPricing', () => {
-    it('should calculate stay pricing with dynamic modifier applied', async () => {
-      vi.mocked(roomService.getRoomById).mockResolvedValueOnce({
-        id: 'r1',
-        basePrice: 500000,
-      } as any);
+    it('calculates pure base price when no modifiers exist', async () => {
+      vi.mocked(roomService.getRoomById).mockResolvedValueOnce({ id: 'r1', basePrice: 500000 } as any);
+      vi.mocked(prisma.roomPriceModifier.findMany).mockResolvedValueOnce([]);
+
+      const pricing = await calculateStayPricing('r1', '2026-10-01', '2026-10-03');
+      expect(pricing.totalNights).toBe(2);
+      expect(pricing.totalStayPrice).toBe(1000000);
+      expect(pricing.averageNightRate).toBe(500000);
+      expect(pricing.dailyBreakdown[0].effectivePrice).toBe(500000);
+      expect(pricing.dailyBreakdown[1].effectivePrice).toBe(500000);
+    });
+
+    it('calculates percentage markup (+25%) for weekend', async () => {
+      vi.mocked(roomService.getRoomById).mockResolvedValueOnce({ id: 'r1', basePrice: 500000 } as any);
       vi.mocked(prisma.roomPriceModifier.findMany).mockResolvedValueOnce([
         {
-          id: 'm1',
-          roomId: 'r1',
+          id: 'm1', roomId: 'r1',
           startDate: new Date('2026-10-02T00:00:00.000Z'),
           endDate: new Date('2026-10-02T00:00:00.000Z'),
           adjustmentType: AdjustmentType.PERCENTAGE,
-          adjustmentValue: 20,
-          reason: 'Special Event',
-          createdAt: new Date(),
-        },
-      ] as any);
+          adjustmentValue: 25, reason: 'Weekend (+25%)', createdAt: new Date(),
+        } as any,
+      ]);
 
       const pricing = await calculateStayPricing('r1', '2026-10-01', '2026-10-03');
-
       expect(pricing.totalNights).toBe(2);
       expect(pricing.dailyBreakdown[0].effectivePrice).toBe(500000);
-      expect(pricing.dailyBreakdown[1].effectivePrice).toBe(600000);
-      expect(pricing.totalStayPrice).toBe(1100000);
-      expect(pricing.averageNightRate).toBe(550000);
+      expect(pricing.dailyBreakdown[1].effectivePrice).toBe(625000);
+      expect(pricing.totalStayPrice).toBe(1125000);
+    });
+
+    it('calculates nominal markup (+Rp 150.000) for holiday', async () => {
+      vi.mocked(roomService.getRoomById).mockResolvedValueOnce({ id: 'r1', basePrice: 500000 } as any);
+      vi.mocked(prisma.roomPriceModifier.findMany).mockResolvedValueOnce([
+        {
+          id: 'm2', roomId: 'r1',
+          startDate: new Date('2026-10-01T00:00:00.000Z'),
+          endDate: new Date('2026-10-01T00:00:00.000Z'),
+          adjustmentType: AdjustmentType.NOMINAL,
+          adjustmentValue: 150000, reason: 'Holiday (+Rp 150.000)', createdAt: new Date(),
+        } as any,
+      ]);
+
+      const pricing = await calculateStayPricing('r1', '2026-10-01', '2026-10-02');
+      expect(pricing.dailyBreakdown[0].effectivePrice).toBe(650000);
+      expect(pricing.totalStayPrice).toBe(650000);
+    });
+
+    it('prioritizes specific single-day modifier over date range (ADR-005)', async () => {
+      vi.mocked(roomService.getRoomById).mockResolvedValueOnce({ id: 'r1', basePrice: 500000 } as any);
+      vi.mocked(prisma.roomPriceModifier.findMany).mockResolvedValueOnce([
+        {
+          id: 'range-1', roomId: 'r1',
+          startDate: new Date('2026-12-01T00:00:00.000Z'),
+          endDate: new Date('2026-12-31T00:00:00.000Z'),
+          adjustmentType: AdjustmentType.PERCENTAGE,
+          adjustmentValue: 10, reason: 'Desember Liburan (+10%)', createdAt: new Date('2026-09-01'),
+        } as any,
+        {
+          id: 'single-1', roomId: 'r1',
+          startDate: new Date('2026-12-25T00:00:00.000Z'),
+          endDate: new Date('2026-12-25T00:00:00.000Z'),
+          adjustmentType: AdjustmentType.PERCENTAGE,
+          adjustmentValue: 50, reason: 'Hari Natal (+50%)', createdAt: new Date('2026-09-02'),
+        } as any,
+      ]);
+
+      const pricing = await calculateStayPricing('r1', '2026-12-24', '2026-12-26');
+      expect(pricing.dailyBreakdown[0].effectivePrice).toBe(550000);
+      expect(pricing.dailyBreakdown[1].effectivePrice).toBe(750000);
     });
   });
 });
