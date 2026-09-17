@@ -8,15 +8,26 @@ vi.mock('react-leaflet', () => ({
     <div data-testid="map-container">{children}</div>
   ),
   TileLayer: () => <div data-testid="tile-layer" />,
-  Marker: ({ position, draggable }: { position: [number, number]; draggable?: boolean }) => (
-    <div
-      data-testid="marker"
-      data-position={JSON.stringify(position)}
-      data-draggable={draggable}
-    />
-  ),
+  Marker: React.forwardRef(({ position, draggable, eventHandlers }: any, ref: any) => {
+    if (ref) {
+      ref.current = {
+        getLatLng: () => ({ lat: -6.912345, lng: 107.612345 }),
+      };
+    }
+    return (
+      <div
+        data-testid="marker"
+        data-position={JSON.stringify(position)}
+        data-draggable={draggable}
+        onClick={() => eventHandlers?.dragend?.()}
+      />
+    );
+  }),
   useMap: () => ({ setView: vi.fn(), getZoom: vi.fn().mockReturnValue(14) }),
-  useMapEvents: vi.fn(),
+  useMapEvents: (handlers: any) => {
+    (global as any).__mockMapEvents = handlers;
+    return null;
+  },
 }));
 
 describe('PropertyMapPin Component', () => {
@@ -66,5 +77,22 @@ describe('PropertyMapPin Component', () => {
     fireEvent.click(btn);
 
     expect(handleChange).toHaveBeenCalledWith(-6.8888, 107.5555);
+  });
+
+  it('updates coordinates when marker pin is dragged', () => {
+    const handleChange = vi.fn();
+    render(<PropertyMapPin latitude={-6.9} longitude={107.6} onChange={handleChange} />);
+
+    fireEvent.click(screen.getByTestId('marker'));
+    expect(handleChange).toHaveBeenCalledWith(-6.912345, 107.612345);
+  });
+
+  it('updates coordinates when map is clicked', () => {
+    const handleChange = vi.fn();
+    render(<PropertyMapPin latitude={-6.9} longitude={107.6} onChange={handleChange} />);
+
+    const mockEvents = (global as any).__mockMapEvents;
+    mockEvents?.click({ latlng: { lat: -6.95, lng: 107.65 } });
+    expect(handleChange).toHaveBeenCalledWith(-6.95, 107.65);
   });
 });
