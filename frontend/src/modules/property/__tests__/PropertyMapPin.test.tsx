@@ -79,6 +79,37 @@ describe('PropertyMapPin Component', () => {
     expect(handleChange).toHaveBeenCalledWith(-6.8888, 107.5555);
   });
 
+  it('invokes onLocationDetected when Lokasi Saya is clicked', async () => {
+    const handleChange = vi.fn();
+    const handleDetected = vi.fn();
+    const mockGeolocation = {
+      getCurrentPosition: vi.fn().mockImplementationOnce((success) => {
+        success({
+          coords: {
+            latitude: -6.8888,
+            longitude: 107.5555,
+          },
+        });
+      }),
+    };
+    (global as unknown as { navigator: { geolocation: typeof mockGeolocation } }).navigator.geolocation =
+      mockGeolocation;
+
+    render(
+      <PropertyMapPin
+        latitude={-6.9}
+        longitude={107.6}
+        onChange={handleChange}
+        onLocationDetected={handleDetected}
+      />
+    );
+    const btn = screen.getByRole('button', { name: /Lokasi Saya/i });
+    fireEvent.click(btn);
+
+    expect(handleChange).toHaveBeenCalledWith(-6.8888, 107.5555);
+    expect(handleDetected).toHaveBeenCalledWith(-6.8888, 107.5555);
+  });
+
   it('updates coordinates when marker pin is dragged', () => {
     const handleChange = vi.fn();
     render(<PropertyMapPin latitude={-6.9} longitude={107.6} onChange={handleChange} />);

@@ -8,6 +8,14 @@ export interface ReverseGeocodeResult {
   city: string;
   address: string;
   formatted: string;
+  formattedAddress?: string;
+}
+
+export interface GeocodeSuggestion {
+  latitude: number;
+  longitude: number;
+  formattedAddress: string;
+  city: string;
 }
 
 export interface OpenCageGeometry {

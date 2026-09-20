@@ -61,9 +61,17 @@ export const ReverseGeocodeQuerySchema = z.object({
     .max(180, 'Longitude harus di antara -180 dan 180'),
 });
 
+export const SearchGeocodeQuerySchema = z.object({
+  query: z
+    .string({ required_error: 'Query pencarian wajib diisi' })
+    .min(1, 'Query pencarian minimal 1 karakter'),
+  limit: z.coerce.number().min(1).max(10).optional().default(5),
+});
+
 export type CreatePropertyInput = z.infer<typeof CreatePropertySchema>;
 export type UpdatePropertyInput = z.infer<typeof UpdatePropertySchema>;
 export type PropertyIdParam = z.infer<typeof PropertyIdParamSchema>;
 export type PropertyImageParam = z.infer<typeof PropertyImageParamSchema>;
 export type ReverseGeocodeQuery = z.infer<typeof ReverseGeocodeQuerySchema>;
+export type SearchGeocodeQuery = z.infer<typeof SearchGeocodeQuerySchema>;
 

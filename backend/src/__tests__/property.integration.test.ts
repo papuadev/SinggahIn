@@ -43,6 +43,14 @@ vi.mock('../shared/services/opencage.service', () => ({
     formatted: 'Jl. Braga No. 10, Bandung',
   }),
   forwardGeocode: vi.fn(),
+  searchAddress: vi.fn().mockResolvedValue([
+    {
+      latitude: -6.9175,
+      longitude: 107.6191,
+      formattedAddress: 'Jl. Braga No. 10, Bandung',
+      city: 'Bandung',
+    },
+  ]),
 }));
 
 describe('Property HTTP Integration Tests', () => {
@@ -167,5 +175,16 @@ describe('Property HTTP Integration Tests', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.city).toBe('Bandung');
+  });
+
+  it('GET /api/v1/properties/geocode/search should return address suggestions for TENANT', async () => {
+    const res = await request(app)
+      .get('/api/v1/properties/geocode/search?query=Braga')
+      .set('Cookie', [`token=${tenantToken}`]);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].city).toBe('Bandung');
+    expect(res.body.data[0].formattedAddress).toBe('Jl. Braga No. 10, Bandung');
   });
 });

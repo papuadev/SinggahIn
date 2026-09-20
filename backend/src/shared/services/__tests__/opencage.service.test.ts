@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
-import { forwardGeocode, reverseGeocode } from '../opencage.service';
+import { forwardGeocode, reverseGeocode, searchAddress } from '../opencage.service';
 
 describe('OpenCage Service (Axios)', () => {
   const originalEnv = process.env.OPENCAGE_API_KEY;
@@ -99,6 +99,56 @@ describe('OpenCage Service (Axios)', () => {
 
       const result = await reverseGeocode(-6.9218, 107.607);
       expect(result).toBeNull();
+    });
+  });
+
+  describe('searchAddress', () => {
+    it('returns empty array if OPENCAGE_API_KEY is missing', async () => {
+      delete process.env.OPENCAGE_API_KEY;
+      const result = await searchAddress('Dago');
+      expect(result).toEqual([]);
+    });
+
+    it('returns empty array if query is empty or whitespace', async () => {
+      const result = await searchAddress('   ');
+      expect(result).toEqual([]);
+    });
+
+    it('returns list of suggestions with coordinates and city', async () => {
+      const mockResponse = {
+        results: [
+          {
+            geometry: { lat: -6.875, lng: 107.615 },
+            formatted: 'Dago, Bandung City, West Java, Indonesia',
+            components: {
+              _normalized_city: 'Bandung City',
+              suburb: 'Dago',
+            },
+          },
+        ],
+        status: { code: 200, message: 'OK' },
+      };
+
+      vi.spyOn(axios, 'get').mockResolvedValueOnce({
+        data: mockResponse,
+        status: 200,
+      });
+
+      const result = await searchAddress('Dago', 5);
+      expect(result).toEqual([
+        {
+          latitude: -6.875,
+          longitude: 107.615,
+          formattedAddress: 'Dago, Bandung City, West Java, Indonesia',
+          city: 'Bandung City',
+        },
+      ]);
+    });
+
+    it('returns empty array when axios throws an error', async () => {
+      vi.spyOn(axios, 'get').mockRejectedValueOnce(new Error('Network error'));
+      const result = await searchAddress('Dago');
+      expect(result).toEqual([]);
     });
   });
 });

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm, UseFormSetValue, UseFormRegister } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, MapPin } from 'lucide-react';
 import { propertyFormSchema, PropertyFormData } from '../schemas/property.schema';
 import { usePropertyCategories } from '../hooks/useProperties';
 import { propertyApi } from '../services/property.api';
-import { PropertyCategory } from '../property.types';
+import { PropertyCategory, GeocodeSuggestion } from '../property.types';
 import { FormField } from '../../../components/molecules/FormField';
 import { Input } from '../../../components/atoms/Input';
 import { Button } from '../../../components/atoms/Button';
@@ -20,10 +20,11 @@ export interface PropertyFormProps {
 }
 
 function applyGeocodeResult(
-  data: { formattedAddress?: string; city?: string },
+  data: { formattedAddress?: string; formatted?: string; address?: string; city?: string },
   setValue: UseFormSetValue<PropertyFormData>
 ): void {
-  if (data.formattedAddress) setValue('address', data.formattedAddress, { shouldValidate: true });
+  const addressText = data.formattedAddress || data.formatted || data.address;
+  if (addressText) setValue('address', addressText, { shouldValidate: true });
   if (data.city) setValue('city', data.city, { shouldValidate: true });
 }
 
@@ -75,6 +76,12 @@ export function PropertyForm({
   const [detecting, setDetecting] = useState(false);
   const [geoFeedback, setGeoFeedback] = useState<string | null>(null);
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
+
   const {
     register, handleSubmit, setValue, watch, formState: { errors },
   } = useForm<PropertyFormData>({
@@ -96,6 +103,69 @@ export function PropertyForm({
   const onMapChange = (newLat: number, newLng: number) => {
     setValue('latitude', newLat, { shouldValidate: true });
     setValue('longitude', newLng, { shouldValidate: true });
+  };
+
+  const handleCurrentLocation = async (newLat: number, newLng: number) => {
+    onMapChange(newLat, newLng);
+    await triggerDetectAddress(
+      newLat,
+      newLng,
+      setValue,
+      setDetecting,
+      (msg) => setGeoFeedback(msg ? `Lokasi saat ini terdeteksi. ${msg}` : null)
+    );
+  };
+
+  useEffect(() => {
+    if (!searchQuery || searchQuery.trim().length < 3) {
+      setSuggestions([]);
+      setShowDropdown(false);
+      setIsSearching(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await propertyApi.searchGeocode(searchQuery.trim());
+        if (res?.data && res.data.length > 0) {
+          setSuggestions(res.data);
+          setShowDropdown(true);
+        } else {
+          setSuggestions([]);
+          setShowDropdown(true);
+        }
+      } catch {
+        setSuggestions([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectSuggestion = (item: GeocodeSuggestion) => {
+    setValue('address', item.formattedAddress, { shouldValidate: true });
+    if (item.city) {
+      setValue('city', item.city, { shouldValidate: true });
+    }
+    setValue('latitude', item.latitude, { shouldValidate: true });
+    setValue('longitude', item.longitude, { shouldValidate: true });
+    setShowDropdown(false);
+    setSuggestions([]);
+    setSearchQuery('');
+    setGeoFeedback(`Pin peta dipindahkan ke: ${item.formattedAddress}`);
   };
 
   return (
@@ -120,9 +190,63 @@ export function PropertyForm({
         <FormField label="Kota" required error={errors.city?.message}>
           <Input placeholder="Contoh: Bandung" hasError={Boolean(errors.city)} {...register('city')} />
         </FormField>
-        <FormField label="Alamat Lengkap" required error={errors.address?.message}>
-          <Input placeholder="Contoh: Jl. Kolonel Masturi No. 88" hasError={Boolean(errors.address)} {...register('address')} />
-        </FormField>
+
+        <div ref={autocompleteRef} className="relative">
+          <FormField label="Alamat Lengkap" required error={errors.address?.message}>
+            <Input
+              placeholder="Contoh: Jl. Kolonel Masturi No. 88"
+              hasError={Boolean(errors.address)}
+              {...register('address', {
+                onChange: (e) => setSearchQuery(e.target.value),
+              })}
+              onFocus={() => {
+                if (suggestions.length > 0) setShowDropdown(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setShowDropdown(false);
+              }}
+              rightIcon={isSearching ? <Spinner size="sm" /> : undefined}
+              autoComplete="off"
+            />
+          </FormField>
+
+          {showDropdown && (
+            <div
+              className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
+              data-testid="address-suggestions-dropdown"
+            >
+              {isSearching ? (
+                <div className="p-3 text-xs text-gray-500 flex items-center gap-2">
+                  <Spinner size="sm" /> Mencari alamat...
+                </div>
+              ) : suggestions.length > 0 ? (
+                <ul className="divide-y divide-gray-100">
+                  {suggestions.map((item, idx) => (
+                    <li
+                      key={`${item.latitude}-${item.longitude}-${idx}`}
+                      onClick={() => handleSelectSuggestion(item)}
+                      className="px-3.5 py-2.5 hover:bg-primary-50 cursor-pointer flex items-start gap-2.5 transition-colors text-left"
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <MapPin className="w-4 h-4 text-primary-600 mt-0.5 shrink-0" />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-800 leading-tight">
+                          {item.formattedAddress}
+                        </span>
+                        {item.city && (
+                          <span className="text-xs text-gray-500 mt-0.5">{item.city}</span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="p-3 text-xs text-gray-400">Tidak ada saran alamat ditemukan</div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2 pt-2 border-t border-gray-100">
@@ -140,7 +264,13 @@ export function PropertyForm({
           </Button>
         </div>
         {geoFeedback && <p className="text-xs text-primary-700 bg-primary-50 p-2 rounded">{geoFeedback}</p>}
-        <PropertyMapPin latitude={lat} longitude={lng} onChange={onMapChange} height="280px" />
+        <PropertyMapPin
+          latitude={lat}
+          longitude={lng}
+          onChange={onMapChange}
+          onLocationDetected={handleCurrentLocation}
+          height="280px"
+        />
         {(errors.latitude || errors.longitude) && (
           <p className="text-xs text-red-600">Koordinat peta wajib ditentukan dengan benar.</p>
         )}
@@ -154,3 +284,4 @@ export function PropertyForm({
     </form>
   );
 }
+

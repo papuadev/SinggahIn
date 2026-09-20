@@ -2,12 +2,13 @@ import axios from 'axios';
 import {
   GeocodeResult,
   ReverseGeocodeResult,
+  GeocodeSuggestion,
   OpenCageApiResponse,
   OpenCageComponents,
   OpenCageItem,
 } from '../types/opencage.types';
 
-export { GeocodeResult, ReverseGeocodeResult };
+export { GeocodeResult, ReverseGeocodeResult, GeocodeSuggestion };
 
 function getApiKey(): string | undefined {
   return process.env.OPENCAGE_API_KEY;
@@ -80,4 +81,23 @@ export async function reverseGeocode(
   const url = buildGeocodeUrl(query, key);
   const data = await fetchOpenCage(url);
   return parseReverseResult(data?.results?.[0]);
+}
+
+export async function searchAddress(
+  query: string,
+  limit = 5
+): Promise<GeocodeSuggestion[]> {
+  const key = getApiKey();
+  if (!key || !query?.trim()) return [];
+  const base = 'https://api.opencagedata.com/geocode/v1/json';
+  const encoded = encodeURIComponent(query.trim());
+  const url = `${base}?q=${encoded}&key=${key}&limit=${limit}&no_annotations=1`;
+  const data = await fetchOpenCage(url);
+  if (!data?.results) return [];
+  return data.results.map((item) => ({
+    latitude: item.geometry.lat,
+    longitude: item.geometry.lng,
+    formattedAddress: item.formatted || '',
+    city: extractCity(item.components),
+  }));
 }

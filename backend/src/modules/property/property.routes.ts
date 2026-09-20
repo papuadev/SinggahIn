@@ -14,6 +14,7 @@ import {
   PropertyIdParamSchema,
   PropertyImageParamSchema,
   ReverseGeocodeQuerySchema,
+  SearchGeocodeQuerySchema,
 } from './property.schema';
 
 const router = Router();
@@ -28,6 +29,15 @@ router.get(
   requireRole(Role.TENANT),
   validateRequest({ query: ReverseGeocodeQuerySchema }),
   propertyController.reverseGeocode
+);
+
+// Tenant-Only: Forward Geocode / Autocomplete Proxy
+router.get(
+  '/geocode/search',
+  authenticate,
+  requireRole(Role.TENANT),
+  validateRequest({ query: SearchGeocodeQuerySchema }),
+  propertyController.searchGeocode
 );
 
 // Tenant-Only: My Properties
