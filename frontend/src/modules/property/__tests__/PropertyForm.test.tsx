@@ -6,11 +6,24 @@ import { PropertyForm } from '../components/PropertyForm';
 import { propertyApi } from '../services/property.api';
 
 vi.mock('../components/PropertyMapPin', () => ({
-  PropertyMapPin: ({ latitude, longitude, onChange }: { latitude: number; longitude: number; onChange?: (lat: number, lng: number) => void }) => (
+  PropertyMapPin: ({
+    latitude,
+    longitude,
+    onChange,
+    onLocationDetected,
+  }: {
+    latitude: number;
+    longitude: number;
+    onChange?: (lat: number, lng: number) => void;
+    onLocationDetected?: (lat: number, lng: number) => void;
+  }) => (
     <div data-testid="mock-map-pin">
       <span>{latitude}, {longitude}</span>
       <button type="button" onClick={() => onChange?.(-6.9, 107.6)}>
         Geser Pin Peta
+      </button>
+      <button type="button" onClick={() => onLocationDetected?.(-6.8888, 107.5555)}>
+        Mock Lokasi Saya
       </button>
     </div>
   ),
@@ -20,6 +33,7 @@ vi.mock('../services/property.api', () => ({
   propertyApi: {
     getCategories: vi.fn(),
     reverseGeocode: vi.fn(),
+    searchGeocode: vi.fn(),
   },
 }));
 
@@ -122,4 +136,56 @@ describe('PropertyForm Component Tests', () => {
       expect(screen.getByDisplayValue('Subang')).toBeInTheDocument();
     });
   });
+
+  it('auto-fills address and city when Lokasi Saya is triggered', async () => {
+    vi.mocked(propertyApi.reverseGeocode).mockResolvedValueOnce({
+      success: true,
+      message: 'OK',
+      data: { formatted: 'Jl. Dipatiukur No. 35, Bandung', city: 'Bandung' },
+    });
+
+    renderWithClient(<PropertyForm onSubmit={vi.fn()} />);
+
+    const lokasiSayaBtn = screen.getByRole('button', { name: /Mock Lokasi Saya/i });
+    fireEvent.click(lokasiSayaBtn);
+
+    await waitFor(() => {
+      expect(propertyApi.reverseGeocode).toHaveBeenCalledWith(-6.8888, 107.5555);
+      expect(screen.getByDisplayValue('Jl. Dipatiukur No. 35, Bandung')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Bandung')).toBeInTheDocument();
+      expect(screen.getByText(/Lokasi saat ini terdeteksi/i)).toBeInTheDocument();
+    });
+  });
+
+  it('searches addresses and updates coordinates and form fields when autocomplete suggestion is clicked', async () => {
+    vi.mocked(propertyApi.searchGeocode).mockResolvedValueOnce({
+      success: true,
+      message: 'OK',
+      data: [
+        {
+          latitude: -6.875,
+          longitude: 107.615,
+          formattedAddress: 'Jl. Ir. H. Juanda No. 123, Dago, Bandung',
+          city: 'Bandung',
+        },
+      ],
+    });
+
+    renderWithClient(<PropertyForm onSubmit={vi.fn()} />);
+
+    const addressInput = screen.getByPlaceholderText('Contoh: Jl. Kolonel Masturi No. 88');
+    fireEvent.change(addressInput, { target: { value: 'Dago' } });
+
+    const suggestion = await screen.findByText('Jl. Ir. H. Juanda No. 123, Dago, Bandung');
+    expect(suggestion).toBeInTheDocument();
+
+    fireEvent.click(suggestion);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Jl. Ir. H. Juanda No. 123, Dago, Bandung')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Bandung')).toBeInTheDocument();
+      expect(screen.getByText('-6.875, 107.615')).toBeInTheDocument();
+    });
+  });
 });
+

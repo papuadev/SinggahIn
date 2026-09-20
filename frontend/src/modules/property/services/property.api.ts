@@ -7,6 +7,7 @@ import {
   CreatePropertyPayload,
   UpdatePropertyPayload,
   ReverseGeocodeResult,
+  GeocodeSuggestion,
 } from '../property.types';
 
 export const propertyApi = {
@@ -64,6 +65,17 @@ export const propertyApi = {
     const res = await apiClient.get<ApiResponse<ReverseGeocodeResult>>(
       '/properties/geocode/reverse',
       { params: { latitude, longitude } }
+    );
+    return res.data;
+  },
+
+  async searchGeocode(
+    query: string,
+    limit = 5
+  ): Promise<ApiResponse<GeocodeSuggestion[]>> {
+    const res = await apiClient.get<ApiResponse<GeocodeSuggestion[]>>(
+      '/properties/geocode/search',
+      { params: { query, limit } }
     );
     return res.data;
   },

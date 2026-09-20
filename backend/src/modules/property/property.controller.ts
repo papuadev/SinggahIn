@@ -162,3 +162,23 @@ export async function reverseGeocode(
     next(error);
   }
 }
+
+export async function searchGeocode(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { query, limit } = req.query as unknown as {
+      query: string;
+      limit?: number;
+    };
+    const results = await opencageService.searchAddress(
+      query,
+      limit ? Number(limit) : 5
+    );
+    sendSuccess(res, results, 'Daftar saran alamat berhasil diambil.');
+  } catch (error) {
+    next(error);
+  }
+}

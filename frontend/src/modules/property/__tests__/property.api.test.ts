@@ -111,4 +111,21 @@ describe('Property API Service Tests', () => {
     });
     expect(result.data.city).toBe('Bandung');
   });
+
+  it('searchGeocode should call /properties/geocode/search with query and limit params', async () => {
+    const mockSuggestions = [
+      { latitude: -6.8, longitude: 107.6, formattedAddress: 'Jl. Dago, Bandung', city: 'Bandung' },
+    ];
+    vi.mocked(apiClient.get).mockResolvedValueOnce({
+      data: { success: true, message: 'OK', data: mockSuggestions },
+    });
+
+    const result = await propertyApi.searchGeocode('Dago', 5);
+
+    expect(apiClient.get).toHaveBeenCalledWith('/properties/geocode/search', {
+      params: { query: 'Dago', limit: 5 },
+    });
+    expect(result.data).toEqual(mockSuggestions);
+  });
 });
+

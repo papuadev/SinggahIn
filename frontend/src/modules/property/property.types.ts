@@ -47,7 +47,9 @@ export interface PropertyItem {
 export type Property = PropertyItem;
 
 export interface ReverseGeocodeResult {
-  formattedAddress: string;
+  formattedAddress?: string;
+  formatted?: string;
+  address?: string;
   city: string;
   components?: {
     road?: string;
@@ -57,6 +59,13 @@ export interface ReverseGeocodeResult {
     country?: string;
     postcode?: string;
   };
+}
+
+export interface GeocodeSuggestion {
+  latitude: number;
+  longitude: number;
+  formattedAddress: string;
+  city: string;
 }
 
 export interface CreatePropertyPayload {

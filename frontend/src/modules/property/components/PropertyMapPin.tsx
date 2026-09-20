@@ -40,23 +40,42 @@ function MapRecenter({ center }: { center: [number, number] }): null {
   return null;
 }
 
-function onGeoSuccess(pos: GeolocationPosition, onSelect: (lat: number, lng: number) => void) {
+async function onGeoSuccess(
+  pos: GeolocationPosition,
+  onSelect: (lat: number, lng: number) => void,
+  onLocationDetected?: (lat: number, lng: number) => Promise<void> | void
+) {
   const lat = Number(pos.coords.latitude.toFixed(6));
   const lng = Number(pos.coords.longitude.toFixed(6));
   onSelect(lat, lng);
+  if (onLocationDetected) {
+    await onLocationDetected(lat, lng);
+  }
 }
 
 function requestCurrentLocation(
   onSelect: (lat: number, lng: number) => void,
   setLoading: (l: boolean) => void,
-  setError: (e: string | null) => void
+  setError: (e: string | null) => void,
+  onLocationDetected?: (lat: number, lng: number) => Promise<void> | void
 ): void {
   if (!navigator.geolocation) return setError('Browser tidak mendukung geolokasi GPS.');
   setLoading(true);
   setError(null);
   navigator.geolocation.getCurrentPosition(
-    (pos) => { setLoading(false); onGeoSuccess(pos, onSelect); },
-    (err) => { setLoading(false); setError(`Gagal mengambil lokasi: ${err.message}`); }
+    async (pos) => {
+      try {
+        await onGeoSuccess(pos, onSelect, onLocationDetected);
+      } catch {
+        // handled
+      } finally {
+        setLoading(false);
+      }
+    },
+    (err) => {
+      setLoading(false);
+      setError(`Gagal mengambil lokasi: ${err.message}`);
+    }
   );
 }
 
@@ -64,6 +83,7 @@ export interface PropertyMapPinProps {
   latitude: number;
   longitude: number;
   onChange?: (lat: number, lng: number) => void;
+  onLocationDetected?: (lat: number, lng: number) => Promise<void> | void;
   readonly?: boolean;
   height?: string;
   className?: string;
@@ -75,6 +95,7 @@ export function PropertyMapPin({
   latitude,
   longitude,
   onChange,
+  onLocationDetected,
   readonly = false,
   height = '320px',
   className = '',
@@ -111,7 +132,7 @@ export function PropertyMapPin({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => requestCurrentLocation(onChange, setLoading, setGeoError)}
+            onClick={() => requestCurrentLocation(onChange, setLoading, setGeoError, onLocationDetected)}
             disabled={loading}
             leftIcon={loading ? <Spinner size="sm" /> : <Navigation className="w-3.5 h-3.5" />}
           >
