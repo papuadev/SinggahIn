@@ -76,6 +76,11 @@ export function RoomCard(props: RoomCardProps): React.JSX.Element {
           <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md shrink-0">
             {formatRupiah(room.basePrice)} / malam
           </span>
+          {room.weekendRatePercent && room.weekendRatePercent > 0 ? (
+            <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md shrink-0 border border-primary-200">
+              Weekend: +{room.weekendRatePercent}%
+            </span>
+          ) : null}
         </div>
         {room.description && <p className="text-xs text-gray-500 line-clamp-2">{room.description}</p>}
         <RoomMetaBadges capacity={room.capacity} totalUnits={room.totalUnits} />

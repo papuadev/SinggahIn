@@ -10,6 +10,13 @@ export const CreateRoomSchema = z.object({
     .number({ required_error: 'Harga dasar kamar wajib diisi' })
     .int('Harga dasar harus berupa bilangan bulat')
     .positive('Harga dasar harus lebih dari 0'),
+  weekendRatePercent: z
+    .number()
+    .int('Persentase akhir pekan harus bilangan bulat')
+    .min(0, 'Persentase akhir pekan minimal 0%')
+    .max(100, 'Persentase akhir pekan maksimal 100%')
+    .optional()
+    .default(0),
   capacity: z
     .number({ required_error: 'Kapasitas tamu wajib diisi' })
     .int('Kapasitas harus berupa bilangan bulat')
@@ -30,6 +37,7 @@ export const UpdateRoomSchema = z
   .object({
     name: z.string().min(2).max(100).optional(),
     basePrice: z.number().int().positive().optional(),
+    weekendRatePercent: z.number().int().min(0).max(100).optional(),
     capacity: z.number().int().min(1).max(50).optional(),
     totalUnits: z.number().int().min(1).optional(),
     description: z.string().max(1000).optional(),

@@ -2,10 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { roomFormSchema } from '../schemas/room.schema';
 
 describe('Room Form Zod Schema Validation', () => {
-  it('accepts valid room data with coerced numbers', () => {
+  it('accepts valid room data with coerced numbers and weekendRatePercent', () => {
     const validData = {
       name: 'Deluxe King Bed',
       basePrice: '350000',
+      weekendRatePercent: '25',
       capacity: '2',
       totalUnits: '5',
       description: 'Kamar nyaman ber-AC dengan pemandangan pegunungan.',
@@ -16,6 +17,7 @@ describe('Room Form Zod Schema Validation', () => {
     if (parsed.success) {
       expect(parsed.data.name).toBe('Deluxe King Bed');
       expect(parsed.data.basePrice).toBe(350000);
+      expect(parsed.data.weekendRatePercent).toBe(25);
       expect(parsed.data.capacity).toBe(2);
       expect(parsed.data.totalUnits).toBe(5);
     }

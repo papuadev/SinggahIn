@@ -90,11 +90,14 @@ async function fetchActiveModifiers(
 }
 
 function computeDailyBreakdown(
-  dates: Date[], modifiers: RoomPriceModifierDto[], basePrice: number
+  dates: Date[],
+  modifiers: RoomPriceModifierDto[],
+  basePrice: number,
+  weekendRatePercent?: number | null
 ) {
   return dates.map((d) => {
     const mod = resolveModifierForDate(modifiers, d, basePrice);
-    return buildDailyPrice(d, basePrice, mod);
+    return buildDailyPrice(d, basePrice, mod, weekendRatePercent);
   });
 }
 
@@ -106,6 +109,8 @@ export async function calculateStayPricing(
   const checkOut = toUtcDate(checkOutStr);
   const modifiers = await fetchActiveModifiers(roomId, checkIn, checkOut);
   const dates = generateDateRange(checkIn, checkOut);
-  const breakdown = computeDailyBreakdown(dates, modifiers, room.basePrice);
+  const breakdown = computeDailyBreakdown(
+    dates, modifiers, room.basePrice, room.weekendRatePercent
+  );
   return aggregateStayPricing(roomId, checkInStr, checkOutStr, room.basePrice, breakdown);
 }

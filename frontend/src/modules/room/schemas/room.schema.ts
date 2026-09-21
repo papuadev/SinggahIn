@@ -10,6 +10,13 @@ export const roomFormSchema = z.object({
     .int('Harga dasar harus bilangan bulat')
     .positive('Harga dasar harus lebih dari 0')
     .min(10000, 'Harga dasar minimal Rp 10.000'),
+  weekendRatePercent: z.coerce
+    .number()
+    .int('Persentase akhir pekan harus bilangan bulat')
+    .min(0, 'Persentase akhir pekan minimal 0%')
+    .max(100, 'Persentase akhir pekan maksimal 100%')
+    .optional()
+    .default(0),
   capacity: z.coerce
     .number({ required_error: 'Kapasitas tamu wajib diisi' })
     .int('Kapasitas harus bilangan bulat')

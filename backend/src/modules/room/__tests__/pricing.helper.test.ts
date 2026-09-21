@@ -7,6 +7,7 @@ import {
   resolveModifierForDate,
   generateDateRange,
   aggregateStayPricing,
+  buildDailyPrice,
   toUtcDate,
 } from '../pricing.helper';
 import { RoomPriceModifierDto, DailyPriceDto } from '../pricing.types';
@@ -58,36 +59,24 @@ describe('Pricing Helper Tests', () => {
 
   describe('Conflict Resolution (Specific Date Overrides Range)', () => {
     const monthlyMod: RoomPriceModifierDto = {
-      id: 'm1',
-      roomId: 'r1',
-      startDate: toUtcDate('2026-12-01'),
-      endDate: toUtcDate('2026-12-31'),
-      adjustmentType: AdjustmentType.PERCENTAGE,
-      adjustmentValue: 10,
-      reason: 'Desember Liburan (+10%)',
-      createdAt: new Date('2026-09-01'),
+      id: 'm1', roomId: 'r1',
+      startDate: toUtcDate('2026-12-01'), endDate: toUtcDate('2026-12-31'),
+      adjustmentType: AdjustmentType.PERCENTAGE, adjustmentValue: 10,
+      reason: 'Desember Liburan (+10%)', createdAt: new Date('2026-09-01'),
     };
 
     const weekendMod: RoomPriceModifierDto = {
-      id: 'm2',
-      roomId: 'r1',
-      startDate: toUtcDate('2026-12-24'),
-      endDate: toUtcDate('2026-12-26'),
-      adjustmentType: AdjustmentType.PERCENTAGE,
-      adjustmentValue: 20,
-      reason: 'Christmas Weekend (+20%)',
-      createdAt: new Date('2026-09-02'),
+      id: 'm2', roomId: 'r1',
+      startDate: toUtcDate('2026-12-24'), endDate: toUtcDate('2026-12-26'),
+      adjustmentType: AdjustmentType.PERCENTAGE, adjustmentValue: 20,
+      reason: 'Christmas Weekend (+20%)', createdAt: new Date('2026-09-02'),
     };
 
     const christmasMod: RoomPriceModifierDto = {
-      id: 'm3',
-      roomId: 'r1',
-      startDate: toUtcDate('2026-12-25'),
-      endDate: toUtcDate('2026-12-25'),
-      adjustmentType: AdjustmentType.PERCENTAGE,
-      adjustmentValue: 50,
-      reason: 'Hari Natal (+50%)',
-      createdAt: new Date('2026-09-03'),
+      id: 'm3', roomId: 'r1',
+      startDate: toUtcDate('2026-12-25'), endDate: toUtcDate('2026-12-25'),
+      adjustmentType: AdjustmentType.PERCENTAGE, adjustmentValue: 50,
+      reason: 'Hari Natal (+50%)', createdAt: new Date('2026-09-03'),
     };
 
     it('should prioritize the most specific single-day modifier on Dec 25', () => {
@@ -170,6 +159,36 @@ describe('Pricing Helper Tests', () => {
       expect(result.totalStayPrice).toBe(1775000);
       expect(result.averageNightRate).toBe(Math.round(1775000 / 3));
       expect(result.dailyBreakdown.length).toBe(3);
+    });
+  });
+
+  describe('buildDailyPrice with Weekend Rate & Peak Season Precedence', () => {
+    it('applies percentage markup on Saturday & Sunday when no peak season modifier exists', () => {
+      // 2026-10-03 is Saturday, 2026-10-04 is Sunday, 2026-10-02 is Friday
+      const sat = buildDailyPrice(toUtcDate('2026-10-03'), 500000, null, 20);
+      expect(sat.effectivePrice).toBe(600000);
+      expect(sat.reason).toBe('Tarif Akhir Pekan (+20%)');
+
+      const sun = buildDailyPrice(toUtcDate('2026-10-04'), 500000, null, 20);
+      expect(sun.effectivePrice).toBe(600000);
+
+      const fri = buildDailyPrice(toUtcDate('2026-10-02'), 500000, null, 20);
+      expect(fri.effectivePrice).toBe(500000);
+      expect(fri.reason).toBeNull();
+    });
+
+    it('prioritizes peak season modifier over weekend rate when both coincide', () => {
+      const peakMod: RoomPriceModifierDto = {
+        id: 'peak-1', roomId: 'r1',
+        startDate: toUtcDate('2026-10-03'), endDate: toUtcDate('2026-10-03'),
+        adjustmentType: AdjustmentType.PERCENTAGE, adjustmentValue: 50,
+        reason: 'Konser Musik', createdAt: new Date(),
+      };
+      // On Saturday 2026-10-03 with 20% weekend rate and 50% peak season modifier
+      const res = buildDailyPrice(toUtcDate('2026-10-03'), 500000, peakMod, 20);
+      expect(res.effectivePrice).toBe(750000); // 500,000 * 1.5
+      expect(res.reason).toBe('Konser Musik');
+      expect(res.modifierId).toBe('peak-1');
     });
   });
 });

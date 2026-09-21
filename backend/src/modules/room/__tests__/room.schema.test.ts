@@ -11,19 +11,23 @@ import {
 
 describe('Room Schemas', () => {
   describe('CreateRoomSchema', () => {
-    it('should validate valid room payload', () => {
+    it('should validate valid room payload with weekendRatePercent', () => {
       const validData = {
         name: 'Deluxe Ocean View',
         basePrice: 750000,
+        weekendRatePercent: 20,
         capacity: 2,
         totalUnits: 5,
         description: 'Spacious room overlooking the sea',
       };
       const result = CreateRoomSchema.safeParse(validData);
       expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.weekendRatePercent).toBe(20);
+      }
     });
 
-    it('should default totalUnits to 1 when omitted', () => {
+    it('should default totalUnits to 1 and weekendRatePercent to 0 when omitted', () => {
       const data = {
         name: 'Standard Room',
         basePrice: 350000,
@@ -33,14 +37,16 @@ describe('Room Schemas', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.totalUnits).toBe(1);
+        expect(result.data.weekendRatePercent).toBe(0);
       }
     });
 
-    it('should reject invalid basePrice or capacity', () => {
+    it('should reject invalid basePrice, capacity, or weekendRatePercent', () => {
       const invalidData = {
         name: 'A',
         basePrice: -100,
         capacity: 0,
+        weekendRatePercent: 150, // exceeds 100%
       };
       const result = CreateRoomSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
