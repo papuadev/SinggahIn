@@ -116,6 +116,19 @@ describe('PropertyGalleryManager Component', () => {
     });
   });
 
+  it('displays validation error and halts upload when file has XSS injection', async () => {
+    renderWithClient(<PropertyGalleryManager propertyId="prop-123" images={mockImages} />);
+    const input = screen.getByLabelText('Unggah foto properti');
+    const xssFile = new File(['<script>alert("xss")</script>'], 'xss.jpg', { type: 'image/jpeg' });
+
+    fireEvent.change(input, { target: { files: [xssFile] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/terdeteksi potensi injeksi skrip \/ XSS/i)).toBeInTheDocument();
+      expect(propertyApi.uploadImages).not.toHaveBeenCalled();
+    });
+  });
+
   it('shows disabled message when 6 images already reached', () => {
     const fullImages: PropertyImage[] = Array.from({ length: 6 }, (_, i) => ({
       id: `img-${i}`,

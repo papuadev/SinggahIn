@@ -7,7 +7,7 @@ import {
   useSetCoverPropertyImage,
 } from '../hooks/usePropertyImages';
 import {
-  validateImageBatch,
+  validateImageBatchAsync,
   MAX_PROPERTY_IMAGES,
 } from '../schemas/property-image.schema';
 import { Alert } from '../../../components/atoms/Alert';
@@ -139,7 +139,7 @@ function useGalleryManager(propertyId: string, currentCount: number, onImagesUpd
 
   const handleUpload = async (files: File[]) => {
     setValError(null);
-    const err = validateImageBatch(files, currentCount);
+    const err = await validateImageBatchAsync(files, currentCount);
     if (err) return setValError(err);
     await uploadMut.mutateAsync(files);
     onImagesUpdated?.();

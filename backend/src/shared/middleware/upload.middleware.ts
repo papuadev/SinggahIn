@@ -1,27 +1,34 @@
 import { Request, Response, NextFunction } from 'express';
 import multer, { MulterError } from 'multer';
 import { AppError } from '../utils/app-error';
+import {
+  ALLOWED_MIME_TYPES,
+  validateFilename,
+  validateFileSecurity,
+} from '../utils/image-security.util';
 
 export const MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024; // 1MB (CON-004)
-
-const ALLOWED_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-]);
+export { ALLOWED_MIME_TYPES };
 
 function fileFilter(
   _req: Request,
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ): void {
-  if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
-    cb(null, true);
+  const filenameErr = validateFilename(file.originalname);
+  if (filenameErr) {
+    cb(AppError.badRequest(filenameErr));
     return;
   }
-  cb(AppError.badRequest('Hanya file gambar (.jpg, .jpeg, .png, .gif, .webp) yang diperbolehkan.'));
+  if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
+    cb(
+      AppError.badRequest(
+        'Hanya file gambar (.jpg, .jpeg, .png, .gif, .webp) yang diperbolehkan.'
+      )
+    );
+    return;
+  }
+  cb(null, true);
 }
 
 const uploader = multer({
@@ -56,12 +63,21 @@ export function uploadSingleImage(fieldName: string) {
       if (!req.file) {
         return next(AppError.badRequest(`File '${fieldName}' wajib diunggah.`));
       }
+      try {
+        validateFileSecurity(req.file);
+      } catch (secErr) {
+        return next(secErr);
+      }
       next();
     });
   };
 }
 
-function validateFilesList(files: unknown, field: string, next: NextFunction): boolean {
+function validateFilesList(
+  files: unknown,
+  field: string,
+  next: NextFunction
+): boolean {
   const list = files as Express.Multer.File[] | undefined;
   if (!list || list.length === 0) {
     next(AppError.badRequest(`Minimal 1 file gambar '${field}' wajib diunggah.`));
@@ -76,6 +92,14 @@ export function uploadMultipleImages(fieldName: string, maxCount = 6) {
     upload(req, res, (err) => {
       if (err) return handleMulterError(err, next, maxCount);
       if (!validateFilesList(req.files, fieldName, next)) return;
+      const files = req.files as Express.Multer.File[];
+      for (const file of files) {
+        try {
+          validateFileSecurity(file);
+        } catch (secErr) {
+          return next(secErr);
+        }
+      }
       next();
     });
   };
