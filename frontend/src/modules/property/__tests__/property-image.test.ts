@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
+  validateFilenameSecurity,
   validateImageFile,
+  validateImageContentSecurity,
   validateImageBatch,
+  validateImageBatchAsync,
   MAX_IMAGE_FILE_SIZE,
 } from '../schemas/property-image.schema';
 import { propertyApi } from '../services/property.api';
@@ -15,30 +18,31 @@ vi.mock('../../../libs/axios', () => ({
   },
 }));
 
-function createMockFile(name: string, size: number, type: string): File {
-  const blob = new Blob(['a'.repeat(size)], { type });
+function createMockFile(name: string, contentOrSize: string | number, type: string): File {
+  const content = typeof contentOrSize === 'number' ? 'a'.repeat(contentOrSize) : contentOrSize;
+  const blob = new Blob([content], { type });
   return new File([blob], name, { type });
 }
 
-describe('Property Image Validation Schema', () => {
+describe('Property Image Validation Schema & Security Guards', () => {
+  it('validates filename security against traversal, XSS, and double extensions', () => {
+    expect(validateFilenameSecurity('')).toContain('tidak boleh kosong');
+    expect(validateFilenameSecurity('../secret.png')).toContain('path traversal');
+    expect(validateFilenameSecurity('<script>alert(1)</script>.png')).toContain('XSS injection');
+    expect(validateFilenameSecurity('exploit.php.jpg')).toContain('double extension');
+    expect(validateFilenameSecurity('virus.exe')).toContain('Format file harus JPG');
+    expect(validateFilenameSecurity('villa.jpg')).toBeNull();
+  });
+
   it('accepts valid JPEG, PNG, and WebP images under 1MB', () => {
-    const file = createMockFile('villa.jpg', 500 * 1024, 'image/jpeg');
-    expect(validateImageFile(file)).toBeNull();
-
-    const png = createMockFile('villa.png', 800 * 1024, 'image/png');
-    expect(validateImageFile(png)).toBeNull();
-
-    const webp = createMockFile('villa.webp', 300 * 1024, 'image/webp');
-    expect(validateImageFile(webp)).toBeNull();
+    expect(validateImageFile(createMockFile('villa.jpg', 500 * 1024, 'image/jpeg'))).toBeNull();
+    expect(validateImageFile(createMockFile('villa.png', 800 * 1024, 'image/png'))).toBeNull();
+    expect(validateImageFile(createMockFile('villa.webp', 300 * 1024, 'image/webp'))).toBeNull();
   });
 
   it('rejects file larger than 1MB per CON-004', () => {
-    const oversizedFile = createMockFile(
-      'large.jpg',
-      MAX_IMAGE_FILE_SIZE + 1024,
-      'image/jpeg'
-    );
-    expect(validateImageFile(oversizedFile)).toBe('Ukuran gambar maksimal 1MB per file.');
+    const oversized = createMockFile('large.jpg', MAX_IMAGE_FILE_SIZE + 1024, 'image/jpeg');
+    expect(validateImageFile(oversized)).toBe('Ukuran gambar maksimal 1MB per file.');
   });
 
   it('rejects unsupported mime types', () => {
@@ -46,15 +50,33 @@ describe('Property Image Validation Schema', () => {
     expect(validateImageFile(pdf)).toBe('Format file harus JPG, JPEG, PNG, atau WebP.');
   });
 
-  it('validates batch image limits (max 6 images total)', () => {
+  it('intercepts XSS injection payload in file content asynchronously', async () => {
+    const xssFile = createMockFile('clean.jpg', '<script>alert("xss")</script>', 'image/jpeg');
+    const err = await validateImageContentSecurity(xssFile);
+    expect(err).toContain('terdeteksi potensi injeksi skrip / XSS');
+
+    const svgFile = createMockFile('img.png', '<svg onload=alert(1)>', 'image/png');
+    expect(await validateImageContentSecurity(svgFile)).toContain('injeksi skrip / XSS');
+
+    const safeFile = createMockFile('safe.png', 'pure-binary-content', 'image/png');
+    expect(await validateImageContentSecurity(safeFile)).toBeNull();
+  });
+
+  it('validates batch image limits and content security asynchronously', async () => {
     const files = [
       createMockFile('f1.jpg', 100 * 1024, 'image/jpeg'),
       createMockFile('f2.jpg', 100 * 1024, 'image/jpeg'),
-      createMockFile('f3.jpg', 100 * 1024, 'image/jpeg'),
     ];
     expect(validateImageBatch([], 0)).toBe('Pilih minimal 1 file gambar.');
-    expect(validateImageBatch(files, 4)).toBe('Maksimal total 6 foto per properti.');
-    expect(validateImageBatch(files, 2)).toBeNull();
+    expect(validateImageBatch(files, 5)).toBe('Maksimal total 6 foto per properti.');
+    expect(await validateImageBatchAsync(files, 2)).toBeNull();
+
+    const maliciousBatch = [
+      createMockFile('ok.jpg', 'clean', 'image/jpeg'),
+      createMockFile('bad.jpg', '<script>alert(1)</script>', 'image/jpeg'),
+    ];
+    const batchErr = await validateImageBatchAsync(maliciousBatch, 0);
+    expect(batchErr).toContain('bad.jpg: File terindikasi membahayakan keamanan');
   });
 });
 
