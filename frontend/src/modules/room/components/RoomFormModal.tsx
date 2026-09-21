@@ -33,8 +33,16 @@ function RoomNameField({ register, errors }: FieldsProps): React.JSX.Element {
 
 function RoomPriceField({ register, errors }: FieldsProps): React.JSX.Element {
   return (
-    <FormField label="Harga Dasar per Malam (Rp)" required error={errors.basePrice?.message}>
+    <FormField label="Harga Dasar (Rp)" required error={errors.basePrice?.message}>
       <Input type="number" min={10000} step={5000} placeholder="Contoh: 350000" hasError={Boolean(errors.basePrice)} {...register('basePrice', { valueAsNumber: true })} />
+    </FormField>
+  );
+}
+
+function RoomWeekendRateField({ register, errors }: FieldsProps): React.JSX.Element {
+  return (
+    <FormField label="Tarif Weekend (+%)" error={errors.weekendRatePercent?.message}>
+      <Input type="number" min={0} max={100} step={5} placeholder="Contoh: 20" hasError={Boolean(errors.weekendRatePercent)} {...register('weekendRatePercent', { valueAsNumber: true })} />
     </FormField>
   );
 }
@@ -89,7 +97,10 @@ function RoomFormBody({ register, errors, onSubmit }: {
   return (
     <form id="room-form" onSubmit={onSubmit} className="space-y-4">
       <RoomNameField register={register} errors={errors} />
-      <RoomPriceField register={register} errors={errors} />
+      <div className="grid grid-cols-2 gap-3">
+        <RoomPriceField register={register} errors={errors} />
+        <RoomWeekendRateField register={register} errors={errors} />
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <RoomCapacityField register={register} errors={errors} />
         <RoomUnitsField register={register} errors={errors} />
@@ -109,6 +120,7 @@ function useRoomFormReset(
       reset({
         name: initialData?.name ?? '',
         basePrice: initialData?.basePrice ?? 100000,
+        weekendRatePercent: initialData?.weekendRatePercent ?? 0,
         capacity: initialData?.capacity ?? 2,
         totalUnits: initialData?.totalUnits ?? 1,
         description: initialData?.description ?? '',
@@ -127,7 +139,7 @@ export function RoomFormModal({
 }: RoomFormModalProps): React.JSX.Element {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<RoomFormData>({
     resolver: zodResolver(roomFormSchema) as any,
-    defaultValues: { name: '', basePrice: 100000, capacity: 2, totalUnits: 1, description: '' },
+    defaultValues: { name: '', basePrice: 100000, weekendRatePercent: 0, capacity: 2, totalUnits: 1, description: '' },
   });
   useRoomFormReset(isOpen, initialData, reset);
 

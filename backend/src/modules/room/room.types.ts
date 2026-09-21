@@ -3,6 +3,7 @@ export interface RoomResponseDto {
   propertyId: string;
   name: string;
   basePrice: number;
+  weekendRatePercent?: number | null;
   capacity: number;
   totalUnits: number;
   description: string | null;
@@ -15,6 +16,7 @@ export interface RoomListItemDto {
   propertyId: string;
   name: string;
   basePrice: number;
+  weekendRatePercent?: number | null;
   capacity: number;
   totalUnits: number;
   availableUnits?: number;

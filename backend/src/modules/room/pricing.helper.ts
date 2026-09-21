@@ -63,20 +63,52 @@ export function resolveModifierForDate(
   return matching[0];
 }
 
+function isWeekendDay(date: Date): boolean {
+  const day = toUtcDate(date).getUTCDay();
+  return day === 0 || day === 6;
+}
+
+function resolveEffectivePrice(
+  basePrice: number,
+  mod: RoomPriceModifierDto | null,
+  isWeekend: boolean,
+  weekendRatePercent?: number | null
+): { price: number; type: AdjustmentType | null; value: number | null; reason: string | null } {
+  if (mod) {
+    return {
+      price: computeAdjustedPrice(basePrice, mod.adjustmentType, mod.adjustmentValue),
+      type: mod.adjustmentType,
+      value: mod.adjustmentValue,
+      reason: mod.reason,
+    };
+  }
+  if (isWeekend && weekendRatePercent && weekendRatePercent > 0) {
+    return {
+      price: computeAdjustedPrice(basePrice, AdjustmentType.PERCENTAGE, weekendRatePercent),
+      type: AdjustmentType.PERCENTAGE,
+      value: weekendRatePercent,
+      reason: `Tarif Akhir Pekan (+${weekendRatePercent}%)`,
+    };
+  }
+  return { price: basePrice, type: null, value: null, reason: null };
+}
+
 export function buildDailyPrice(
-  date: Date, basePrice: number, mod: RoomPriceModifierDto | null
+  date: Date,
+  basePrice: number,
+  mod: RoomPriceModifierDto | null,
+  weekendRatePercent?: number | null
 ): DailyPriceDto {
-  const effectivePrice = mod
-    ? computeAdjustedPrice(basePrice, mod.adjustmentType, mod.adjustmentValue)
-    : basePrice;
+  const isWeekend = isWeekendDay(date);
+  const resolved = resolveEffectivePrice(basePrice, mod, isWeekend, weekendRatePercent);
   return {
     date: toUtcDate(date).toISOString().slice(0, 10),
     basePrice,
-    effectivePrice,
+    effectivePrice: resolved.price,
     modifierId: mod?.id ?? null,
-    adjustmentType: mod?.adjustmentType ?? null,
-    adjustmentValue: mod?.adjustmentValue ?? null,
-    reason: mod?.reason ?? null,
+    adjustmentType: resolved.type,
+    adjustmentValue: resolved.value,
+    reason: resolved.reason,
   };
 }
 

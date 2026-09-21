@@ -138,6 +138,7 @@ model Room {
   propertyId       String
   name             String
   basePrice        Int
+  weekendRatePercent Int?               @default(0)
   capacity         Int
   totalUnits       Int                  @default(1)
   description      String?              @db.Text

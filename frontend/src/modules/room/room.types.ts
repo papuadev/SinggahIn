@@ -3,6 +3,7 @@ export interface Room {
   propertyId: string;
   name: string;
   basePrice: number;
+  weekendRatePercent?: number | null;
   capacity: number;
   totalUnits: number;
   description?: string | null;
@@ -13,6 +14,7 @@ export interface Room {
 export interface CreateRoomPayload {
   name: string;
   basePrice: number;
+  weekendRatePercent?: number;
   capacity: number;
   totalUnits: number;
   description?: string;
@@ -21,6 +23,7 @@ export interface CreateRoomPayload {
 export interface UpdateRoomPayload {
   name?: string;
   basePrice?: number;
+  weekendRatePercent?: number;
   capacity?: number;
   totalUnits?: number;
   description?: string;
