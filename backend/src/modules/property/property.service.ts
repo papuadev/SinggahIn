@@ -100,6 +100,7 @@ export async function getPropertyById(
     include: {
       category: true,
       images: { orderBy: { createdAt: 'asc' } },
+      rooms: { orderBy: { basePrice: 'asc' } },
     },
   });
   if (!property) {

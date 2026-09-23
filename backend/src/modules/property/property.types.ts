@@ -24,8 +24,10 @@ export interface PropertyResponseDto {
   city: string;
   latitude: number;
   longitude: number;
+  facilities?: string[];
   category?: PropertyCategoryDto;
   images?: PropertyImageDto[];
+  rooms?: any[];
   createdAt: Date;
   updatedAt: Date;
 }

@@ -46,7 +46,7 @@ function useCatalogSearch() {
   });
 
   const onSearch = (v: SearchWidgetValues) => setSearchParams(buildWidgetSearchParams(v, queryParams));
-  const onSort = (by: 'price' | 'name', order: 'asc' | 'desc') => {
+  const onSort = (by: 'price' | 'name' | 'rating', order: 'asc' | 'desc') => {
     const next = new URLSearchParams(searchParams);
     next.set('sortBy', by);
     next.set('sortOrder', order);
@@ -84,9 +84,9 @@ function SearchHeader({
   city?: string;
   category?: string;
   total: number;
-  sortBy: 'price' | 'name';
+  sortBy: 'price' | 'name' | 'rating';
   sortOrder: 'asc' | 'desc';
-  onSortChange: (by: 'price' | 'name', order: 'asc' | 'desc') => void;
+  onSortChange: (by: 'price' | 'name' | 'rating', order: 'asc' | 'desc') => void;
 }) {
   const title = city ? `Penginapan di ${city}` : 'Semua Penginapan';
   const subtitle = category ? `Kategori ${category} • ` : '';
