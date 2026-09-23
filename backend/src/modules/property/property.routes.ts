@@ -35,11 +35,9 @@ router.get(
   propertyController.reverseGeocode
 );
 
-// Tenant-Only: Forward Geocode / Autocomplete Proxy
+// Public / Tenant: Forward Geocode / Autocomplete Proxy
 router.get(
   '/geocode/search',
-  authenticate,
-  requireRole(Role.TENANT),
   validateRequest({ query: SearchGeocodeQuerySchema }),
   propertyController.searchGeocode
 );
