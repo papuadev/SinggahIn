@@ -14,6 +14,7 @@ import { TenantPropertyListPage } from "./pages/tenant/TenantPropertyListPage";
 import { TenantPropertyCreatePage } from "./pages/tenant/TenantPropertyCreatePage";
 import { TenantPropertyEditPage } from "./pages/tenant/TenantPropertyEditPage";
 import { HomePage } from "./pages/HomePage";
+import { CatalogSearchPage } from "./pages/CatalogSearchPage";
 
 function TenantPlaceholder(): React.JSX.Element {
   return (
@@ -32,6 +33,7 @@ function AppRoutes(): React.JSX.Element {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/search" element={<CatalogSearchPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/verify" element={<VerifyTokenPage />} />

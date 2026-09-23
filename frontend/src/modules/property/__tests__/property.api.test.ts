@@ -127,5 +127,19 @@ describe('Property API Service Tests', () => {
     });
     expect(result.data).toEqual(mockSuggestions);
   });
+
+  it('getCatalog should call /properties with query params', async () => {
+    const mockCatalog = [{ id: 'prop-1', title: 'Villa Indah' }];
+    vi.mocked(apiClient.get).mockResolvedValueOnce({
+      data: { success: true, message: 'OK', data: mockCatalog, meta: { totalPages: 1 } },
+    });
+
+    const result = await propertyApi.getCatalog({ city: 'Bandung', guests: 2 });
+
+    expect(apiClient.get).toHaveBeenCalledWith('/properties', {
+      params: { city: 'Bandung', guests: 2 },
+    });
+    expect(result.data).toEqual(mockCatalog);
+  });
 });
 

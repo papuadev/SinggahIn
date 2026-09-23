@@ -79,3 +79,34 @@ export interface CreatePropertyPayload {
 }
 
 export type UpdatePropertyPayload = Partial<CreatePropertyPayload>;
+
+export interface CatalogPricing {
+  averageNightRate: number;
+  totalStayPrice: number;
+  totalNights: number;
+}
+
+export interface CatalogPropertyItem {
+  id: string;
+  title: string;
+  city: string;
+  address: string;
+  category: { name: string; slug: string };
+  coverImage: string | null;
+  averageRating: number;
+  totalReviews: number;
+  pricing: CatalogPricing;
+}
+
+export interface CatalogQueryParams {
+  city?: string;
+  name?: string;
+  category?: string;
+  checkIn?: string;
+  checkOut?: string;
+  guests?: number;
+  sortBy?: 'price' | 'name' | 'rating';
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
