@@ -9,6 +9,7 @@ import { validateRequest } from '../../shared/middleware/validate.middleware';
 import { uploadMultipleImages } from '../../shared/middleware/upload.middleware';
 import { propertyRoomRoutes } from '../room/room.routes';
 import * as catalogController from './catalog.controller';
+import * as calendarController from './calendar.controller';
 import {
   CreatePropertySchema,
   UpdatePropertySchema,
@@ -18,6 +19,7 @@ import {
   SearchGeocodeQuerySchema,
 } from './property.schema';
 import { CatalogQuerySchema } from './catalog.schema';
+import { CalendarQuerySchema } from './calendar.schema';
 
 const router = Router();
 
@@ -64,6 +66,16 @@ router.post(
   requireRole(Role.TENANT),
   validateRequest({ body: CreatePropertySchema }),
   propertyController.create
+);
+
+// Public: Interactive 1-Month Price Calendar
+router.get(
+  '/:id/calendar',
+  validateRequest({
+    params: PropertyIdParamSchema,
+    query: CalendarQuerySchema,
+  }),
+  calendarController.getCalendar
 );
 
 // Detail Property (Public / Tenant)
