@@ -13,19 +13,7 @@ import { ProtectedRoute } from "./components/molecules/ProtectedRoute";
 import { TenantPropertyListPage } from "./pages/tenant/TenantPropertyListPage";
 import { TenantPropertyCreatePage } from "./pages/tenant/TenantPropertyCreatePage";
 import { TenantPropertyEditPage } from "./pages/tenant/TenantPropertyEditPage";
-
-function HomePage(): React.JSX.Element {
-  return (
-    <div className="text-center py-20">
-      <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
-        Selamat Datang di SinggahIn
-      </h2>
-      <p className="text-gray-600 max-w-xl mx-auto">
-        Platform sewa properti, hotel, dan villa terpercaya di seluruh Nusantara.
-      </p>
-    </div>
-  );
-}
+import { HomePage } from "./pages/HomePage";
 
 function TenantPlaceholder(): React.JSX.Element {
   return (
