@@ -33,7 +33,7 @@ export const CatalogQuerySchema = z
         .positive('Jumlah tamu minimal 1')
         .optional()
     ),
-    sortBy: z.enum(['price', 'name']).optional().default('price'),
+    sortBy: z.enum(['price', 'name', 'rating']).optional().default('price'),
     sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
     page: z.preprocess(
       (val) => (val === '' || val === undefined ? undefined : val),

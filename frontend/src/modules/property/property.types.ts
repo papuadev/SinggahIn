@@ -105,7 +105,7 @@ export interface CatalogQueryParams {
   checkIn?: string;
   checkOut?: string;
   guests?: number;
-  sortBy?: 'price' | 'name';
+  sortBy?: 'price' | 'name' | 'rating';
   sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;

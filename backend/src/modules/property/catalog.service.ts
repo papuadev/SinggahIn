@@ -52,20 +52,24 @@ function buildRoomRelations(checkIn?: string, checkOut?: string) {
   return buildDateFilterRoomRelations(checkIn, checkOut);
 }
 
+function compareByField(
+  a: CatalogPropertyItemDto,
+  b: CatalogPropertyItemDto,
+  sortBy: 'price' | 'name' | 'rating'
+): number {
+  if (sortBy === 'rating') return a.averageRating - b.averageRating;
+  if (sortBy === 'name') return a.title.localeCompare(b.title);
+  return a.pricing.averageNightRate - b.pricing.averageNightRate;
+}
+
 function sortCatalogItems(
   items: CatalogPropertyItemDto[],
-  sortBy: 'price' | 'name' = 'price',
+  sortBy: 'price' | 'name' | 'rating' = 'price',
   sortOrder: 'asc' | 'desc' = 'asc'
 ): CatalogPropertyItemDto[] {
   return [...items].sort((a, b) => {
-    if (sortBy === 'name') {
-      return sortOrder === 'asc'
-        ? a.title.localeCompare(b.title)
-        : b.title.localeCompare(a.title);
-    }
-    return sortOrder === 'asc'
-      ? a.pricing.averageNightRate - b.pricing.averageNightRate
-      : b.pricing.averageNightRate - a.pricing.averageNightRate;
+    const diff = compareByField(a, b, sortBy);
+    return sortOrder === 'asc' ? diff : -diff;
   });
 }
 
