@@ -16,7 +16,11 @@ interface FacilityItem {
   category: string;
 }
 
-const DEFAULT_FACILITIES: FacilityItem[] = [
+export interface PropertyDetailFacilitiesProps {
+  facilities?: string[];
+}
+
+export const DEFAULT_FACILITIES: FacilityItem[] = [
   { icon: Wifi, name: 'WiFi Kecepatan Tinggi', category: 'Konektivitas' },
   { icon: AirVent, name: 'Air Conditioning (AC)', category: 'Kenyamanan' },
   { icon: Waves, name: 'Kolam Renang', category: 'Fasilitas Utama' },
@@ -55,15 +59,30 @@ function FacilitiesHeader() {
   );
 }
 
-export function PropertyDetailFacilities(): React.JSX.Element {
+function resolveFacilityItem(name: string): FacilityItem {
+  const found = DEFAULT_FACILITIES.find((fac) => fac.name.toLowerCase() === name.toLowerCase());
+  return found || { icon: ShieldCheck, name, category: 'Fasilitas' };
+}
+
+function FacilitiesListGrid({ items }: { items: FacilityItem[] }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {items.map((fac) => <FacilityCard key={fac.name} facility={fac} />)}
+    </div>
+  );
+}
+
+export function PropertyDetailFacilities({
+  facilities,
+}: PropertyDetailFacilitiesProps = {}): React.JSX.Element {
+  const list = facilities && facilities.length > 0
+    ? facilities.map(resolveFacilityItem)
+    : DEFAULT_FACILITIES;
+
   return (
     <section aria-labelledby="fasilitas-properti" className="py-6 border-b border-gray-100">
       <FacilitiesHeader />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {DEFAULT_FACILITIES.map((fac) => (
-          <FacilityCard key={fac.name} facility={fac} />
-        ))}
-      </div>
+      <FacilitiesListGrid items={list} />
     </section>
   );
 }

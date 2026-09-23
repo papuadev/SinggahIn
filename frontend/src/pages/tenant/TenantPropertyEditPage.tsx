@@ -77,6 +77,7 @@ function toInitialData(property: Property): PropertyFormData {
     city: property.city,
     latitude: property.latitude,
     longitude: property.longitude,
+    facilities: property.facilities || [],
   };
 }
 

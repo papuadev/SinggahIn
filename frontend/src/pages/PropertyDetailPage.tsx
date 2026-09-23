@@ -39,7 +39,7 @@ function PropertyMainCol({ property, rooms, checkIn, checkOut, onBook }: MainCol
   return (
     <div className="lg:col-span-8 flex flex-col">
       <PropertyDetailDescription description={property.description} />
-      <PropertyDetailFacilities />
+      <PropertyDetailFacilities facilities={property.facilities} />
       <PropertyDetailRoomList propertyId={property.id} rooms={rooms} checkIn={checkIn} checkOut={checkOut} onBookRoom={onBook} />
       <PropertyDetailMap latitude={property.latitude} longitude={property.longitude} address={property.address} city={property.city} />
     </div>

@@ -28,6 +28,7 @@ export const propertyFormSchema = z.object({
     .number({ invalid_type_error: 'Titik longitude harus berupa angka' })
     .min(-180, 'Longitude harus di antara -180 dan 180')
     .max(180, 'Longitude harus di antara -180 dan 180'),
+  facilities: z.array(z.string()).optional().default([]),
 });
 
 export type PropertyFormData = z.infer<typeof propertyFormSchema>;

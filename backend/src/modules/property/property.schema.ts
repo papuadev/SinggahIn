@@ -25,6 +25,7 @@ export const CreatePropertySchema = z.object({
     .number({ required_error: 'Titik longitude wajib diisi' })
     .min(-180, 'Longitude tidak valid')
     .max(180, 'Longitude tidak valid'),
+  facilities: z.array(z.string()).optional().default([]),
 });
 
 export const UpdatePropertySchema = z
@@ -36,6 +37,7 @@ export const UpdatePropertySchema = z
     city: z.string().min(2).optional(),
     latitude: z.number().min(-90).max(90).optional(),
     longitude: z.number().min(-180).max(180).optional(),
+    facilities: z.array(z.string()).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'Minimal satu field harus diisi untuk memperbarui properti',

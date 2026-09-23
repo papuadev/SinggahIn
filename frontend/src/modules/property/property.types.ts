@@ -37,6 +37,7 @@ export interface PropertyItem {
   city: string;
   latitude: number;
   longitude: number;
+  facilities?: string[];
   createdAt: string;
   updatedAt: string;
   images?: PropertyImage[];
@@ -78,6 +79,7 @@ export interface CreatePropertyPayload {
   city: string;
   latitude: number;
   longitude: number;
+  facilities?: string[];
 }
 
 export type UpdatePropertyPayload = Partial<CreatePropertyPayload>;

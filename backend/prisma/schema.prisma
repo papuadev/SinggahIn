@@ -104,6 +104,7 @@ model Property {
   city        String
   latitude    Float
   longitude   Float
+  facilities  String[]         @default([])
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
