@@ -1,4 +1,5 @@
 @import 'leaflet/dist/leaflet.css';
+@import 'react-day-picker/dist/style.css';
 
 @tailwind base;
 @tailwind components;
@@ -8,4 +9,20 @@
   body {
     @apply font-sans;
   }
+}
+
+.rdp {
+  --rdp-cell-size: 36px;
+  --rdp-accent-color: #2563eb;
+  --rdp-background-color: #eff6ff;
+  margin: 0;
+}
+.rdp-day_selected,
+.rdp-day_selected:hover {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+.rdp-day_range_middle {
+  background-color: #eff6ff !important;
+  color: #1d4ed8 !important;
 }

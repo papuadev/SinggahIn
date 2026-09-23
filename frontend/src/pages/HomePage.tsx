@@ -56,7 +56,7 @@ export function HomePage(): React.JSX.Element {
   return (
     <div className="w-full flex flex-col">
       <HeroCarousel />
-      <div className="-mt-10 sm:-mt-14 relative z-30 px-2 sm:px-6">
+      <div className="-mt-6 sm:-mt-10 md:-mt-14 relative z-30 px-3 sm:px-6">
         <FloatingSearchWidget />
       </div>
       <ValuePropsSection />

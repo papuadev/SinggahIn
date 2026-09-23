@@ -23,25 +23,26 @@ describe('FloatingSearchWidget Organism', () => {
     );
 
     expect(screen.getByPlaceholderText(/Mau menginap di mana/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Tanggal check-in/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Tanggal check-out/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Pilih rentang tanggal menginap/i })).toBeInTheDocument();
     expect(screen.getByText('1 Tamu')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Villa' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Cari Penginapan/i })).toBeInTheDocument();
   });
 
-  it('selects popular destination when chip is clicked', () => {
+  it('allows entering destination and clearing it with clear button', () => {
     render(
       <MemoryRouter>
         <FloatingSearchWidget />
       </MemoryRouter>
     );
 
-    const bandungChip = screen.getByRole('button', { name: 'Bandung' });
-    fireEvent.click(bandungChip);
-
     const input = screen.getByPlaceholderText(/Mau menginap di mana/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Bandung' } });
     expect(input.value).toBe('Bandung');
+
+    const clearBtn = screen.getByLabelText(/Hapus destinasi/i);
+    fireEvent.click(clearBtn);
+    expect(input.value).toBe('');
   });
 
   it('fetches OpenCage suggestions and allows selection', async () => {
@@ -98,6 +99,26 @@ describe('FloatingSearchWidget Organism', () => {
     expect(decBtn).toBeDisabled();
   });
 
+  it('opens date picker popover and formats dates as dd/mm/yyyy', () => {
+    render(
+      <MemoryRouter>
+        <FloatingSearchWidget
+          initialValues={{ checkIn: '2026-10-01', checkOut: '2026-10-04' }}
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('01/10/2026')).toBeInTheDocument();
+    expect(screen.getByText('04/10/2026')).toBeInTheDocument();
+    expect(screen.getByText(/3 Malam/i)).toBeInTheDocument();
+
+    const trigger = screen.getByRole('button', { name: /Pilih rentang tanggal menginap/i });
+    fireEvent.click(trigger);
+
+    expect(screen.getByRole('button', { name: /Selesai/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Reset/i })).toBeInTheDocument();
+  });
+
   it('submits search criteria with active category and dates', () => {
     const mockSearch = vi.fn();
     render(
@@ -107,7 +128,9 @@ describe('FloatingSearchWidget Organism', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Villa' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Bali' }));
+
+    const input = screen.getByPlaceholderText(/Mau menginap di mana/i);
+    fireEvent.change(input, { target: { value: 'Bali' } });
 
     const checkInInput = screen.getByLabelText(/Tanggal check-in/i);
     fireEvent.change(checkInInput, { target: { value: '2026-10-01' } });

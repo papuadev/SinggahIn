@@ -33,37 +33,71 @@ function buildSearchUrl(values: SearchWidgetValues): string {
 
 function SearchSubmitButton({ onClick }: { onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Cari penginapan"
-      className="w-full h-11 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5"
-    >
-      <Search className="w-4 h-4" />
-      <span>Cari Penginapan</span>
-    </button>
+    <div className="flex flex-col w-full">
+      <span
+        className="hidden md:flex h-5 mb-1.5 items-center text-xs invisible select-none"
+        aria-hidden="true"
+      >
+        &nbsp;
+      </span>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label="Cari penginapan"
+        className="w-full h-11 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5"
+      >
+        <Search className="w-4 h-4" />
+        <span>Cari Penginapan</span>
+      </button>
+    </div>
   );
 }
 
 function SearchInputsGrid({
-  city, setCity, checkIn, checkOut, onDateChange, guests, setGuests, onSearch,
+  city,
+  setCity,
+  checkIn,
+  checkOut,
+  onDateChange,
+  guests,
+  setGuests,
+  onSearch,
 }: {
-  city: string; setCity: (c: string) => void;
-  checkIn: string; checkOut: string; onDateChange: (i: string, o: string) => void;
-  guests: number; setGuests: (g: number) => void; onSearch: () => void;
+  city: string;
+  setCity: (c: string) => void;
+  checkIn: string;
+  checkOut: string;
+  onDateChange: (i: string, o: string) => void;
+  guests: number;
+  setGuests: (g: number) => void;
+  onSearch: () => void;
 }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-      <div className="md:col-span-4"><DestinationInput value={city} onChange={setCity} /></div>
-      <div className="md:col-span-4"><DateRangeSelector checkIn={checkIn} checkOut={checkOut} onChange={onDateChange} /></div>
-      <div className="md:col-span-2"><GuestCounter value={guests} onChange={setGuests} /></div>
-      <div className="md:col-span-2"><SearchSubmitButton onClick={onSearch} /></div>
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 md:gap-4 items-end">
+      <div className="md:col-span-4 w-full">
+        <DestinationInput value={city} onChange={setCity} />
+      </div>
+      <div className="md:col-span-4 w-full">
+        <DateRangeSelector
+          checkIn={checkIn}
+          checkOut={checkOut}
+          onChange={onDateChange}
+        />
+      </div>
+      <div className="md:col-span-2 w-full">
+        <GuestCounter value={guests} onChange={setGuests} />
+      </div>
+      <div className="md:col-span-2 w-full mt-1 md:mt-0">
+        <SearchSubmitButton onClick={onSearch} />
+      </div>
     </div>
   );
 }
 
 export function FloatingSearchWidget({
-  initialValues, onSearch, className = '',
+  initialValues,
+  onSearch,
+  className = '',
 }: FloatingSearchWidgetProps): React.JSX.Element {
   const [city, setCity] = useState(initialValues?.city || '');
   const [checkIn, setCheckIn] = useState(initialValues?.checkIn || '');
@@ -78,9 +112,26 @@ export function FloatingSearchWidget({
   };
 
   return (
-    <div aria-label="Widget pencarian properti" className={`bg-white border border-gray-100 rounded-3xl shadow-xl p-5 sm:p-6 w-full ${className}`}>
-      <div className="mb-4"><CategoryFilterChips selected={category} onSelect={setCategory} /></div>
-      <SearchInputsGrid city={city} setCity={setCity} checkIn={checkIn} checkOut={checkOut} onDateChange={(i, o) => { setCheckIn(i); setCheckOut(o); }} guests={guests} setGuests={setGuests} onSearch={handleSearch} />
+    <div
+      aria-label="Widget pencarian properti"
+      className={`bg-white border border-gray-100 rounded-2xl md:rounded-3xl shadow-xl p-4 sm:p-5 md:p-6 w-full ${className}`}
+    >
+      <div className="mb-3.5 md:mb-4">
+        <CategoryFilterChips selected={category} onSelect={setCategory} />
+      </div>
+      <SearchInputsGrid
+        city={city}
+        setCity={setCity}
+        checkIn={checkIn}
+        checkOut={checkOut}
+        onDateChange={(i, o) => {
+          setCheckIn(i);
+          setCheckOut(o);
+        }}
+        guests={guests}
+        setGuests={setGuests}
+        onSearch={handleSearch}
+      />
     </div>
   );
 }
