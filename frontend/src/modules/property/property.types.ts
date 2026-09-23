@@ -22,6 +22,8 @@ export interface PropertyRoomSummary {
   basePrice: number;
   capacity: number;
   totalUnits: number;
+  description?: string | null;
+  weekendRatePercent?: number | null;
 }
 
 export interface PropertyItem {

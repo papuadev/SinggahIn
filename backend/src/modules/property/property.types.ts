@@ -26,6 +26,7 @@ export interface PropertyResponseDto {
   longitude: number;
   category?: PropertyCategoryDto;
   images?: PropertyImageDto[];
+  rooms?: any[];
   createdAt: Date;
   updatedAt: Date;
 }
