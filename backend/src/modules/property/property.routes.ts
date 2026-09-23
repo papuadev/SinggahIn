@@ -8,6 +8,7 @@ import {
 import { validateRequest } from '../../shared/middleware/validate.middleware';
 import { uploadMultipleImages } from '../../shared/middleware/upload.middleware';
 import { propertyRoomRoutes } from '../room/room.routes';
+import * as catalogController from './catalog.controller';
 import {
   CreatePropertySchema,
   UpdatePropertySchema,
@@ -16,6 +17,7 @@ import {
   ReverseGeocodeQuerySchema,
   SearchGeocodeQuerySchema,
 } from './property.schema';
+import { CatalogQuerySchema } from './catalog.schema';
 
 const router = Router();
 
@@ -46,6 +48,13 @@ router.get(
   authenticate,
   requireRole(Role.TENANT),
   propertyController.getMyProperties
+);
+
+// Public: Catalog Search
+router.get(
+  '/',
+  validateRequest({ query: CatalogQuerySchema }),
+  catalogController.getCatalog
 );
 
 // Tenant-Only: Create Property
