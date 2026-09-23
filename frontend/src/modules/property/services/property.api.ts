@@ -8,6 +8,8 @@ import {
   UpdatePropertyPayload,
   ReverseGeocodeResult,
   GeocodeSuggestion,
+  CatalogPropertyItem,
+  CatalogQueryParams,
 } from '../property.types';
 
 export const propertyApi = {
@@ -113,4 +115,15 @@ export const propertyApi = {
     );
     return res.data;
   },
+
+  async getCatalog(
+    params?: CatalogQueryParams
+  ): Promise<ApiResponse<CatalogPropertyItem[]>> {
+    const res = await apiClient.get<ApiResponse<CatalogPropertyItem[]>>(
+      '/properties',
+      { params }
+    );
+    return res.data;
+  },
 };
+
