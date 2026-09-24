@@ -134,8 +134,8 @@ describe('PropertyDetailPage Integration', () => {
     expect(screen.getByText('(18 ulasan)')).toBeInTheDocument();
     expect(screen.getByText(/Villa modern di kawasan sejuk/i)).toBeInTheDocument();
     expect(screen.getByText('WiFi Kecepatan Tinggi')).toBeInTheDocument();
-    expect(screen.getByText('Deluxe Mountain Suite')).toBeInTheDocument();
-    expect(screen.getByText('Family Garden Suite')).toBeInTheDocument();
+    expect(screen.getAllByText('Deluxe Mountain Suite').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Family Garden Suite').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Maks. 2 Tamu')).toBeInTheDocument();
     expect(screen.getByText('3 unit tersedia')).toBeInTheDocument();
     expect(screen.getByTestId('map-container')).toBeInTheDocument();
@@ -176,7 +176,7 @@ describe('PropertyDetailPage Integration', () => {
 
     renderComponent('/properties/clprop123');
     await waitFor(() => {
-      expect(screen.getByText('Fallback Suite')).toBeInTheDocument();
+      expect(screen.getAllByText('Fallback Suite').length).toBeGreaterThanOrEqual(1);
     });
   });
 });

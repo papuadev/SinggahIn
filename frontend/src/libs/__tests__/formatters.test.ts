@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatRupiah,
   formatCompactRupiah,
+  formatCalendarPrice,
   formatDateID
 } from '../formatters';
 
@@ -37,6 +38,27 @@ describe('Frontend Formatter Utilities', () => {
 
     it('should format values under 1000 with raw number', () => {
       expect(formatCompactRupiah(500)).toBe('Rp 500');
+    });
+  });
+
+  describe('formatCalendarPrice', () => {
+    it('should format thousands without Rp and with K', () => {
+      expect(formatCalendarPrice(500000)).toBe('500K');
+      expect(formatCalendarPrice(650000)).toBe('650K');
+      expect(formatCalendarPrice(25000)).toBe('25K');
+    });
+
+    it('should format millions as thousands with K', () => {
+      expect(formatCalendarPrice(1000000)).toBe('1000K');
+      expect(formatCalendarPrice(1500000)).toBe('1500K');
+    });
+
+    it('should format numbers with decimal thousands', () => {
+      expect(formatCalendarPrice(550500)).toBe('550.5K');
+    });
+
+    it('should format values under 1000 without K or Rp', () => {
+      expect(formatCalendarPrice(500)).toBe('500');
     });
   });
 

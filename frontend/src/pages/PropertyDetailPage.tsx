@@ -37,7 +37,7 @@ function PropertyNotFound() {
 
 function PropertyMainCol({ property, rooms, checkIn, checkOut, onBook }: MainColProps) {
   return (
-    <div className="lg:col-span-8 flex flex-col">
+    <div className="flex flex-col">
       <PropertyDetailDescription description={property.description} />
       <PropertyDetailFacilities facilities={property.facilities} />
       <PropertyDetailRoomList propertyId={property.id} rooms={rooms} checkIn={checkIn} checkOut={checkOut} onBookRoom={onBook} />
@@ -57,13 +57,27 @@ function PropertyDetailHero({ property }: { property: NonNullable<ReturnType<typ
   );
 }
 
+function PropertySidebarCol({ state }: { state: ReturnType<typeof usePropertyDetailPage> }) {
+  return (
+    <div className="w-full lg:col-span-4 order-1 lg:order-2">
+      <PropertyDetailSidebar
+        propertyId={state.id!} rooms={state.rooms} selectedRoomId={state.selectedRoomId}
+        onRoomChange={state.setSelectedRoomId} checkIn={state.checkIn} checkOut={state.checkOut}
+        lowestPrice={state.lowestPrice} onSelectDates={state.handleSelectDates}
+        onBookRoom={state.handleBookRoom}
+      />
+    </div>
+  );
+}
+
 function PropertyDetailGrid({ state }: { state: ReturnType<typeof usePropertyDetailPage> }) {
+  const { property, rooms, checkIn, checkOut, handleBookRoom } = state;
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-      <PropertyMainCol property={state.property!} rooms={state.rooms} checkIn={state.checkIn} checkOut={state.checkOut} onBook={state.handleBookRoom} />
-      <div className="lg:col-span-4">
-        <PropertyDetailSidebar lowestPrice={state.lowestPrice} onScrollToRooms={state.scrollToRooms} />
+      <div className="w-full lg:col-span-8 order-2 lg:order-1">
+        <PropertyMainCol property={property!} rooms={rooms} checkIn={checkIn} checkOut={checkOut} onBook={handleBookRoom} />
       </div>
+      <PropertySidebarCol state={state} />
     </div>
   );
 }
