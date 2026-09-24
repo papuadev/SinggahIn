@@ -21,6 +21,15 @@ export function formatCompactRupiah(amount: number): string {
   return `Rp ${amount}`;
 }
 
+export function formatCalendarPrice(amount: number): string {
+  if (amount >= 1_000) {
+    const k = amount / 1_000;
+    const formatted = Number.isInteger(k) ? k.toString() : k.toFixed(1).replace('.0', '');
+    return `${formatted}K`;
+  }
+  return `${amount}`;
+}
+
 export function formatDateID(
   date: Date | string | number,
   pattern = 'dd MMMM yyyy'

@@ -114,3 +114,23 @@ export interface CatalogQueryParams {
   page?: number;
   limit?: number;
 }
+
+export interface CalendarDayItem {
+  date: string;
+  price: number;
+  isAvailable: boolean;
+  reason: string | null;
+}
+
+export interface CalendarResponseData {
+  roomId: string;
+  basePrice: number;
+  calendar: CalendarDayItem[];
+}
+
+export interface CalendarQueryParams {
+  month: number;
+  year: number;
+  roomId?: string;
+}
+

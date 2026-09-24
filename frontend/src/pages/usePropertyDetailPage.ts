@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { propertyApi } from '../modules/property/services/property.api';
@@ -44,16 +44,35 @@ function useRoomSelection(propertyRooms?: any[], id?: string) {
   return { rooms, lowestPrice };
 }
 
-export function usePropertyDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const [params] = useSearchParams();
+function useDateRangeParams() {
+  const [params, setParams] = useSearchParams();
   const checkIn = params.get('checkIn') || undefined;
   const checkOut = params.get('checkOut') || undefined;
-  const { data: property, isLoading, isError } = usePropertyQuery(id);
-  const { rooms, lowestPrice } = useRoomSelection(property?.rooms, id);
-  const scrollToRooms = useCallback(() => {
+  const handleSelectDates = useCallback((newCheckIn: string, newCheckOut: string) => {
+    const next = new URLSearchParams(params);
+    if (newCheckIn) next.set('checkIn', newCheckIn); else next.delete('checkIn');
+    if (newCheckOut) next.set('checkOut', newCheckOut); else next.delete('checkOut');
+    setParams(next, { replace: true });
+  }, [params, setParams]);
+  return { checkIn, checkOut, handleSelectDates };
+}
+
+function useScrollToRooms() {
+  return useCallback(() => {
     document.getElementById('pilihan-kamar')?.scrollIntoView({ behavior: 'smooth' });
   }, []);
-  const handleBookRoom = usePropertyBooking(id, checkIn, checkOut);
-  return { id, property, rooms, checkIn, checkOut, lowestPrice, isLoading, isError, scrollToRooms, handleBookRoom };
+}
+
+export function usePropertyDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const dates = useDateRangeParams();
+  const { data: property, isLoading, isError } = usePropertyQuery(id);
+  const { rooms, lowestPrice } = useRoomSelection(property?.rooms, id);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(undefined);
+  const scrollToRooms = useScrollToRooms();
+  const handleBookRoom = usePropertyBooking(id, dates.checkIn, dates.checkOut);
+  return {
+    id, property, rooms, lowestPrice, selectedRoomId, setSelectedRoomId,
+    isLoading, isError, scrollToRooms, handleBookRoom, ...dates,
+  };
 }

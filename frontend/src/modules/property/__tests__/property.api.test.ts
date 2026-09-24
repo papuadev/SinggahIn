@@ -141,5 +141,24 @@ describe('Property API Service Tests', () => {
     });
     expect(result.data).toEqual(mockCatalog);
   });
+
+  it('getCalendar should call /properties/:id/calendar with query params', async () => {
+    const mockCalendar = {
+      roomId: 'room-1',
+      basePrice: 500000,
+      calendar: [{ date: '2026-10-01', price: 500000, isAvailable: true, reason: null }],
+    };
+    vi.mocked(apiClient.get).mockResolvedValueOnce({
+      data: { success: true, message: 'OK', data: mockCalendar },
+    });
+
+    const result = await propertyApi.getCalendar('prop-1', { month: 10, year: 2026, roomId: 'room-1' });
+
+    expect(apiClient.get).toHaveBeenCalledWith('/properties/prop-1/calendar', {
+      params: { month: 10, year: 2026, roomId: 'room-1' },
+    });
+    expect(result.data).toEqual(mockCalendar);
+  });
 });
+
 

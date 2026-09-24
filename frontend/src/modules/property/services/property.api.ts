@@ -10,6 +10,8 @@ import {
   GeocodeSuggestion,
   CatalogPropertyItem,
   CatalogQueryParams,
+  CalendarResponseData,
+  CalendarQueryParams,
 } from '../property.types';
 
 export const propertyApi = {
@@ -121,6 +123,17 @@ export const propertyApi = {
   ): Promise<ApiResponse<CatalogPropertyItem[]>> {
     const res = await apiClient.get<ApiResponse<CatalogPropertyItem[]>>(
       '/properties',
+      { params }
+    );
+    return res.data;
+  },
+
+  async getCalendar(
+    id: string,
+    params: CalendarQueryParams
+  ): Promise<ApiResponse<CalendarResponseData>> {
+    const res = await apiClient.get<ApiResponse<CalendarResponseData>>(
+      `/properties/${id}/calendar`,
       { params }
     );
     return res.data;
