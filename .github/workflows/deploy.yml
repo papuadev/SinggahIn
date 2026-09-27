@@ -102,8 +102,8 @@ jobs:
             # Re-create and restart updated containers
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
-            # Apply pending database migrations
-            docker compose -f docker-compose.prod.yml exec -T backend npx prisma migrate deploy
+            # Apply pending database schema changes
+            docker compose -f docker-compose.prod.yml exec -T backend npx prisma db push
 
             # Clean up old unused Docker images to save VPS SSD storage
             docker image prune -af
