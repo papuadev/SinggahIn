@@ -17,6 +17,20 @@
   --rdp-background-color: #eff6ff;
   margin: 0;
 }
+.rdp-full-width,
+.rdp-full-width .rdp-months,
+.rdp-full-width .rdp-month {
+  width: 100%;
+  margin: 0;
+}
+.rdp-full-width .rdp-table {
+  width: 100% !important;
+  max-width: none !important;
+}
+.rdp-full-width .rdp-cell {
+  width: auto !important;
+  height: auto !important;
+}
 .rdp-day_selected,
 .rdp-day_selected:hover {
   background-color: #2563eb !important;

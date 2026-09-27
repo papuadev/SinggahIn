@@ -145,7 +145,7 @@ interface DateSectionProps {
 
 function SidebarDateSection(p: DateSectionProps) {
   return (
-    <div className="relative mt-3">
+    <div className="relative mt-3 z-30">
       <DateTriggerBox checkIn={p.checkIn} checkOut={p.checkOut} onClick={p.onToggle} isOpen={p.isOpen} />
       <CalendarPopover isOpen={p.isOpen} onClose={p.onClose} propertyId={p.propertyId} rooms={p.rooms} activeRoomId={p.activeRoomId} onRoom={p.onRoomChange} inDate={p.checkIn} outDate={p.checkOut} onDates={p.onSelectDates} />
     </div>
