@@ -4,20 +4,30 @@ import * as profileService from './profile.service';
 import { sendSuccess } from '../../shared/utils/response.util';
 import { AppError } from '../../shared/utils/app-error';
 
-function setAuthCookie(res: Response, token: string): void {
+function setAuthCookie(req: Request, res: Response, token: string): void {
+  const isSecure =
+    process.env.COOKIE_SECURE === 'true' ||
+    req.secure ||
+    req.headers['x-forwarded-proto'] === 'https';
+
   res.cookie('token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: Boolean(isSecure),
     sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000,
     path: '/'
   });
 }
 
-function clearAuthCookie(res: Response): void {
+function clearAuthCookie(req: Request, res: Response): void {
+  const isSecure =
+    process.env.COOKIE_SECURE === 'true' ||
+    req.secure ||
+    req.headers['x-forwarded-proto'] === 'https';
+
   res.clearCookie('token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: Boolean(isSecure),
     sameSite: 'lax',
     path: '/'
   });
@@ -48,7 +58,7 @@ export async function verify(
 ): Promise<void> {
   try {
     const result = await identityService.verifyAccount(req.body);
-    setAuthCookie(res, result.token);
+    setAuthCookie(req, res, result.token);
     sendSuccess(res, { user: result.user }, 'Akun berhasil diverifikasi.');
   } catch (error) {
     next(error);
@@ -62,15 +72,15 @@ export async function login(
 ): Promise<void> {
   try {
     const result = await identityService.login(req.body);
-    setAuthCookie(res, result.token);
+    setAuthCookie(req, res, result.token);
     sendSuccess(res, { user: result.user }, 'Login berhasil.');
   } catch (error) {
     next(error);
   }
 }
 
-export function logout(_req: Request, res: Response): void {
-  clearAuthCookie(res);
+export function logout(req: Request, res: Response): void {
+  clearAuthCookie(req, res);
   sendSuccess(res, null, 'Logout berhasil.');
 }
 
