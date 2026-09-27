@@ -31,7 +31,7 @@ function NightsBadge({ nights }: { nights: number }) {
 
 function EmptySummaryHint() {
   return (
-    <p className="text-xs text-gray-500 italic">
+    <p className="text-[11px] text-gray-500 italic">
       Klik tanggal untuk memilih Check-in dan Check-out
     </p>
   );
@@ -39,11 +39,11 @@ function EmptySummaryHint() {
 
 function SummaryDetails({ checkIn, checkOut, nights }: { checkIn: string; checkOut?: string; nights: number }) {
   const outText = checkOut ? formatDateID(checkOut, 'dd MMM yyyy') : 'Pilih Check-out';
-  const outCls = checkOut ? 'text-gray-900' : 'text-gray-400 font-normal italic';
+  const outCls = checkOut ? 'text-gray-900 font-bold' : 'text-gray-400 font-normal italic';
   return (
-    <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-gray-800">
-      <span>{formatDateID(checkIn, 'dd MMM yyyy')}</span>
-      <ArrowRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+    <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-gray-800">
+      <span className="font-bold text-gray-900">{formatDateID(checkIn, 'dd MMM yyyy')}</span>
+      <ArrowRight className="w-3 h-3 text-gray-400 shrink-0" />
       <span className={outCls}>{outText}</span>
       <NightsBadge nights={nights} />
     </div>
@@ -51,12 +51,18 @@ function SummaryDetails({ checkIn, checkOut, nights }: { checkIn: string; checkO
 }
 
 export function CalendarDateSummary({ checkIn, checkOut, onReset }: DateSummaryProps): React.JSX.Element {
-  if (!checkIn) return <div className="py-2"><EmptySummaryHint /></div>;
+  if (!checkIn) {
+    return (
+      <div className="py-1.5 px-2.5 bg-gray-50/70 rounded-lg border border-gray-100 my-1 text-center sm:text-left">
+        <EmptySummaryHint />
+      </div>
+    );
+  }
   const nights = calculateNights(checkIn, checkOut);
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 py-3 px-3.5 bg-gray-50 rounded-xl border border-gray-100 mb-2">
+    <div className="flex flex-wrap items-center justify-between gap-1.5 py-1.5 px-2.5 bg-gray-50 rounded-lg border border-gray-100 my-1">
       <SummaryDetails checkIn={checkIn} checkOut={checkOut} nights={nights} />
-      <button type="button" onClick={onReset} className="text-xs text-gray-500 hover:text-red-600 font-medium flex items-center gap-1 transition-colors">
+      <button type="button" onClick={onReset} className="text-xs text-gray-500 hover:text-red-600 font-semibold flex items-center gap-1 transition-colors">
         <RotateCcw className="w-3 h-3" /> Reset
       </button>
     </div>

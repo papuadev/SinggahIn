@@ -74,30 +74,52 @@ function processRangeSelection(
 }
 
 const RDP_CLASSES = {
-  caption: 'hidden', table: 'w-full border-collapse space-y-1',
-  head_row: 'flex w-full justify-between pb-1 border-b border-gray-100',
-  head_cell: 'text-gray-400 font-semibold text-[11px] sm:text-xs flex-1 text-center py-0.5',
-  row: 'flex w-full justify-between mt-0.5 sm:mt-1',
-  cell: 'text-center p-0 relative flex-1 h-9 sm:h-10 flex items-center justify-center',
-  day: 'h-full w-full p-0 font-normal rounded-lg hover:bg-primary-50 transition-colors flex items-center justify-center',
-  day_range_middle: '!bg-primary-50 !text-primary-700 rounded-none',
-  day_selected: '!bg-primary-600 !text-white font-bold',
-  day_disabled: 'opacity-40 cursor-not-allowed hover:bg-transparent text-gray-300',
+  root: 'w-full !m-0',
+  months: 'w-full !m-0',
+  month: 'w-full !m-0 space-y-2',
+  caption: 'hidden',
+  table: 'w-full border-collapse !max-w-none space-y-1 sm:space-y-1.5',
+  head_row: 'flex w-full justify-between pb-2 mb-1 border-b border-gray-100',
+  head_cell: 'text-gray-500 font-bold text-xs sm:text-sm flex-1 text-center py-1 sm:py-1.5',
+  row: 'flex w-full justify-between mt-1 sm:mt-1.5',
+  cell: 'text-center p-0.5 sm:p-1 relative flex-1 min-h-[48px] sm:min-h-[54px] md:min-h-[58px] !w-auto !h-auto flex items-center justify-center',
+  day: 'h-full w-full min-h-[48px] sm:min-h-[54px] md:min-h-[58px] p-1 sm:p-1.5 font-normal rounded-xl hover:bg-primary-50 transition-all flex items-center justify-center border border-transparent hover:border-primary-200',
+  day_range_middle: '!bg-primary-50 !text-primary-700 !rounded-none !border-transparent',
+  day_selected: '!bg-primary-600 !text-white font-bold !rounded-xl shadow-md shadow-primary-500/25',
+  day_disabled: 'opacity-40 cursor-not-allowed hover:bg-transparent hover:border-transparent text-gray-300',
+};
+
+const RDP_SIDEBAR_CLASSES = {
+  root: 'w-full !m-0',
+  months: 'w-full !m-0',
+  month: 'w-full !m-0 space-y-0.5',
+  caption: 'hidden',
+  table: 'w-full border-collapse !max-w-none space-y-0.5',
+  head_row: 'flex w-full justify-between pb-1 mb-0.5 border-b border-gray-100',
+  head_cell: 'text-gray-500 font-bold text-xs flex-1 text-center py-0.5',
+  row: 'flex w-full justify-between mt-0.5',
+  cell: 'text-center p-0.5 relative flex-1 min-h-[32px] sm:min-h-[35px] !w-auto !h-auto flex items-center justify-center',
+  day: 'h-full w-full min-h-[32px] sm:min-h-[35px] py-0.5 px-0.5 font-normal rounded-lg hover:bg-primary-50 transition-all flex items-center justify-center border border-transparent hover:border-primary-200',
+  day_range_middle: '!bg-primary-50 !text-primary-700 !rounded-none !border-transparent',
+  day_selected: '!bg-primary-600 !text-white font-bold !rounded-lg shadow-sm shadow-primary-500/25',
+  day_disabled: 'opacity-40 cursor-not-allowed hover:bg-transparent hover:border-transparent text-gray-300',
 };
 
 interface GridProps {
   selectedRange: DateRange; onSelect: (r: DateRange | undefined) => void;
   monthDate: Date; disabled: (d: Date) => boolean; dayRenderer: (props: any) => React.ReactElement | null;
+  isSidebar?: boolean;
 }
 
-function CalendarGrid({ selectedRange, onSelect, monthDate, disabled, dayRenderer }: GridProps) {
+function CalendarGrid({ selectedRange, onSelect, monthDate, disabled, dayRenderer, isSidebar }: GridProps) {
   return (
-    <div className="py-1 sm:py-2 w-full overflow-hidden">
+    <div className={isSidebar ? 'py-0.5 w-full overflow-hidden' : 'py-1 sm:py-2 w-full overflow-hidden'}>
       <DayPicker
         mode="range" selected={selectedRange} onSelect={onSelect}
         month={monthDate} disabled={disabled}
         components={{ DayContent: dayRenderer, Day: CalendarDayButton }}
-        showOutsideDays={false} classNames={RDP_CLASSES}
+        showOutsideDays={false} classNames={isSidebar ? RDP_SIDEBAR_CLASSES : RDP_CLASSES}
+        className="rdp-full-width w-full"
       />
     </div>
   );
@@ -118,7 +140,7 @@ function CalendarCardBody({ cal, rooms, activeRoomId, onRoomChange, selectedRang
     <div className={cardCls}>
       <CalendarHeader month={cal.month} year={cal.year} onNext={cal.goToNext} onPrev={cal.goToPrev} canPrev={cal.canGoPrev} rooms={rooms} selectedRoomId={activeRoomId} onRoomChange={onRoomChange} />
       <CalendarAlert message={cal.validationError} />
-      <CalendarGrid selectedRange={selectedRange} onSelect={onSelect} monthDate={new Date(cal.year, cal.month - 1, 1)} disabled={cal.isDateDisabled} dayRenderer={dayRenderer} />
+      <CalendarGrid selectedRange={selectedRange} onSelect={onSelect} monthDate={new Date(cal.year, cal.month - 1, 1)} disabled={cal.isDateDisabled} dayRenderer={dayRenderer} isSidebar={isSidebar} />
       <CalendarDateSummary checkIn={checkIn} checkOut={checkOut} onReset={onReset} />
       <CalendarLegend />
     </div>
