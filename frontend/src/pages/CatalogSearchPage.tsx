@@ -37,110 +37,98 @@ function buildWidgetSearchParams(values: SearchWidgetValues, current: CatalogQue
   return next;
 }
 
-function useCatalogSearch() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const queryParams = parseQueryParams(searchParams);
+function handleCategoryUpdate(params: URLSearchParams, setParams: (p: URLSearchParams) => void, cat: string) {
+  const next = new URLSearchParams(params);
+  if (cat) next.set('category', cat);
+  else next.delete('category');
+  next.set('page', '1');
+  setParams(next);
+}
+
+function applyNavParam(params: URLSearchParams, setParams: (p: URLSearchParams) => void, mutator: (n: URLSearchParams) => void) {
+  const next = new URLSearchParams(params);
+  mutator(next);
+  setParams(next);
+}
+
+function useCatalogNav(params: URLSearchParams, setParams: (p: URLSearchParams) => void) {
+  const onSort = (by: 'price' | 'name' | 'rating', order: 'asc' | 'desc') => {
+    applyNavParam(params, setParams, (n) => { n.set('sortBy', by); n.set('sortOrder', order); n.set('page', '1'); });
+  };
+  const onPage = (p: number) => {
+    applyNavParam(params, setParams, (n) => n.set('page', String(p)));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  return { onSort, onPage };
+}
+
+function useCatalogQuery(searchParams: URLSearchParams, queryParams: CatalogQueryParams) {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['catalog', searchParams.toString()],
     queryFn: () => propertyApi.getCatalog(queryParams),
   });
-
-  const onSearch = (v: SearchWidgetValues) => setSearchParams(buildWidgetSearchParams(v, queryParams));
-  const onSort = (by: 'price' | 'name' | 'rating', order: 'asc' | 'desc') => {
-    const next = new URLSearchParams(searchParams);
-    next.set('sortBy', by);
-    next.set('sortOrder', order);
-    next.set('page', '1');
-    setSearchParams(next);
-  };
-  const onPage = (p: number) => {
-    const next = new URLSearchParams(searchParams);
-    next.set('page', String(p));
-    setSearchParams(next);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  return {
-    queryParams,
-    properties: data?.data || [],
-    meta: data?.meta || { page: 1, limit: 12, totalItems: 0, totalPages: 0 },
-    isLoading,
-    isError,
-    onSearch,
-    onSort,
-    onPage,
-    reset: () => setSearchParams({}),
-  };
+  return { properties: data?.data || [], meta: data?.meta, isLoading, isError };
 }
 
-function SearchHeader({
-  city,
-  category,
-  total,
-  sortBy,
-  sortOrder,
-  onSortChange,
-}: {
-  city?: string;
-  category?: string;
-  total: number;
-  sortBy: 'price' | 'name' | 'rating';
-  sortOrder: 'asc' | 'desc';
-  onSortChange: (by: 'price' | 'name' | 'rating', order: 'asc' | 'desc') => void;
-}) {
+function useCatalogSearch() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryParams = parseQueryParams(searchParams);
+  const qData = useCatalogQuery(searchParams, queryParams);
+  const nav = useCatalogNav(searchParams, setSearchParams);
+  const onSearch = (v: SearchWidgetValues) => setSearchParams(buildWidgetSearchParams(v, queryParams));
+  const onCat = (cat: string) => handleCategoryUpdate(searchParams, setSearchParams, cat);
+  return { queryParams, ...qData, onSearch, onCategoryChange: onCat, ...nav, reset: () => setSearchParams({}) };
+}
+
+function SearchHeaderTitle({ city, category, total }: { city?: string; category?: string; total: number }) {
   const title = city ? `Penginapan di ${city}` : 'Semua Penginapan';
-  const subtitle = category ? `Kategori ${category} • ` : '';
+  const sub = category ? `Kategori ${category} • ` : '';
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 my-6 pb-4 border-b border-gray-200">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-black text-gray-900">{title}</h1>
-        <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-          {subtitle}Ditemukan <strong className="text-gray-900">{total}</strong> penginapan
-        </p>
-      </div>
-      <CatalogSortSelect sortBy={sortBy} sortOrder={sortOrder} onChange={onSortChange} />
+    <div>
+      <h1 className="text-xl sm:text-2xl font-black text-gray-900">{title}</h1>
+      <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+        {sub}Ditemukan <strong className="text-gray-900">{total}</strong> penginapan
+      </p>
     </div>
   );
 }
 
+type HeaderProps = {
+  city?: string; category?: string; total: number;
+  sortBy: 'price' | 'name' | 'rating'; sortOrder: 'asc' | 'desc';
+  onSortChange: (by: 'price' | 'name' | 'rating', order: 'asc' | 'desc') => void;
+};
+
+function SearchHeader(p: HeaderProps) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 my-6 pb-4 border-b border-gray-200">
+      <SearchHeaderTitle city={p.city} category={p.category} total={p.total} />
+      <CatalogSortSelect sortBy={p.sortBy} sortOrder={p.sortOrder} onChange={p.onSortChange} />
+    </div>
+  );
+}
+
+function CatalogWidget({
+  q, onSearch, onCat,
+}: {
+  q: CatalogQueryParams; onSearch: (v: SearchWidgetValues) => void; onCat: (c: string) => void;
+}) {
+  const init = { city: q.city, category: q.category, checkIn: q.checkIn, checkOut: q.checkOut, guests: q.guests || 1 };
+  return <FloatingSearchWidget initialValues={init} onSearch={onSearch} onCategoryChange={onCat} />;
+}
+
 export function CatalogSearchPage(): React.JSX.Element {
-  const { queryParams, properties, meta, isLoading, isError, onSearch, onSort, onPage, reset } =
-    useCatalogSearch();
+  const s = useCatalogSearch();
+  const m = s.meta || { page: 1, limit: 12, totalItems: 0, totalPages: 0 };
+  const sort = s.queryParams.sortBy || 'price';
+  const order = s.queryParams.sortOrder || 'asc';
 
   return (
     <div className="w-full flex flex-col py-4">
-      <FloatingSearchWidget
-        initialValues={{
-          city: queryParams.city,
-          category: queryParams.category,
-          checkIn: queryParams.checkIn,
-          checkOut: queryParams.checkOut,
-          guests: queryParams.guests || 1,
-        }}
-        onSearch={onSearch}
-      />
-      <SearchHeader
-        city={queryParams.city}
-        category={queryParams.category}
-        total={meta.totalItems}
-        sortBy={queryParams.sortBy || 'price'}
-        sortOrder={queryParams.sortOrder || 'asc'}
-        onSortChange={onSort}
-      />
-      <CatalogPropertyGrid
-        properties={properties}
-        isLoading={isLoading}
-        isError={isError}
-        checkIn={queryParams.checkIn}
-        checkOut={queryParams.checkOut}
-        onResetFilters={reset}
-      />
-      <CatalogPagination
-        page={meta.page}
-        totalPages={meta.totalPages}
-        totalItems={meta.totalItems}
-        onPageChange={onPage}
-      />
+      <CatalogWidget q={s.queryParams} onSearch={s.onSearch} onCat={s.onCategoryChange} />
+      <SearchHeader city={s.queryParams.city} category={s.queryParams.category} total={m.totalItems} sortBy={sort} sortOrder={order} onSortChange={s.onSort} />
+      <CatalogPropertyGrid properties={s.properties} isLoading={s.isLoading} isError={s.isError} checkIn={s.queryParams.checkIn} checkOut={s.queryParams.checkOut} onResetFilters={s.reset} />
+      <CatalogPagination page={m.page} totalPages={m.totalPages} totalItems={m.totalItems} onPageChange={s.onPage} />
     </div>
   );
 }
