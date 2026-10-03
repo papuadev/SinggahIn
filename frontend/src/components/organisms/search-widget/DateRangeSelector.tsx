@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, Moon, ArrowRight, X, Check } from 'lucide-react';
 import { format, parseISO, differenceInCalendarDays, startOfToday } from 'date-fns';
+import { id } from 'date-fns/locale';
 import { DayPicker, DateRange } from 'react-day-picker';
 
 interface DateRangeSelectorProps {
@@ -82,7 +83,7 @@ type PopoverProps = {
 function DatePickerPopover(p: PopoverProps) {
   return (
     <div className="absolute z-50 left-0 right-0 sm:left-auto sm:right-auto sm:w-[320px] top-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-2xl p-3.5 max-w-[calc(100vw-2rem)]">
-      <DayPicker mode="range" selected={p.range} onSelect={p.onSelect} disabled={{ before: startOfToday() }} />
+      <DayPicker mode="range" selected={p.range} onSelect={p.onSelect} disabled={{ before: startOfToday() }} locale={id} />
       <PopoverFooter onReset={p.onReset} onApply={p.onClose} />
     </div>
   );

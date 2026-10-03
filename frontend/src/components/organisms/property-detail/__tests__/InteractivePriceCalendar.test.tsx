@@ -58,6 +58,13 @@ describe('InteractivePriceCalendar Component', () => {
     expect(screen.getByRole('option', { name: 'Executive Suite' })).toBeInTheDocument();
   });
 
+  it('renders Indonesian day abbreviations in calendar header', () => {
+    renderCalendar();
+    ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].forEach((day) => {
+      expect(screen.getByText(day)).toBeInTheDocument();
+    });
+  });
+
   it('renders daily price and sold out badge when data is loaded', async () => {
     renderCalendar();
     await waitFor(() => {

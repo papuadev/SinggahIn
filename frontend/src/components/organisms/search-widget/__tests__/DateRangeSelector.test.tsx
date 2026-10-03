@@ -23,6 +23,15 @@ describe('DateRangeSelector Organism Component', () => {
     expect(screen.getByRole('button', { name: /Selesai/i })).toBeInTheDocument();
   });
 
+  it('renders Indonesian day abbreviations in calendar header', () => {
+    render(<DateRangeSelector checkIn="" checkOut="" onChange={vi.fn()} />);
+    const trigger = screen.getByRole('button', { name: /Pilih rentang tanggal menginap/i });
+    fireEvent.click(trigger);
+    ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].forEach((day) => {
+      expect(screen.getByText(day)).toBeInTheDocument();
+    });
+  });
+
   it('closes popover on Escape key press for WCAG 2.1 accessibility', () => {
     render(<DateRangeSelector checkIn="" checkOut="" onChange={vi.fn()} />);
     const trigger = screen.getByRole('button', { name: /Pilih rentang tanggal menginap/i });
