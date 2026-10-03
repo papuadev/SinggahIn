@@ -12,6 +12,8 @@ import { PropertyDetailSidebar } from '../components/organisms/property-detail/P
 import { PropertyDetailMobileBar } from '../components/organisms/property-detail/PropertyDetailMobileBar';
 import { PropertyDetailSkeleton } from '../components/organisms/property-detail/PropertyDetailSkeleton';
 import { Button } from '../components/atoms/Button';
+import { SEOHead } from '../components/atoms/SEOHead';
+import { createLodgingBusinessSchema } from '../libs/seo';
 import { usePropertyDetailPage } from './usePropertyDetailPage';
 
 interface MainColProps {
@@ -25,6 +27,7 @@ interface MainColProps {
 function PropertyNotFound() {
   return (
     <div className="py-20 text-center max-w-md mx-auto flex flex-col items-center gap-3">
+      <SEOHead title="Properti Tidak Ditemukan" noIndex />
       <Building className="w-12 h-12 text-gray-300" />
       <h2 className="text-xl font-bold text-gray-900">Properti Tidak Ditemukan</h2>
       <p className="text-sm text-gray-500">Properti yang Anda cari tidak tersedia atau mungkin telah dihapus.</p>
@@ -32,6 +35,22 @@ function PropertyNotFound() {
         <Button variant="primary" size="md" leftIcon={<ArrowLeft className="w-4 h-4" />}>Kembali ke Katalog</Button>
       </Link>
     </div>
+  );
+}
+
+function PropertyDetailSEO({ property: p, lowestPrice }: { property: NonNullable<ReturnType<typeof usePropertyDetailPage>['property']>; lowestPrice?: number }) {
+  const jsonLd = createLodgingBusinessSchema({
+    title: p.title, description: p.description, images: p.images, address: p.address,
+    city: p.city, latitude: p.latitude, longitude: p.longitude, lowestPrice,
+    averageRating: p.averageRating, totalReviews: p.totalReviews,
+  });
+  return (
+    <SEOHead
+      title={`${p.title} - Sewa Penginapan Murah di ${p.city}`}
+      description={p.description.slice(0, 160)}
+      ogImage={p.coverImage || p.images?.[0]?.imageUrl} ogType="hotel"
+      ogPriceAmount={lowestPrice} jsonLd={jsonLd}
+    />
   );
 }
 
@@ -88,6 +107,7 @@ export function PropertyDetailPage(): React.JSX.Element {
   if (state.isError || !state.property) return <PropertyNotFound />;
   return (
     <article className="pb-16 flex flex-col gap-6 max-w-7xl mx-auto">
+      <PropertyDetailSEO property={state.property} lowestPrice={state.lowestPrice} />
       <PropertyDetailHero property={state.property} />
       <PropertyDetailGrid state={state} />
       <PropertyDetailMobileBar lowestPrice={state.lowestPrice} onScrollToRooms={state.scrollToRooms} />
