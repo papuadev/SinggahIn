@@ -76,6 +76,7 @@ describe('PropertyCard Organism', () => {
       </MemoryRouter>
     );
 
+    expect(screen.getByText('Mulai dari')).toBeInTheDocument();
     expect(screen.getByText(/Rp 750\.000/i)).toBeInTheDocument();
     expect(screen.getByText('/ malam')).toBeInTheDocument();
     expect(screen.getByText(/Total Rp 2\.250\.000 untuk 3 malam/i)).toBeInTheDocument();
