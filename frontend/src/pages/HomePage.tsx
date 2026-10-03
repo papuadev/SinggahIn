@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ShieldCheck, CalendarCheck, CreditCard, Star, Sparkles } from 'lucide-react';
 import { HeroCarousel } from '../components/organisms/HeroCarousel';
 import { FloatingSearchWidget } from '../components/organisms/FloatingSearchWidget';
@@ -53,32 +54,55 @@ function ValuePropsSection() {
   );
 }
 
+function useCategoryFilter() {
+  const [params, setParams] = useSearchParams();
+  const selectedCategory = params.get('category') || '';
+  const onCategoryChange = (cat: string) => {
+    const next = new URLSearchParams(params);
+    if (cat) next.set('category', cat);
+    else next.delete('category');
+    setParams(next);
+  };
+  return { selectedCategory, onCategoryChange };
+}
+
+function TopRatedSection({ category }: { category?: string }) {
+  const url = `/search?sortBy=rating&sortOrder=desc${category ? `&category=${category}` : ''}`;
+  return (
+    <RecommendedPropertiesSection
+      title="Favorit Tamu & Rating Tertinggi"
+      subtitle="Pilihan penginapan dengan ulasan bintang emas tertinggi dari tamu terverifikasi"
+      badgeText="Paling Direkomendasikan" badgeIcon={Star}
+      queryParams={{ sortBy: 'rating', sortOrder: 'desc', limit: 4, category }}
+      viewAllUrl={url}
+    />
+  );
+}
+
+function FreshPicksSection({ category, onReset }: { category?: string; onReset: () => void }) {
+  const url = `/search${category ? `?category=${category}` : ''}`;
+  return (
+    <RecommendedPropertiesSection
+      title="Jelajahi Penginapan Pilihan"
+      subtitle="Koleksi villa, hotel, dan homestay terverifikasi untuk liburan tak terlupakan"
+      badgeText="Pilihan Segar" badgeIcon={Sparkles}
+      queryParams={{ limit: 4, category }}
+      viewAllUrl={url} showEmptyIfFiltered onResetCategory={onReset}
+    />
+  );
+}
+
 export function HomePage(): React.JSX.Element {
+  const { selectedCategory, onCategoryChange } = useCategoryFilter();
+  const cat = selectedCategory || undefined;
   return (
     <div className="w-full flex flex-col">
       <HeroCarousel />
       <div className="-mt-6 sm:-mt-10 md:-mt-14 relative z-30 px-3 sm:px-6">
-        <FloatingSearchWidget />
+        <FloatingSearchWidget initialValues={{ category: selectedCategory }} onCategoryChange={onCategoryChange} />
       </div>
-
-      <RecommendedPropertiesSection
-        title="Favorit Tamu & Rating Tertinggi"
-        subtitle="Pilihan penginapan dengan ulasan bintang emas tertinggi dari tamu terverifikasi"
-        badgeText="Paling Direkomendasikan"
-        badgeIcon={Star}
-        queryParams={{ sortBy: 'rating', sortOrder: 'desc', limit: 4 }}
-        viewAllUrl="/search"
-      />
-
-      <RecommendedPropertiesSection
-        title="Jelajahi Penginapan Pilihan"
-        subtitle="Koleksi villa, hotel, dan homestay terverifikasi untuk liburan tak terlupakan"
-        badgeText="Pilihan Segar"
-        badgeIcon={Sparkles}
-        queryParams={{ limit: 4 }}
-        viewAllUrl="/search"
-      />
-
+      <TopRatedSection category={cat} />
+      <FreshPicksSection category={cat} onReset={() => onCategoryChange('')} />
       <ValuePropsSection />
     </div>
   );

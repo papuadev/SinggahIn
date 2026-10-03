@@ -149,4 +149,19 @@ describe('FloatingSearchWidget Organism', () => {
       category: 'villa',
     });
   });
+
+  it('triggers onCategoryChange callback when category chip is clicked', () => {
+    const handleCat = vi.fn();
+    render(
+      <MemoryRouter>
+        <FloatingSearchWidget onCategoryChange={handleCat} />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Villa' }));
+    expect(handleCat).toHaveBeenCalledWith('villa');
+    fireEvent.click(screen.getByRole('button', { name: 'Semua' }));
+    expect(handleCat).toHaveBeenCalledWith('');
+  });
 });
+
