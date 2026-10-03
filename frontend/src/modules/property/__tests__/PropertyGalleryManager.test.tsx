@@ -84,7 +84,7 @@ describe('PropertyGalleryManager Component', () => {
     });
   });
 
-  it('uploads valid image file via file input', async () => {
+  it('stages valid image file via file input and uploads only after user clicks upload button', async () => {
     vi.mocked(propertyApi.uploadImages).mockResolvedValueOnce({
       success: true,
       message: 'Uploaded',
@@ -97,8 +97,104 @@ describe('PropertyGalleryManager Component', () => {
 
     fireEvent.change(input, { target: { files: [validFile] } });
 
+    // File should be in staging (preview), not immediately uploaded to Cloudinary
+    await waitFor(() => {
+      expect(screen.getByText(/Foto Baru Dipilih/i)).toBeInTheDocument();
+      expect(screen.getByText('1 Siap Diunggah')).toBeInTheDocument();
+    });
+    expect(propertyApi.uploadImages).not.toHaveBeenCalled();
+
+    // Now user clicks upload button
+    const uploadBtn = screen.getByRole('button', { name: /Unggah 1 Foto/i });
+    fireEvent.click(uploadBtn);
+
     await waitFor(() => {
       expect(propertyApi.uploadImages).toHaveBeenCalledWith('prop-123', [validFile]);
+    });
+  });
+
+  it('allows user to cancel/delete a staged image before upload without calling Cloudinary API', async () => {
+    renderWithClient(<PropertyGalleryManager propertyId="prop-123" images={mockImages} />);
+    const input = screen.getByLabelText('Unggah foto properti');
+    const fileToCancel = new File(['mock content'], 'cancel-me.jpg', { type: 'image/jpeg' });
+
+    fireEvent.change(input, { target: { files: [fileToCancel] } });
+
+    await waitFor(() => {
+      expect(screen.getByText('1 Siap Diunggah')).toBeInTheDocument();
+    });
+
+    // User cancels the staged file
+    const cancelBtn = screen.getByRole('button', { name: /Batal unggah foto/i });
+    fireEvent.click(cancelBtn);
+
+    // Staged list is empty, and uploadImages is NEVER called
+    await waitFor(() => {
+      expect(screen.queryByText(/Foto Baru Dipilih/i)).not.toBeInTheDocument();
+    });
+    expect(propertyApi.uploadImages).not.toHaveBeenCalled();
+  });
+
+  it('allows user to sort/reorder staged images before uploading', async () => {
+    vi.mocked(propertyApi.uploadImages).mockResolvedValueOnce({
+      success: true,
+      message: 'Uploaded',
+      data: mockImages,
+    });
+
+    renderWithClient(<PropertyGalleryManager propertyId="prop-123" images={mockImages} />);
+    const input = screen.getByLabelText('Unggah foto properti');
+    const fileA = new File(['a'], 'foto-a.jpg', { type: 'image/jpeg' });
+    const fileB = new File(['b'], 'foto-b.jpg', { type: 'image/jpeg' });
+
+    fireEvent.change(input, { target: { files: [fileA, fileB] } });
+
+    await waitFor(() => {
+      expect(screen.getByText('2 Siap Diunggah')).toBeInTheDocument();
+    });
+
+    // Move first image to the right (swap A and B)
+    const moveRightButtons = screen.getAllByRole('button', { name: /Pindah ke kanan/i });
+    fireEvent.click(moveRightButtons[0]);
+
+    // Click upload
+    const uploadBtn = screen.getByRole('button', { name: /Unggah 2 Foto/i });
+    fireEvent.click(uploadBtn);
+
+    // Order should now be [fileB, fileA]
+    await waitFor(() => {
+      expect(propertyApi.uploadImages).toHaveBeenCalledWith('prop-123', [fileB, fileA]);
+    });
+  });
+
+  it('supports drag and drop functionality on image upload area', async () => {
+    vi.mocked(propertyApi.uploadImages).mockResolvedValueOnce({
+      success: true,
+      message: 'Uploaded',
+      data: mockImages,
+    });
+
+    renderWithClient(<PropertyGalleryManager propertyId="prop-123" images={mockImages} />);
+    const dropzone = screen.getByText(/Klik atau seret foto/i).closest('div')!;
+    const droppedFile = new File(['content'], 'dropped.jpg', { type: 'image/jpeg' });
+
+    // Drag over activates drag state
+    fireEvent.dragOver(dropzone);
+    expect(screen.getByText(/Lepaskan file di sini/i)).toBeInTheDocument();
+
+    // Drag leave resets
+    fireEvent.dragLeave(dropzone);
+    expect(screen.getByText(/Klik atau seret foto/i)).toBeInTheDocument();
+
+    // Drop files
+    fireEvent.drop(dropzone, {
+      dataTransfer: {
+        files: [droppedFile],
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('1 Siap Diunggah')).toBeInTheDocument();
     });
   });
 
