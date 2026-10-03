@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Building2, PlusCircle, Compass } from 'lucide-react';
+import { Building2, PlusCircle, Compass, Calendar } from 'lucide-react';
 
 interface SidebarLinkProps {
   to: string;
@@ -23,6 +23,7 @@ function SidebarLink({ to, icon, label, isActive }: SidebarLinkProps): React.JSX
 
 export function TenantSidebar(): React.JSX.Element {
   const { pathname } = useLocation();
+  const isDash = pathname === '/tenant/dashboard';
   const isList = pathname === '/tenant/properties';
   const isNew = pathname === '/tenant/properties/new';
 
@@ -30,6 +31,7 @@ export function TenantSidebar(): React.JSX.Element {
     <aside className="hidden lg:block w-64 shrink-0 bg-white border-r border-gray-200 min-h-[calc(100vh-4rem)] p-4 space-y-6">
       <div className="space-y-1">
         <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Manajemen Properti</p>
+        <SidebarLink to="/tenant/dashboard" icon={<Calendar className="w-4 h-4" />} label="Dasbor & Kalender" isActive={isDash} />
         <SidebarLink to="/tenant/properties" icon={<Building2 className="w-4 h-4" />} label="Daftar Properti" isActive={isList} />
         <SidebarLink to="/tenant/properties/new" icon={<PlusCircle className="w-4 h-4" />} label="Tambah Properti" isActive={isNew} />
       </div>

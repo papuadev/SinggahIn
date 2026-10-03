@@ -2,6 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import { PeakSeasonRateModal } from '../components/PeakSeasonRateModal';
 import { pricingApi } from '../services/pricing.api';
 
@@ -57,6 +58,10 @@ describe('PeakSeasonRateModal Component', () => {
     expect(screen.getByText(/Tarif Musiman: Deluxe King Bed/)).toBeInTheDocument();
     expect(screen.getByText('Tanggal Mulai')).toBeInTheDocument();
     expect(screen.getByText('Tipe Penyesuaian')).toBeInTheDocument();
+    expect(document.getElementById('peak-start-date')).toHaveAttribute(
+      'min',
+      format(new Date(), 'yyyy-MM-dd')
+    );
 
     await waitFor(() => {
       expect(screen.getByText('+25%')).toBeInTheDocument();
@@ -120,8 +125,8 @@ describe('PeakSeasonRateModal Component', () => {
       />
     );
 
-    fireEvent.change(screen.getByLabelText(/Tanggal Mulai/i), { target: { value: '2026-05-01' } });
-    fireEvent.change(screen.getByLabelText(/Tanggal Selesai/i), { target: { value: '2026-05-05' } });
+    fireEvent.change(screen.getByLabelText(/Tanggal Mulai/i), { target: { value: '2026-11-01' } });
+    fireEvent.change(screen.getByLabelText(/Tanggal Selesai/i), { target: { value: '2026-11-05' } });
     fireEvent.change(screen.getByLabelText(/Tipe Penyesuaian/i), { target: { value: 'NOMINAL' } });
     fireEvent.change(screen.getByLabelText(/Nominal \(Rp\)/i), { target: { value: '150000' } });
 
@@ -131,8 +136,8 @@ describe('PeakSeasonRateModal Component', () => {
       expect(pricingApi.createRoomRate).toHaveBeenCalledWith(
         'room-1',
         expect.objectContaining({
-          startDate: '2026-05-01',
-          endDate: '2026-05-05',
+          startDate: '2026-11-01',
+          endDate: '2026-11-05',
           adjustmentType: 'NOMINAL',
           adjustmentValue: 150000,
         })
