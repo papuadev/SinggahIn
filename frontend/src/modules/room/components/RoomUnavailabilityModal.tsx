@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useForm, UseFormRegister, FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trash2, CalendarOff } from 'lucide-react';
+import { format } from 'date-fns';
 import { RoomUnavailability } from '../pricing.types';
 import {
   roomUnavailabilityFormSchema,
@@ -62,13 +63,14 @@ function UnavailabilityDateFields({ register, errors }: {
   register: UseFormRegister<RoomUnavailabilityFormData>;
   errors: FieldErrors<RoomUnavailabilityFormData>;
 }): React.JSX.Element {
+  const minDate = format(new Date(), 'yyyy-MM-dd');
   return (
     <div className="grid grid-cols-2 gap-3">
       <FormField label="Tanggal Mulai" htmlFor="unavail-start-date" required error={errors.startDate?.message}>
-        <Input id="unavail-start-date" type="date" hasError={Boolean(errors.startDate)} {...register('startDate')} />
+        <Input id="unavail-start-date" type="date" min={minDate} hasError={Boolean(errors.startDate)} {...register('startDate')} />
       </FormField>
       <FormField label="Tanggal Selesai" htmlFor="unavail-end-date" required error={errors.endDate?.message}>
-        <Input id="unavail-end-date" type="date" hasError={Boolean(errors.endDate)} {...register('endDate')} />
+        <Input id="unavail-end-date" type="date" min={minDate} hasError={Boolean(errors.endDate)} {...register('endDate')} />
       </FormField>
     </div>
   );

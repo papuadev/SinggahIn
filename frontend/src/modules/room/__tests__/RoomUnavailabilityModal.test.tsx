@@ -2,6 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import { RoomUnavailabilityModal } from '../components/RoomUnavailabilityModal';
 import { pricingApi } from '../services/pricing.api';
 
@@ -53,6 +54,10 @@ describe('RoomUnavailabilityModal Component', () => {
     expect(screen.getByText(/Blokir Tanggal: Deluxe King Bed/)).toBeInTheDocument();
     expect(screen.getByText('Tanggal Mulai')).toBeInTheDocument();
     expect(screen.getByText('Tanggal Selesai')).toBeInTheDocument();
+    expect(document.getElementById('unavail-start-date')).toHaveAttribute(
+      'min',
+      format(new Date(), 'yyyy-MM-dd')
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Diblokir')).toBeInTheDocument();
@@ -83,15 +88,15 @@ describe('RoomUnavailabilityModal Component', () => {
 
     const startInput = screen.getByLabelText(/Tanggal Mulai/i);
     const endInput = screen.getByLabelText(/Tanggal Selesai/i);
-    fireEvent.change(startInput, { target: { value: '2026-10-01' } });
-    fireEvent.change(endInput, { target: { value: '2026-10-07' } });
+    fireEvent.change(startInput, { target: { value: '2026-11-01' } });
+    fireEvent.change(endInput, { target: { value: '2026-11-07' } });
 
     fireEvent.click(screen.getByRole('button', { name: /Simpan Pemblokiran Tanggal/i }));
 
     await waitFor(() => {
       expect(pricingApi.createRoomUnavailability).toHaveBeenCalledWith('room-1', {
-        startDate: '2026-10-01',
-        endDate: '2026-10-07',
+        startDate: '2026-11-01',
+        endDate: '2026-11-07',
         reason: undefined,
       });
     });

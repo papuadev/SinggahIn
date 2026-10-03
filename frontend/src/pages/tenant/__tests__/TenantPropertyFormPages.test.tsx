@@ -53,6 +53,12 @@ vi.mock('../../../modules/room/components/RoomListSection', () => ({
   ),
 }));
 
+vi.mock('../../../modules/room/components/TenantRoomStatusCalendar', () => ({
+  TenantRoomStatusCalendar: ({ propertyId }: { propertyId: string }) => (
+    <div data-testid="mock-calendar-section">Calendar for {propertyId}</div>
+  ),
+}));
+
 vi.mock('../../../modules/property/services/property.api', () => ({
   propertyApi: {
     createProperty: vi.fn(),
@@ -162,5 +168,8 @@ describe('Tenant Property Create & Edit Pages', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Tipe & Tarif Kamar/i }));
     expect(screen.getByTestId('mock-rooms-section')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Kalender Status Kamar/i }));
+    expect(screen.getByTestId('mock-calendar-section')).toBeInTheDocument();
   });
 });

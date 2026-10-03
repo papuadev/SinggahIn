@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Building2, Image as ImageIcon, BedDouble } from 'lucide-react';
+import { ArrowLeft, Building2, Image as ImageIcon, BedDouble, Calendar } from 'lucide-react';
 import { usePropertyDetail, useUpdateProperty } from '../../modules/property/hooks/useProperties';
 import { Property } from '../../modules/property/property.types';
 import { PropertyFormData } from '../../modules/property/schemas/property.schema';
 import { PropertyForm } from '../../modules/property/components/PropertyForm';
 import { PropertyGalleryManager } from '../../modules/property/components/PropertyGalleryManager';
 import { RoomListSection } from '../../modules/room/components/RoomListSection';
+import { TenantRoomStatusCalendar } from '../../modules/room/components/TenantRoomStatusCalendar';
 import { Alert } from '../../components/atoms/Alert';
 import { Spinner } from '../../components/atoms/Spinner';
 
-export type EditTab = 'info' | 'gallery' | 'rooms';
+export type EditTab = 'info' | 'gallery' | 'rooms' | 'calendar';
 
 function EditPageHeader({ propertyTitle }: { propertyTitle?: string }): React.JSX.Element {
   return (
@@ -64,6 +65,7 @@ function EditPageTabs({ activeTab, setActiveTab, imageCount }: {
       <TabButton label="Informasi Dasar" icon={<Building2 className="w-4 h-4" />} isActive={activeTab === 'info'} onClick={() => setActiveTab('info')} />
       <TabButton label="Galeri Foto" icon={<ImageIcon className="w-4 h-4" />} isActive={activeTab === 'gallery'} count={imageCount} onClick={() => setActiveTab('gallery')} />
       <TabButton label="Tipe & Tarif Kamar" icon={<BedDouble className="w-4 h-4" />} isActive={activeTab === 'rooms'} onClick={() => setActiveTab('rooms')} />
+      <TabButton label="Kalender Status Kamar" icon={<Calendar className="w-4 h-4" />} isActive={activeTab === 'calendar'} onClick={() => setActiveTab('calendar')} />
     </div>
   );
 }
@@ -123,6 +125,9 @@ export function TenantPropertyEditPage(): React.JSX.Element {
         <PropertyGalleryManager propertyId={id} images={property.images || []} onImagesUpdated={() => refetch()} />
       )}
       {activeTab === 'rooms' && <RoomListSection propertyId={id} />}
+      {activeTab === 'calendar' && (
+        <TenantRoomStatusCalendar propertyId={id} rooms={property.rooms || []} />
+      )}
     </div>
   );
 }

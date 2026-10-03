@@ -10,25 +10,13 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { VerifyTokenPage } from "./pages/VerifyTokenPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ProtectedRoute } from "./components/molecules/ProtectedRoute";
+import { TenantDashboardPage } from "./pages/tenant/TenantDashboardPage";
 import { TenantPropertyListPage } from "./pages/tenant/TenantPropertyListPage";
 import { TenantPropertyCreatePage } from "./pages/tenant/TenantPropertyCreatePage";
 import { TenantPropertyEditPage } from "./pages/tenant/TenantPropertyEditPage";
 import { HomePage } from "./pages/HomePage";
 import { CatalogSearchPage } from "./pages/CatalogSearchPage";
 import { PropertyDetailPage } from "./pages/PropertyDetailPage";
-
-function TenantPlaceholder(): React.JSX.Element {
-  return (
-    <div className="py-12 text-center">
-      <h3 className="text-2xl font-bold text-gray-900">
-        Dasbor Pemilik Properti (Tenant)
-      </h3>
-      <p className="text-gray-600 mt-2">
-        Area khusus untuk mengelola properti, kamar, dan tarif sewa.
-      </p>
-    </div>
-  );
-}
 
 function AppRoutes(): React.JSX.Element {
   return (
@@ -41,7 +29,7 @@ function AppRoutes(): React.JSX.Element {
       <Route path="/verify" element={<VerifyTokenPage />} />
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="/tenant" element={<ProtectedRoute requiredRole="TENANT"><TenantLayout /></ProtectedRoute>}>
-        <Route path="dashboard" element={<TenantPlaceholder />} />
+        <Route path="dashboard" element={<TenantDashboardPage />} />
         <Route path="properties" element={<TenantPropertyListPage />} />
         <Route path="properties/new" element={<TenantPropertyCreatePage />} />
         <Route path="properties/:id/edit" element={<TenantPropertyEditPage />} />
