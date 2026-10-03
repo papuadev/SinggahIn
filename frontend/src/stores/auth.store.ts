@@ -111,19 +111,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   uploadAvatar: async (file: File) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       const res = await identityApi.uploadAvatar(file);
       const currentUser = get().user;
       if (currentUser) {
-        set({ user: { ...currentUser, avatarUrl: res.data.avatarUrl }, isLoading: false });
-      } else {
-        set({ isLoading: false });
+        set({ user: { ...currentUser, avatarUrl: res.data.avatarUrl } });
       }
       return res.data.avatarUrl;
     } catch (err) {
       const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
+      set({ error: message });
       throw err;
     }
   },

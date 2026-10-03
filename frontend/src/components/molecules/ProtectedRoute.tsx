@@ -13,7 +13,7 @@ export function ProtectedRoute({
   children,
   requiredRole,
 }: ProtectedRouteProps): React.JSX.Element {
-  const { user, isAuthenticated, isLoading, isInitialized, setConflict } = useAuthStore();
+  const { user, isAuthenticated, isInitialized, setConflict } = useAuthStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export function ProtectedRoute({
     }
   }, [isAuthenticated, user, requiredRole, setConflict, navigate]);
 
-  if (!isInitialized || isLoading) {
+  if (!isInitialized) {
     return (
       <div className="flex justify-center items-center py-20">
         <Spinner size="lg" />
