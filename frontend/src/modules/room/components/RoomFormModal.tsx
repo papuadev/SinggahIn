@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
-import { useForm, UseFormRegister, FieldErrors } from 'react-hook-form';
+import { useForm, UseFormRegister, FieldErrors, Control, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { roomFormSchema, RoomFormData } from '../schemas/room.schema';
 import { Modal } from '../../../components/molecules/Modal';
 import { FormField } from '../../../components/molecules/FormField';
 import { Input } from '../../../components/atoms/Input';
+import { CurrencyInput } from '../../../components/atoms/CurrencyInput';
 import { Button } from '../../../components/atoms/Button';
-
 import { Room } from '../room.types';
 
 export interface RoomFormModalProps {
@@ -31,10 +31,29 @@ function RoomNameField({ register, errors }: FieldsProps): React.JSX.Element {
   );
 }
 
-function RoomPriceField({ register, errors }: FieldsProps): React.JSX.Element {
+function RoomPriceField({
+  control, errors,
+}: {
+  control: Control<RoomFormData>;
+  errors: FieldErrors<RoomFormData>;
+}): React.JSX.Element {
   return (
     <FormField label="Harga Dasar (Rp)" required error={errors.basePrice?.message}>
-      <Input type="number" min={10000} step={5000} placeholder="Contoh: 350000" hasError={Boolean(errors.basePrice)} {...register('basePrice', { valueAsNumber: true })} />
+      <Controller
+        name="basePrice"
+        control={control}
+        render={({ field }) => (
+          <CurrencyInput
+            id="room-base-price"
+            aria-label="Harga Dasar"
+            placeholder="Contoh: 350.000"
+            hasError={Boolean(errors.basePrice)}
+            value={field.value}
+            onValueChange={field.onChange}
+            onBlur={field.onBlur}
+          />
+        )}
+      />
     </FormField>
   );
 }
@@ -89,8 +108,9 @@ function RoomModalFooter({ onClose, isLoading }: { onClose: () => void; isLoadin
   );
 }
 
-function RoomFormBody({ register, errors, onSubmit }: {
+function RoomFormBody({ register, control, errors, onSubmit }: {
   register: UseFormRegister<RoomFormData>;
+  control: Control<RoomFormData>;
   errors: FieldErrors<RoomFormData>;
   onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
 }): React.JSX.Element {
@@ -98,7 +118,7 @@ function RoomFormBody({ register, errors, onSubmit }: {
     <form id="room-form" onSubmit={onSubmit} className="space-y-4">
       <RoomNameField register={register} errors={errors} />
       <div className="grid grid-cols-2 gap-3">
-        <RoomPriceField register={register} errors={errors} />
+        <RoomPriceField control={control} errors={errors} />
         <RoomWeekendRateField register={register} errors={errors} />
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -137,7 +157,7 @@ export function RoomFormModal({
   isLoading = false,
   title = 'Tambah Tipe Kamar',
 }: RoomFormModalProps): React.JSX.Element {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<RoomFormData>({
+  const { register, control, handleSubmit, reset, formState: { errors } } = useForm<RoomFormData>({
     resolver: zodResolver(roomFormSchema) as any,
     defaultValues: { name: '', basePrice: 100000, weekendRatePercent: 0, capacity: 2, totalUnits: 1, description: '' },
   });
@@ -148,10 +168,10 @@ export function RoomFormModal({
       isOpen={isOpen}
       onClose={onClose}
       title={title}
-      description="Isi rincian informasi dan tarif kamar di bawah ini."
+      description="Lengkapi detail tipe kamar, harga dasar per malam, dan unit yang tersedia."
       footer={<RoomModalFooter onClose={onClose} isLoading={isLoading} />}
     >
-      <RoomFormBody register={register} errors={errors} onSubmit={handleSubmit((d) => onSubmit(d))} />
+      <RoomFormBody register={register} control={control} errors={errors} onSubmit={handleSubmit(onSubmit)} />
     </Modal>
   );
 }

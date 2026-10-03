@@ -110,7 +110,7 @@ describe('RoomFormModal Component', () => {
     );
 
     const nameInput = screen.getByDisplayValue('Deluxe Queen Room');
-    const priceInput = screen.getByDisplayValue('350000');
+    const priceInput = screen.getByDisplayValue('350.000');
     expect(nameInput).toBeInTheDocument();
     expect(priceInput).toBeInTheDocument();
 
