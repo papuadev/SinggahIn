@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { parseISO, format, isSameDay } from 'date-fns';
+import { id } from 'date-fns/locale';
 import { Calendar, AlertCircle } from 'lucide-react';
 import { usePropertyCalendar, checkRangeAvailable } from '../../../modules/property/hooks/usePropertyCalendar';
 import { createDayContentRenderer, CalendarDayButton } from './calendar/CalendarDayCell';
@@ -116,7 +117,7 @@ function CalendarGrid({ selectedRange, onSelect, monthDate, disabled, dayRendere
     <div className={isSidebar ? 'py-0.5 w-full overflow-hidden' : 'py-1 sm:py-2 w-full overflow-hidden'}>
       <DayPicker
         mode="range" selected={selectedRange} onSelect={onSelect}
-        month={monthDate} disabled={disabled}
+        month={monthDate} disabled={disabled} locale={id}
         components={{ DayContent: dayRenderer, Day: CalendarDayButton }}
         showOutsideDays={false} classNames={isSidebar ? RDP_SIDEBAR_CLASSES : RDP_CLASSES}
         className="rdp-full-width w-full"
