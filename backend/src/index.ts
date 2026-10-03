@@ -10,6 +10,7 @@ import { propertyRoutes } from './modules/property/property.routes';
 import { roomRoutes } from './modules/room/room.routes';
 import { bookingRoutes } from './modules/booking/booking.routes';
 import paymentRoutes from './modules/payment/payment.routes';
+import { initAutoCancelCron } from './modules/booking/booking-cron.service';
 
 dotenv.config();
 
@@ -50,6 +51,7 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
+  initAutoCancelCron();
   app.listen(PORT, () => {
     // Server running on configured PORT
   });
