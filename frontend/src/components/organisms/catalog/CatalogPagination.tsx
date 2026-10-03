@@ -12,14 +12,10 @@ type PageBtnProps = { p: number; current: number; onSelect: (p: number) => void 
 
 function PageButton({ p, current, onSelect }: PageBtnProps) {
   const isActive = p === current;
-  const cls = isActive
-    ? 'bg-primary-600 text-white font-bold shadow-sm'
-    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50';
+  const cls = isActive ? 'bg-primary-600 text-white font-bold shadow-sm' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50';
   return (
     <button
-      type="button"
-      onClick={() => onSelect(p)}
-      aria-label={`Halaman ${p}`}
+      type="button" onClick={() => onSelect(p)} aria-label={`Halaman ${p}`}
       aria-current={isActive ? 'page' : undefined}
       className={`w-9 h-9 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center transition-all ${cls}`}
     >
@@ -28,13 +24,42 @@ function PageButton({ p, current, onSelect }: PageBtnProps) {
   );
 }
 
-function PageNumbers({ current, total, onSelect }: { current: number; total: number; onSelect: (p: number) => void }) {
-  const pages = Array.from({ length: total }, (_, i) => i + 1);
+function EllipsisItem() {
+  return (
+    <span
+      data-testid="pagination-ellipsis"
+      aria-hidden="true"
+      className="w-9 h-9 flex items-center justify-center text-xs sm:text-sm text-gray-400 font-bold select-none"
+    >
+      ...
+    </span>
+  );
+}
+
+function getMiddlePages(current: number, total: number): (number | string)[] {
+  if (current <= 4) return [1, 2, 3, 4, 5, '...', total];
+  if (current >= total - 3) return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+  return [1, '...', current - 1, current, current + 1, '...', total];
+}
+
+function getPaginationItems(current: number, total: number): (number | string)[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  return getMiddlePages(current, total);
+}
+
+type PageNumbersProps = { current: number; total: number; onSelect: (p: number) => void };
+
+function PageNumbers({ current, total, onSelect }: PageNumbersProps) {
+  const items = getPaginationItems(current, total);
   return (
     <div className="flex items-center gap-1">
-      {pages.map((p) => (
-        <PageButton key={p} p={p} current={current} onSelect={onSelect} />
-      ))}
+      {items.map((item, idx) =>
+        typeof item === 'number' ? (
+          <PageButton key={item} p={item} current={current} onSelect={onSelect} />
+        ) : (
+          <EllipsisItem key={`ellipsis-${idx}`} />
+        )
+      )}
     </div>
   );
 }
@@ -44,10 +69,7 @@ type NavBtnProps = { disabled: boolean; onClick: () => void; label: string; icon
 function NavButton({ disabled, onClick, label, icon: Icon, iconRight }: NavBtnProps) {
   return (
     <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      aria-label={label}
+      type="button" disabled={disabled} onClick={onClick} aria-label={label}
       className="h-9 px-3 rounded-xl border border-gray-200 bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white flex items-center gap-1 transition-colors"
     >
       {!iconRight && <Icon className="w-4 h-4" />}
