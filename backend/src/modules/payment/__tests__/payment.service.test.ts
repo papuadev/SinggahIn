@@ -1,0 +1,153 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { BookingStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
+import { prisma } from '../../../shared/services/prisma.service';
+import * as cloudinaryService from '../../../shared/services/cloudinary.service';
+import * as mailService from '../../../shared/services/mail.service';
+import {
+  uploadPaymentProof,
+  approvePaymentProof,
+  rejectPaymentProof,
+  emergencyCancelBooking,
+} from '../payment.service';
+
+vi.mock('../../../shared/services/prisma.service', () => ({
+  prisma: {
+    $transaction: vi.fn(),
+    booking: { findUnique: vi.fn(), update: vi.fn() },
+  },
+}));
+
+vi.mock('../../../shared/services/cloudinary.service', () => ({
+  uploadToCloudinary: vi.fn(),
+  deleteFromCloudinary: vi.fn(),
+}));
+
+vi.mock('../../../shared/services/mail.service', () => ({
+  sendBookingVoucherEmail: vi.fn(),
+  sendEmergencyCancellationEmail: vi.fn(),
+}));
+
+describe('Payment Service', () => {
+  const userId = 'usr-123';
+  const tenantId = 'tnt-123';
+  const bookingId = 'bk-123';
+  const dummyFile = { buffer: Buffer.from('fake-image') } as Express.Multer.File;
+
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  describe('uploadPaymentProof', () => {
+    function setupUploadMock(opts: { oldPublicId?: string } = {}) {
+      const b = {
+        id: bookingId, userId, bookingCode: 'SGH-20261010-ABCD', status: BookingStatus.WAITING_PAYMENT,
+        expiresAt: new Date(Date.now() + 3600000), payment: { paymentMethod: PaymentMethod.MANUAL_TRANSFER, proofPublicId: opts.oldPublicId },
+      };
+      vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
+      vi.mocked(cloudinaryService.uploadToCloudinary).mockResolvedValueOnce({ secureUrl: 'https://cdn/p1.webp', publicId: 'p1' });
+      const txMock = {
+        booking: { update: vi.fn().mockResolvedValue({ ...b, status: BookingStatus.WAITING_CONFIRMATION, payment: { status: PaymentStatus.WAITING_APPROVAL, proofImageUrl: 'https://cdn/p1.webp' } }) },
+      };
+      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb(txMock));
+      return { txMock, b };
+    }
+
+    it('uploads proof, removes old publicId if present, and updates status to WAITING_CONFIRMATION', async () => {
+      const { txMock } = setupUploadMock({ oldPublicId: 'old-p0' });
+      const result = await uploadPaymentProof(userId, bookingId, dummyFile);
+
+      expect(cloudinaryService.uploadToCloudinary).toHaveBeenCalledWith(dummyFile.buffer, 'singgahin/payments');
+      expect(cloudinaryService.deleteFromCloudinary).toHaveBeenCalledWith('old-p0');
+      expect(txMock.booking.update).toHaveBeenCalled();
+      expect(result.bookingStatus).toBe(BookingStatus.WAITING_CONFIRMATION);
+      expect(result.paymentStatus).toBe(PaymentStatus.WAITING_APPROVAL);
+      expect(result.proofImageUrl).toBe('https://cdn/p1.webp');
+    });
+
+    it('rejects upload if booking has already expired', async () => {
+      const expiredBooking = {
+        id: bookingId, userId, status: BookingStatus.WAITING_PAYMENT,
+        expiresAt: new Date(Date.now() - 1000), payment: { paymentMethod: PaymentMethod.MANUAL_TRANSFER },
+      };
+      vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(expiredBooking as any);
+      await expect(uploadPaymentProof(userId, bookingId, dummyFile)).rejects.toThrow('Batas waktu pembayaran');
+    });
+  });
+
+  describe('approvePaymentProof', () => {
+    function setupApproveMock() {
+      const b = {
+        id: bookingId, bookingCode: 'SGH-20261010-ABCD', status: BookingStatus.WAITING_CONFIRMATION,
+        totalPrice: 1000000, guestCount: 2, checkInDate: new Date('2026-10-10'), checkOutDate: new Date('2026-10-12'),
+        property: { tenantId, title: 'Villa Lembang' }, room: { name: 'Deluxe' },
+        user: { email: 'guest@example.com' }, payment: { paymentMethod: PaymentMethod.MANUAL_TRANSFER },
+      };
+      vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
+      const txMock = {
+        booking: { update: vi.fn().mockResolvedValue({ ...b, status: BookingStatus.PROCESSED, payment: { status: PaymentStatus.SETTLEMENT } }) },
+      };
+      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb(txMock));
+      return { txMock, b };
+    }
+
+    it('approves payment, updates to PROCESSED, and sends voucher email', async () => {
+      setupApproveMock();
+      const result = await approvePaymentProof(tenantId, bookingId);
+
+      expect(result.bookingStatus).toBe(BookingStatus.PROCESSED);
+      expect(result.paymentStatus).toBe(PaymentStatus.SETTLEMENT);
+      expect(mailService.sendBookingVoucherEmail).toHaveBeenCalledWith(
+        'guest@example.com',
+        expect.objectContaining({ bookingCode: 'SGH-20261010-ABCD', propertyName: 'Villa Lembang' })
+      );
+    });
+  });
+
+  describe('rejectPaymentProof (AC-002 Grace Period)', () => {
+    function setupRejectMock() {
+      const b = {
+        id: bookingId, bookingCode: 'SGH-20261010-ABCD', status: BookingStatus.WAITING_CONFIRMATION,
+        property: { tenantId }, payment: { paymentMethod: PaymentMethod.MANUAL_TRANSFER },
+      };
+      vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
+      const txMock = {
+        booking: { update: vi.fn().mockImplementation(({ data }) => Promise.resolve({
+          ...b, status: data.status, expiresAt: data.expiresAt, payment: { status: PaymentStatus.REJECTED },
+        })) },
+      };
+      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb(txMock));
+      return { txMock, b };
+    }
+
+    it('reverts status to WAITING_PAYMENT and extends expiry by 1 hour', async () => {
+      setupRejectMock();
+      const beforeTime = Date.now() + 3500000;
+      const res = await rejectPaymentProof(tenantId, bookingId, { reason: 'Bukti transfer buram' });
+
+      expect(res.bookingStatus).toBe(BookingStatus.WAITING_PAYMENT);
+      expect(res.paymentStatus).toBe(PaymentStatus.REJECTED);
+      expect(new Date(res.expiresAt!).getTime()).toBeGreaterThanOrEqual(beforeTime);
+    });
+  });
+
+  describe('emergencyCancelBooking', () => {
+    function setupEmergencyMock() {
+      const b = {
+        id: bookingId, bookingCode: 'SGH-20261010-ABCD', status: BookingStatus.PROCESSED,
+        property: { tenantId, title: 'Villa Lembang' }, user: { email: 'guest@example.com' },
+      };
+      vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
+      const txMock = {
+        booking: { update: vi.fn().mockResolvedValue({ ...b, status: BookingStatus.CANCELLED, payment: { status: PaymentStatus.CANCELLED } }) },
+      };
+      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb(txMock));
+    }
+
+    it('cancels booking with reason and refund contact, notifying user via email', async () => {
+      setupEmergencyMock();
+      const input = { cancellationReason: 'Bencana banjir lokal', refundContact: '081234567890 (Ibu Maya)' };
+      const res = await emergencyCancelBooking(tenantId, bookingId, input);
+
+      expect(res.bookingStatus).toBe(BookingStatus.CANCELLED);
+      expect(mailService.sendEmergencyCancellationEmail).toHaveBeenCalledWith('guest@example.com', expect.objectContaining(input));
+    });
+  });
+});
