@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ShieldCheck, Zap, Sparkles } from 'lucide-react';
+import { ShieldCheck, Zap, Sparkles, ChevronDown } from 'lucide-react';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { Button } from '../../atoms/Button';
 import { formatRupiah } from '../../../libs/formatters';
@@ -72,16 +72,35 @@ function RoomOptions({ rooms }: { rooms: any[] }) {
   );
 }
 
-function SidebarRoomSelector({ rooms, activeId, onChange }: { rooms: any[]; activeId?: string; onChange?: (id: string) => void }) {
-  if (rooms.length <= 1) return null;
+type RoomSelectProps = {
+  rooms: any[];
+  activeId?: string;
+  onChange?: (id: string) => void;
+};
+
+function RoomSelectField({ rooms, activeId, onChange }: RoomSelectProps) {
+  return (
+    <div className="relative flex items-center">
+      <select
+        id="sidebar-room-select" value={activeId || rooms[0]?.id}
+        onChange={(e) => onChange?.(e.target.value)} aria-label="Pilih Tipe Kamar"
+        className="w-full appearance-none text-xs sm:text-sm font-semibold text-gray-800 bg-gray-50/70 border border-gray-200 rounded-xl pl-3.5 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer transition-all"
+      >
+        <RoomOptions rooms={rooms} />
+      </select>
+      <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+    </div>
+  );
+}
+
+function SidebarRoomSelector(p: RoomSelectProps) {
+  if (p.rooms.length <= 1) return null;
   return (
     <div className="mt-2.5">
       <label htmlFor="sidebar-room-select" className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
         Tipe Kamar
       </label>
-      <select id="sidebar-room-select" value={activeId || rooms[0]?.id} onChange={(e) => onChange?.(e.target.value)} aria-label="Pilih Tipe Kamar" className="w-full text-xs sm:text-sm font-semibold text-gray-800 bg-gray-50/70 border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500">
-        <RoomOptions rooms={rooms} />
-      </select>
+      <RoomSelectField {...p} />
     </div>
   );
 }
