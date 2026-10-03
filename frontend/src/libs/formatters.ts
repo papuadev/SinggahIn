@@ -37,3 +37,29 @@ export function formatDateID(
   const d = typeof date === 'string' ? parseISO(date) : new Date(date);
   return format(d, pattern, { locale: id });
 }
+
+export function formatCurrencyInput(
+  val: number | string | null | undefined,
+  allowNegative = false
+): string {
+  if (val === null || val === undefined || val === '') return '';
+  const str = String(val);
+  const isNeg = allowNegative && str.startsWith('-');
+  const digits = str.replace(/\D/g, '');
+  if (!digits) return isNeg ? '-' : '';
+  const num = parseInt(digits, 10);
+  const formatted = new Intl.NumberFormat('id-ID').format(num);
+  return isNeg ? `-${formatted}` : formatted;
+}
+
+export function parseCurrencyInput(
+  formatted: string | null | undefined,
+  allowNegative = false
+): number | undefined {
+  if (!formatted) return undefined;
+  const isNeg = allowNegative && formatted.includes('-');
+  const digits = formatted.replace(/\D/g, '');
+  if (!digits) return undefined;
+  const num = parseInt(digits, 10);
+  return isNeg ? -num : num;
+}

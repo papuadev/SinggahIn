@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { useForm, UseFormRegister, FieldErrors } from 'react-hook-form';
+import { useForm, UseFormRegister, FieldErrors, Control, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Trash2, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
-import { RoomPriceModifier } from '../pricing.types';
 import { peakRateFormSchema, PeakRateFormData } from '../schemas/pricing.schema';
 import {
   useRoomRates,
@@ -14,10 +13,10 @@ import {
 import { Modal } from '../../../components/molecules/Modal';
 import { FormField } from '../../../components/molecules/FormField';
 import { Input } from '../../../components/atoms/Input';
+import { CurrencyInput } from '../../../components/atoms/CurrencyInput';
 import { Button } from '../../../components/atoms/Button';
 import { Alert } from '../../../components/atoms/Alert';
-import { Spinner } from '../../../components/atoms/Spinner';
-import { formatRupiah, formatDateID } from '../../../libs/formatters';
+import { RateListSection } from './RateListSection';
 
 export interface PeakSeasonRateModalProps {
   roomId: string;
@@ -25,30 +24,6 @@ export interface PeakSeasonRateModalProps {
   propertyId: string;
   isOpen: boolean;
   onClose: () => void;
-}
-
-function RateItem({ rate, onDelete, isDeleting }: {
-  rate: RoomPriceModifier;
-  onDelete: (id: string) => void;
-  isDeleting: boolean;
-}): React.JSX.Element {
-  const badgeText = rate.adjustmentType === 'PERCENTAGE'
-    ? `${rate.adjustmentValue > 0 ? '+' : ''}${rate.adjustmentValue}%`
-    : `${rate.adjustmentValue > 0 ? '+' : ''}${formatRupiah(rate.adjustmentValue)}`;
-  return (
-    <div className="flex items-center justify-between p-2.5 rounded-lg border border-gray-200 bg-gray-50/50 text-xs">
-      <div>
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded border border-primary-100">{badgeText}</span>
-          <span className="font-medium text-gray-800">{formatDateID(rate.startDate, 'dd MMM yyyy')} - {formatDateID(rate.endDate, 'dd MMM yyyy')}</span>
-        </div>
-        {rate.reason && <p className="text-gray-500 mt-1">{rate.reason}</p>}
-      </div>
-      <button type="button" onClick={() => onDelete(rate.id)} disabled={isDeleting} aria-label="Hapus tarif" className="p-1 text-gray-400 hover:text-rose-600 transition-colors disabled:opacity-50">
-        <Trash2 className="w-4 h-4" />
-      </button>
-    </div>
-  );
 }
 
 function RateDateFields({ register, errors }: { register: UseFormRegister<PeakRateFormData>; errors: FieldErrors<PeakRateFormData> }): React.JSX.Element {
@@ -65,7 +40,47 @@ function RateDateFields({ register, errors }: { register: UseFormRegister<PeakRa
   );
 }
 
-function RateAdjustmentFields({ register, errors, type }: { register: UseFormRegister<PeakRateFormData>; errors: FieldErrors<PeakRateFormData>; type: string }): React.JSX.Element {
+function RateValueInput({ control, register, errors, type }: {
+  control: Control<PeakRateFormData>; register: UseFormRegister<PeakRateFormData>;
+  errors: FieldErrors<PeakRateFormData>; type: string;
+}): React.JSX.Element {
+  if (type === 'PERCENTAGE') {
+    return (
+      <Input
+        id="peak-adj-val"
+        type="number"
+        step={1}
+        placeholder="Contoh: 25"
+        hasError={Boolean(errors.adjustmentValue)}
+        {...register('adjustmentValue', { valueAsNumber: true })}
+      />
+    );
+  }
+  return (
+    <Controller
+      name="adjustmentValue"
+      control={control}
+      render={({ field }) => (
+        <CurrencyInput
+          id="peak-adj-val"
+          aria-label="Nominal (Rp)"
+          placeholder="Contoh: 150.000"
+          hasError={Boolean(errors.adjustmentValue)}
+          value={field.value}
+          onValueChange={field.onChange}
+          onBlur={field.onBlur}
+        />
+      )}
+    />
+  );
+}
+
+function RateAdjustmentFields({
+  register, control, errors, type,
+}: {
+  register: UseFormRegister<PeakRateFormData>; control: Control<PeakRateFormData>;
+  errors: FieldErrors<PeakRateFormData>; type: string;
+}): React.JSX.Element {
   return (
     <div className="grid grid-cols-2 gap-3">
       <FormField label="Tipe Penyesuaian" htmlFor="peak-adj-type" required error={errors.adjustmentType?.message}>
@@ -75,7 +90,7 @@ function RateAdjustmentFields({ register, errors, type }: { register: UseFormReg
         </select>
       </FormField>
       <FormField label={type === 'PERCENTAGE' ? 'Persentase (%)' : 'Nominal (Rp)'} htmlFor="peak-adj-val" required error={errors.adjustmentValue?.message}>
-        <Input id="peak-adj-val" type="number" step={type === 'PERCENTAGE' ? 1 : 5000} placeholder={type === 'PERCENTAGE' ? 'Contoh: 25' : 'Contoh: 150000'} hasError={Boolean(errors.adjustmentValue)} {...register('adjustmentValue', { valueAsNumber: true })} />
+        <RateValueInput control={control} register={register} errors={errors} type={type} />
       </FormField>
     </div>
   );
@@ -95,6 +110,25 @@ function RateReasonField({ register, errors }: { register: UseFormRegister<PeakR
   );
 }
 
+function RateForm({
+  register, control, errors, selectedType, isBusy, onSubmit,
+}: {
+  register: UseFormRegister<PeakRateFormData>; control: Control<PeakRateFormData>;
+  errors: FieldErrors<PeakRateFormData>; selectedType: string; isBusy: boolean;
+  onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
+}): React.JSX.Element {
+  return (
+    <form onSubmit={onSubmit} className="space-y-4 p-4 rounded-xl border border-gray-100 bg-gray-50/50">
+      <RateDateFields register={register} errors={errors} />
+      <RateAdjustmentFields register={register} control={control} errors={errors} type={selectedType} />
+      <RateReasonField register={register} errors={errors} />
+      <Button type="submit" variant="primary" size="sm" isLoading={isBusy} className="w-full" leftIcon={<TrendingUp className="w-4 h-4" />}>
+        Simpan Tarif Musiman
+      </Button>
+    </form>
+  );
+}
+
 export function PeakSeasonRateModal({ roomId, roomName, propertyId, isOpen, onClose }: PeakSeasonRateModalProps): React.JSX.Element {
   const [formError, setFormError] = useState<string | null>(null);
   const { data: rates = [], isLoading: loadingRates } = useRoomRates(roomId);
@@ -102,7 +136,7 @@ export function PeakSeasonRateModal({ roomId, roomName, propertyId, isOpen, onCl
   const deleteMut = useDeleteRoomRate(roomId);
   const bulkMut = useBulkCreatePropertyRates(propertyId);
 
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<PeakRateFormData>({
+  const { register, control, handleSubmit, reset, watch, formState: { errors } } = useForm<PeakRateFormData>({
     resolver: zodResolver(peakRateFormSchema) as any,
     defaultValues: { startDate: '', endDate: '', adjustmentType: 'PERCENTAGE', adjustmentValue: 20, reason: '', applyToAllRooms: false },
   });
@@ -118,34 +152,18 @@ export function PeakSeasonRateModal({ roomId, roomName, propertyId, isOpen, onCl
       else await createMut.mutateAsync(payload);
       reset({ startDate: '', endDate: '', adjustmentType: 'PERCENTAGE', adjustmentValue: 20, reason: '', applyToAllRooms: false });
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : 'Gagal menyimpan tarif');
+      setFormError((err as Error).message || 'Gagal menyimpan tarif musiman.');
     }
-  };
-
-  const handleDelete = async (rateId: string) => {
-    try { setFormError(null); await deleteMut.mutateAsync(rateId); }
-    catch (err: unknown) { setFormError(err instanceof Error ? err.message : 'Gagal menghapus tarif'); }
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Tarif Musiman: ${roomName}`} description="Atur penyesuaian harga khusus pada periode libur atau promo." footer={<Button type="button" variant="outline" size="sm" onClick={onClose}>Tutup</Button>}>
-      <div className="space-y-5">
+      <div className="space-y-6">
         {formError && <Alert variant="error">{formError}</Alert>}
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-3 bg-white p-4 rounded-xl border border-gray-200">
-          <RateDateFields register={register} errors={errors} />
-          <RateAdjustmentFields register={register} errors={errors} type={selectedType} />
-          <RateReasonField register={register} errors={errors} />
-          <div className="pt-2 flex justify-end">
-            <Button type="submit" variant="primary" size="sm" isLoading={isBusy} leftIcon={<TrendingUp className="w-3.5 h-3.5" />}>Simpan Tarif Musiman</Button>
-          </div>
-        </form>
-        <div className="space-y-2 pt-2 border-t border-gray-100">
-          <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Daftar Tarif Musiman Aktif ({rates.length})</h4>
-          {loadingRates && <div className="py-4 text-center"><Spinner size="sm" /></div>}
-          {!loadingRates && rates.length === 0 && <p className="text-xs text-gray-400 py-3 text-center">Belum ada pengaturan tarif musiman untuk kamar ini.</p>}
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {rates.map((rate) => <RateItem key={rate.id} rate={rate} onDelete={handleDelete} isDeleting={deleteMut.isPending} />)}
-          </div>
+        <RateForm register={register} control={control} errors={errors} selectedType={selectedType} isBusy={isBusy} onSubmit={handleSubmit(handleFormSubmit)} />
+        <div>
+          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Daftar Tarif Musiman Aktif</h4>
+          <RateListSection rates={rates} isLoading={loadingRates} onDelete={(id) => deleteMut.mutate(id)} isDeleting={deleteMut.isPending} />
         </div>
       </div>
     </Modal>
