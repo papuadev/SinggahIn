@@ -6,13 +6,23 @@ import { usePropertyCategories } from './useProperties';
 import { propertyApi } from '../services/property.api';
 import { GeocodeSuggestion } from '../property.types';
 
+function resolveCity(data: { city?: string; formattedAddress?: string; formatted?: string; address?: string }): string {
+  if (data.city && data.city.trim()) return data.city.trim();
+  const raw = data.formattedAddress || data.formatted || data.address || '';
+  const match = raw.match(/(?:Kota|Kabupaten|Kab\.)\s+([^,]+)/i);
+  if (match) return match[0].trim();
+  const parts = raw.split(',').map((p) => p.trim());
+  return parts.length >= 2 ? parts[parts.length - 2] : '';
+}
+
 function applyGeocode(
   data: { formattedAddress?: string; formatted?: string; address?: string; city?: string },
   setValue: UseFormSetValue<PropertyFormData>
 ): void {
   const addressText = data.formattedAddress || data.formatted || data.address;
   if (addressText) setValue('address', addressText, { shouldValidate: true });
-  if (data.city) setValue('city', data.city, { shouldValidate: true });
+  const city = resolveCity(data);
+  if (city) setValue('city', city, { shouldValidate: true });
 }
 
 type FeedbackSetter = (f: string | null) => void;
@@ -65,7 +75,8 @@ function usePropertyGeocoding(setValue: UseFormSetValue<PropertyFormData>, lat: 
 
 function applySuggestion(item: GeocodeSuggestion, setValue: UseFormSetValue<PropertyFormData>, setFeedback: (msg: string) => void) {
   setValue('address', item.formattedAddress, { shouldValidate: true });
-  if (item.city) setValue('city', item.city, { shouldValidate: true });
+  const city = resolveCity(item);
+  if (city) setValue('city', city, { shouldValidate: true });
   setValue('latitude', item.latitude, { shouldValidate: true });
   setValue('longitude', item.longitude, { shouldValidate: true });
   setFeedback(`Pin peta dipindahkan ke: ${item.formattedAddress}`);

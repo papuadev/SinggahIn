@@ -79,10 +79,14 @@ interface LocationRowProps {
 function PropertyFormLocationRow({ register, errors, onSelectSuggestion }: LocationRowProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <FormField label="Kota" required error={errors.city?.message}>
-        <Input placeholder="Contoh: Bandung" hasError={Boolean(errors.city)} {...register('city')} />
-      </FormField>
       <PropertyAddressAutocomplete register={register} error={errors.address?.message} onSelectSuggestion={onSelectSuggestion} />
+      <FormField label="Kota" required error={errors.city?.message} hint="Terisi otomatis dari pilihan saran alamat atau peta">
+        <Input
+          placeholder="Otomatis terisi dari saran alamat" readOnly tabIndex={-1} aria-readonly="true"
+          hasError={Boolean(errors.city)} className="bg-gray-100 cursor-not-allowed text-gray-700 select-none focus:ring-0"
+          {...register('city')}
+        />
+      </FormField>
     </div>
   );
 }
