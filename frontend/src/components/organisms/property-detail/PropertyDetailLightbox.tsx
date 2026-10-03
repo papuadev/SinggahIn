@@ -39,7 +39,7 @@ function useLightboxKey(isOpen: boolean, close: () => void, next: () => void, pr
 
 function LightboxTopBar({ index, total, isCover, onClose }: TopBarProps) {
   return (
-    <div className="flex items-center justify-between text-white pb-3 border-b border-gray-800">
+    <div className="flex items-center justify-between text-white pb-3 border-b border-gray-800" onClick={(e) => e.stopPropagation()}>
       <div className="flex items-center gap-2 text-sm font-medium">
         <ImageIcon className="w-4 h-4 text-primary-400" />
         <span>{index + 1} / {total}</span>
@@ -57,8 +57,9 @@ function LightboxNavBtn({ dir, onClick }: { dir: 'prev' | 'next'; onClick: () =>
   const Icon = isNext ? ChevronRight : ChevronLeft;
   const label = isNext ? 'Foto selanjutnya' : 'Foto sebelumnya';
   const pos = isNext ? 'right-2 sm:right-4' : 'left-2 sm:left-4';
+  const handleClick = (e: React.MouseEvent) => { e.stopPropagation(); onClick(); };
   return (
-    <button type="button" onClick={onClick} aria-label={label} className={`absolute ${pos} z-10 p-3 text-white bg-black/50 hover:bg-black/80 rounded-full transition-colors`}>
+    <button type="button" onClick={handleClick} aria-label={label} className={`absolute ${pos} z-10 p-3 text-white bg-black/50 hover:bg-black/80 rounded-full transition-colors`}>
       <Icon className="w-6 h-6" />
     </button>
   );
@@ -66,9 +67,12 @@ function LightboxNavBtn({ dir, onClick }: { dir: 'prev' | 'next'; onClick: () =>
 
 function LightboxStage({ img, index, total, onNext, onPrev }: StageProps) {
   return (
-    <div className="relative flex-1 flex items-center justify-center my-4 overflow-hidden">
+    <div data-testid="lightbox-stage" className="relative flex-1 flex items-center justify-center my-4 overflow-hidden">
       {total > 1 && <LightboxNavBtn dir="prev" onClick={onPrev} />}
-      <img src={img.imageUrl} alt={`Foto properti ${index + 1}`} className="max-h-[70vh] max-w-full object-contain select-none transition-all duration-200" />
+      <img
+        src={img.imageUrl} alt={`Foto properti ${index + 1}`} onClick={(e) => e.stopPropagation()}
+        className="max-h-[70vh] max-w-full object-contain select-none transition-all duration-200 cursor-default"
+      />
       {total > 1 && <LightboxNavBtn dir="next" onClick={onNext} />}
     </div>
   );
@@ -85,7 +89,7 @@ function LightboxThumbItem({ img, index, active, onSelect }: { img: PropertyImag
 
 function LightboxThumbs({ images, currentIndex, onSelect }: { images: PropertyImage[]; currentIndex: number; onSelect: (i: number) => void }) {
   return (
-    <div className="flex justify-center gap-2 overflow-x-auto py-2">
+    <div className="flex justify-center gap-2 overflow-x-auto py-2" onClick={(e) => e.stopPropagation()}>
       {images.map((img, i) => (
         <LightboxThumbItem key={img.id || i} img={img} index={i} active={i === currentIndex} onSelect={() => onSelect(i)} />
       ))}
@@ -106,7 +110,11 @@ export function PropertyDetailLightbox({ images, initialIndex = 0, isOpen, onClo
   const { index, setIndex, goNext, goPrev } = useLightboxState(images, initialIndex, isOpen, onClose);
   if (!isOpen || images.length === 0) return null;
   return (
-    <div role="dialog" aria-modal="true" aria-label="Galeri Foto Properti" className="fixed inset-0 z-50 bg-black/90 flex flex-col justify-between p-4 sm:p-6">
+    <div
+      role="dialog" aria-modal="true" aria-label="Galeri Foto Properti"
+      data-testid="lightbox-overlay" onClick={onClose}
+      className="fixed inset-0 z-50 bg-black/90 flex flex-col justify-between p-4 sm:p-6"
+    >
       <LightboxTopBar index={index} total={images.length} isCover={images[index].isCover} onClose={onClose} />
       <LightboxStage img={images[index]} index={index} total={images.length} onNext={goNext} onPrev={goPrev} />
       <LightboxThumbs images={images} currentIndex={index} onSelect={setIndex} />
