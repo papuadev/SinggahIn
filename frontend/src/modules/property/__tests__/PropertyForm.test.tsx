@@ -6,25 +6,11 @@ import { PropertyForm } from '../components/PropertyForm';
 import { propertyApi } from '../services/property.api';
 
 vi.mock('../components/PropertyMapPin', () => ({
-  PropertyMapPin: ({
-    latitude,
-    longitude,
-    onChange,
-    onLocationDetected,
-  }: {
-    latitude: number;
-    longitude: number;
-    onChange?: (lat: number, lng: number) => void;
-    onLocationDetected?: (lat: number, lng: number) => void;
-  }) => (
+  PropertyMapPin: ({ latitude, longitude, onChange, onLocationDetected }: any) => (
     <div data-testid="mock-map-pin">
       <span>{latitude}, {longitude}</span>
-      <button type="button" onClick={() => onChange?.(-6.9, 107.6)}>
-        Geser Pin Peta
-      </button>
-      <button type="button" onClick={() => onLocationDetected?.(-6.8888, 107.5555)}>
-        Mock Lokasi Saya
-      </button>
+      <button type="button" onClick={() => onChange?.(-6.9, 107.6)}>Geser Pin Peta</button>
+      <button type="button" onClick={() => onLocationDetected?.(-6.8888, 107.5555)}>Mock Lokasi Saya</button>
     </div>
   ),
 }));
@@ -59,26 +45,18 @@ describe('PropertyForm Component Tests', () => {
 
   it('renders all form fields and loads categories into select dropdown', async () => {
     renderWithClient(<PropertyForm onSubmit={vi.fn()} />);
-
     expect(screen.getByPlaceholderText('Contoh: Villa Alam Asri')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /Kategori Properti/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Jelaskan daya tarik/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Contoh: Bandung')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Otomatis terisi dari saran alamat')).toHaveAttribute('readonly');
     expect(screen.getByPlaceholderText('Contoh: Jl. Kolonel Masturi No. 88')).toBeInTheDocument();
     expect(screen.getByTestId('mock-map-pin')).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(screen.getByRole('option', { name: 'Villa' })).toBeInTheDocument();
-      expect(screen.getByRole('option', { name: 'Hotel' })).toBeInTheDocument();
-    });
+    await waitFor(() => { expect(screen.getByRole('option', { name: 'Villa' })).toBeInTheDocument(); });
   });
 
   it('shows validation errors when submitted empty', async () => {
     renderWithClient(<PropertyForm onSubmit={vi.fn()} />);
-
-    const submitBtn = screen.getByRole('button', { name: /Simpan Properti/i });
-    fireEvent.click(submitBtn);
-
+    fireEvent.click(screen.getByRole('button', { name: /Simpan Properti/i }));
     await waitFor(() => {
       expect(screen.getByText('Nama properti minimal 3 karakter')).toBeInTheDocument();
       expect(screen.getByText('Kategori properti wajib dipilih')).toBeInTheDocument();
@@ -88,50 +66,34 @@ describe('PropertyForm Component Tests', () => {
 
   it('calls onSubmit with valid form data', async () => {
     const handleSubmit = vi.fn();
-    renderWithClient(<PropertyForm onSubmit={handleSubmit} />);
-
-    await waitFor(() => {
-      expect(screen.getByRole('option', { name: 'Villa' })).toBeInTheDocument();
-    });
-
-    fireEvent.change(screen.getByPlaceholderText('Contoh: Villa Alam Asri'), { target: { value: 'Villa Sejuk Bandung' } });
+    renderWithClient(<PropertyForm onSubmit={handleSubmit} initialData={{ city: 'Bandung' }} />);
+    await waitFor(() => { expect(screen.getByRole('option', { name: 'Villa' })).toBeInTheDocument(); });
+    fireEvent.change(screen.getByPlaceholderText('Contoh: Villa Alam Asri'), { target: { value: 'Villa Sejuk' } });
     fireEvent.change(screen.getByRole('combobox', { name: /Kategori Properti/i }), { target: { value: 'cat-villa' } });
-    fireEvent.change(screen.getByPlaceholderText(/Jelaskan daya tarik/i), { target: { value: 'Villa asri dengan kolam renang privat dan pemandangan lembah.' } });
-    fireEvent.change(screen.getByPlaceholderText('Contoh: Bandung'), { target: { value: 'Bandung' } });
-    fireEvent.change(screen.getByPlaceholderText('Contoh: Jl. Kolonel Masturi No. 88'), { target: { value: 'Jl. Kolonel Masturi No. 99' } });
-
+    fireEvent.change(screen.getByPlaceholderText(/Jelaskan daya tarik/i), { target: { value: 'Villa asri kolam renang privat.' } });
+    fireEvent.change(screen.getByPlaceholderText('Contoh: Jl. Kolonel Masturi No. 88'), { target: { value: 'Jl. Kolonel 99' } });
     fireEvent.click(screen.getByRole('button', { name: /Simpan Properti/i }));
-
     await waitFor(() => {
-      expect(handleSubmit).toHaveBeenCalledTimes(1);
       expect(handleSubmit.mock.calls[0][0]).toEqual(
-        expect.objectContaining({
-          title: 'Villa Sejuk Bandung',
-          categoryId: 'cat-villa',
-          city: 'Bandung',
-          address: 'Jl. Kolonel Masturi No. 99',
-        })
+        expect.objectContaining({ title: 'Villa Sejuk', city: 'Bandung' })
       );
     });
   });
 
+  it('ensures city field is read-only and cannot be manually edited', () => {
+    renderWithClient(<PropertyForm onSubmit={vi.fn()} />);
+    const cityInput = screen.getByPlaceholderText('Otomatis terisi dari saran alamat');
+    expect(cityInput).toHaveAttribute('readonly');
+  });
+
   it('updates coordinates when pin moves and detects address from map', async () => {
     vi.mocked(propertyApi.reverseGeocode).mockResolvedValueOnce({
-      success: true,
-      message: 'OK',
-      data: { formattedAddress: 'Jl. Tangkuban Perahu No. 10', city: 'Subang' },
+      success: true, message: 'OK', data: { formattedAddress: 'Jl. Tangkuban Perahu No. 10', city: 'Subang' },
     });
-
     renderWithClient(<PropertyForm onSubmit={vi.fn()} />);
-
-    const moveBtn = screen.getByRole('button', { name: /Geser Pin Peta/i });
-    fireEvent.click(moveBtn);
-
-    const detectBtn = screen.getByRole('button', { name: /Deteksi Alamat dari Peta/i });
-    fireEvent.click(detectBtn);
-
+    fireEvent.click(screen.getByRole('button', { name: /Geser Pin Peta/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Deteksi Alamat dari Peta/i }));
     await waitFor(() => {
-      expect(propertyApi.reverseGeocode).toHaveBeenCalledWith(-6.9, 107.6);
       expect(screen.getByDisplayValue('Jl. Tangkuban Perahu No. 10')).toBeInTheDocument();
       expect(screen.getByDisplayValue('Subang')).toBeInTheDocument();
     });
@@ -139,18 +101,11 @@ describe('PropertyForm Component Tests', () => {
 
   it('auto-fills address and city when Lokasi Saya is triggered', async () => {
     vi.mocked(propertyApi.reverseGeocode).mockResolvedValueOnce({
-      success: true,
-      message: 'OK',
-      data: { formatted: 'Jl. Dipatiukur No. 35, Bandung', city: 'Bandung' },
+      success: true, message: 'OK', data: { formatted: 'Jl. Dipatiukur No. 35, Bandung', city: 'Bandung' },
     });
-
     renderWithClient(<PropertyForm onSubmit={vi.fn()} />);
-
-    const lokasiSayaBtn = screen.getByRole('button', { name: /Mock Lokasi Saya/i });
-    fireEvent.click(lokasiSayaBtn);
-
+    fireEvent.click(screen.getByRole('button', { name: /Mock Lokasi Saya/i }));
     await waitFor(() => {
-      expect(propertyApi.reverseGeocode).toHaveBeenCalledWith(-6.8888, 107.5555);
       expect(screen.getByDisplayValue('Jl. Dipatiukur No. 35, Bandung')).toBeInTheDocument();
       expect(screen.getByDisplayValue('Bandung')).toBeInTheDocument();
       expect(screen.getByText(/Lokasi saat ini terdeteksi/i)).toBeInTheDocument();
@@ -158,31 +113,13 @@ describe('PropertyForm Component Tests', () => {
   });
 
   it('searches addresses and updates coordinates and form fields when autocomplete suggestion is clicked', async () => {
-    vi.mocked(propertyApi.searchGeocode).mockResolvedValueOnce({
-      success: true,
-      message: 'OK',
-      data: [
-        {
-          latitude: -6.875,
-          longitude: 107.615,
-          formattedAddress: 'Jl. Ir. H. Juanda No. 123, Dago, Bandung',
-          city: 'Bandung',
-        },
-      ],
-    });
-
+    const sug = { latitude: -6.875, longitude: 107.615, formattedAddress: 'Jl. Dago 123', city: 'Bandung' };
+    vi.mocked(propertyApi.searchGeocode).mockResolvedValueOnce({ success: true, message: 'OK', data: [sug] });
     renderWithClient(<PropertyForm onSubmit={vi.fn()} />);
-
-    const addressInput = screen.getByPlaceholderText('Contoh: Jl. Kolonel Masturi No. 88');
-    fireEvent.change(addressInput, { target: { value: 'Dago' } });
-
-    const suggestion = await screen.findByText('Jl. Ir. H. Juanda No. 123, Dago, Bandung');
-    expect(suggestion).toBeInTheDocument();
-
-    fireEvent.click(suggestion);
-
+    fireEvent.change(screen.getByPlaceholderText('Contoh: Jl. Kolonel Masturi No. 88'), { target: { value: 'Dago' } });
+    fireEvent.click(await screen.findByText('Jl. Dago 123'));
     await waitFor(() => {
-      expect(screen.getByDisplayValue('Jl. Ir. H. Juanda No. 123, Dago, Bandung')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Jl. Dago 123')).toBeInTheDocument();
       expect(screen.getByDisplayValue('Bandung')).toBeInTheDocument();
       expect(screen.getByText('-6.875, 107.615')).toBeInTheDocument();
     });

@@ -109,19 +109,28 @@ interface AddressInputProps {
   setOpen: (o: boolean) => void;
   itemsCount: number;
   loading: boolean;
+  onSelectFirst?: () => void;
+  open: boolean;
 }
 
-function AddressInputField({ register, error, setQuery, setOpen, itemsCount, loading }: AddressInputProps) {
+function getAddressKeyDown(open: boolean, count: number, onFirst?: () => void, setOpen?: (o: boolean) => void) {
+  return (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') setOpen?.(false);
+    if (e.key === 'Enter' && open && count > 0 && onFirst) { e.preventDefault(); onFirst(); }
+  };
+}
+
+function AddressInputField({
+  register, error, setQuery, setOpen, itemsCount, loading, onSelectFirst, open,
+}: AddressInputProps) {
+  const onKeyDown = getAddressKeyDown(open, itemsCount, onSelectFirst, setOpen);
   return (
-    <FormField label="Alamat Lengkap" required error={error}>
+    <FormField label="Alamat Lengkap" required error={error} hint="Pilih dari saran alamat agar kota & titik peta terisi otomatis">
       <Input
-        placeholder="Contoh: Jl. Kolonel Masturi No. 88"
-        hasError={Boolean(error)}
+        placeholder="Contoh: Jl. Kolonel Masturi No. 88" hasError={Boolean(error)}
         {...register('address', { onChange: (e) => setQuery(e.target.value) })}
         onFocus={() => { if (itemsCount > 0) setOpen(true); }}
-        onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}
-        rightIcon={loading ? <Spinner size="sm" /> : undefined}
-        autoComplete="off"
+        onKeyDown={onKeyDown} rightIcon={loading ? <Spinner size="sm" /> : undefined} autoComplete="off"
       />
     </FormField>
   );
@@ -138,17 +147,25 @@ function createSelectHandler(
   };
 }
 
-export function PropertyAddressAutocomplete({ register, error, onSelectSuggestion }: AddressAutocompleteProps): React.JSX.Element {
+function useAddressAutocompleteState(onSelectSuggestion: (item: GeocodeSuggestion) => void) {
   const [query, setQuery] = useState('');
   const { items, setItems, loading, open, setOpen } = useDebouncedGeocode(query);
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOutsideClick(dropdownRef, () => setOpen(false));
   const onSelect = createSelectHandler(onSelectSuggestion, setOpen, setItems, setQuery);
+  const onSelectFirst = () => { if (items.length > 0) onSelect(items[0]); };
+  return { setQuery, items, loading, open, setOpen, dropdownRef, onSelect, onSelectFirst };
+}
 
+export function PropertyAddressAutocomplete({ register, error, onSelectSuggestion }: AddressAutocompleteProps): React.JSX.Element {
+  const s = useAddressAutocompleteState(onSelectSuggestion);
   return (
-    <div ref={dropdownRef} className="relative">
-      <AddressInputField register={register} error={error} setQuery={setQuery} setOpen={setOpen} itemsCount={items.length} loading={loading} />
-      <AddressDropdown open={open} loading={loading} items={items} onSelect={onSelect} />
+    <div ref={s.dropdownRef} className="relative">
+      <AddressInputField
+        register={register} error={error} setQuery={s.setQuery} setOpen={s.setOpen}
+        itemsCount={s.items.length} loading={s.loading} onSelectFirst={s.onSelectFirst} open={s.open}
+      />
+      <AddressDropdown open={s.open} loading={s.loading} items={s.items} onSelect={s.onSelect} />
     </div>
   );
 }
