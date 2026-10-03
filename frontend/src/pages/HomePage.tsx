@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ShieldCheck, CalendarCheck, CreditCard, Star, Sparkles } from 'lucide-react';
+import { SEOHead } from '../components/atoms/SEOHead';
 import { HeroCarousel } from '../components/organisms/HeroCarousel';
 import { FloatingSearchWidget } from '../components/organisms/FloatingSearchWidget';
 import { RecommendedPropertiesSection } from '../components/organisms/home/RecommendedPropertiesSection';
@@ -93,16 +94,16 @@ function FreshPicksSection({ category, onReset }: { category?: string; onReset: 
 }
 
 export function HomePage(): React.JSX.Element {
-  const { selectedCategory, onCategoryChange } = useCategoryFilter();
-  const cat = selectedCategory || undefined;
+  const { selectedCategory: cat, onCategoryChange } = useCategoryFilter();
   return (
     <div className="w-full flex flex-col">
+      <SEOHead />
       <HeroCarousel />
       <div className="-mt-6 sm:-mt-10 md:-mt-14 relative z-30 px-3 sm:px-6">
-        <FloatingSearchWidget initialValues={{ category: selectedCategory }} onCategoryChange={onCategoryChange} />
+        <FloatingSearchWidget initialValues={{ category: cat }} onCategoryChange={onCategoryChange} />
       </div>
-      <TopRatedSection category={cat} />
-      <FreshPicksSection category={cat} onReset={() => onCategoryChange('')} />
+      <TopRatedSection category={cat || undefined} />
+      <FreshPicksSection category={cat || undefined} onReset={() => onCategoryChange('')} />
       <ValuePropsSection />
     </div>
   );

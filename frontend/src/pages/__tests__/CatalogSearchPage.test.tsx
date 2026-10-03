@@ -96,6 +96,7 @@ describe('CatalogSearchPage Component', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
       expect(screen.getByText('Villa Nuansa Asri Dago')).toBeInTheDocument();
+      expect(document.title).toBe('Sewa Penginapan Murah di Bandung | SinggahIn');
     });
   });
 

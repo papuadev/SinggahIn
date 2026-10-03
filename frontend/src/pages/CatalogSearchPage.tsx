@@ -10,6 +10,7 @@ import {
 import { CatalogSortSelect } from '../components/organisms/catalog/CatalogSortSelect';
 import { CatalogPropertyGrid } from '../components/organisms/catalog/CatalogPropertyGrid';
 import { CatalogPagination } from '../components/organisms/catalog/CatalogPagination';
+import { SEOHead } from '../components/atoms/SEOHead';
 
 function parseQueryParams(searchParams: URLSearchParams): CatalogQueryParams {
   return {
@@ -117,16 +118,22 @@ function CatalogWidget({
   return <FloatingSearchWidget initialValues={init} onSearch={onSearch} onCategoryChange={onCat} />;
 }
 
+function getCatalogSEOTitle(city?: string, category?: string): string {
+  if (city && category) return `Sewa ${category} di ${city}`;
+  if (city) return `Sewa Penginapan Murah di ${city}`;
+  if (category) return `Daftar ${category} Pilihan`;
+  return 'Katalog Penginapan & Villa Murah';
+}
+
 export function CatalogSearchPage(): React.JSX.Element {
   const s = useCatalogSearch();
   const m = s.meta || { page: 1, limit: 12, totalItems: 0, totalPages: 0 };
-  const sort = s.queryParams.sortBy || 'price';
-  const order = s.queryParams.sortOrder || 'asc';
-
+  const { city, category, sortBy = 'price', sortOrder = 'asc' } = s.queryParams;
   return (
     <div className="w-full flex flex-col py-4">
+      <SEOHead title={getCatalogSEOTitle(city, category)} />
       <CatalogWidget q={s.queryParams} onSearch={s.onSearch} onCat={s.onCategoryChange} />
-      <SearchHeader city={s.queryParams.city} category={s.queryParams.category} total={m.totalItems} sortBy={sort} sortOrder={order} onSortChange={s.onSort} />
+      <SearchHeader city={city} category={category} total={m.totalItems} sortBy={sortBy} sortOrder={sortOrder} onSortChange={s.onSort} />
       <CatalogPropertyGrid properties={s.properties} isLoading={s.isLoading} isError={s.isError} checkIn={s.queryParams.checkIn} checkOut={s.queryParams.checkOut} onResetFilters={s.reset} />
       <CatalogPagination page={m.page} totalPages={m.totalPages} totalItems={m.totalItems} onPageChange={s.onPage} />
     </div>

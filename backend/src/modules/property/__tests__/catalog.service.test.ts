@@ -75,6 +75,32 @@ describe('Catalog Service - getCatalogProperties', () => {
     expect(result.meta.totalItems).toBe(0);
   });
 
+  it('calculates totalStayPrice and averageNightRate for multi-night search', async () => {
+    const mockProperty = {
+      id: 'p3', title: 'Villa Multi Malam', city: 'Bandung', address: 'Jl. Lembang',
+      category: mockCategory, images: mockImages, reviews: mockReviews,
+      rooms: [
+        {
+          id: 'r1', basePrice: 500000, capacity: 2, totalUnits: 2,
+          modifiers: [], unavailabilities: [], bookings: [],
+        },
+      ],
+    };
+    vi.mocked(prisma.property.findMany).mockResolvedValueOnce([mockProperty as any]);
+
+    const result = await getCatalogProperties({
+      checkIn: '2026-10-01', checkOut: '2026-10-04',
+      page: 1, limit: 10, sortBy: 'price', sortOrder: 'asc',
+    });
+
+    expect(result.data.length).toBe(1);
+    expect(result.data[0].pricing).toEqual({
+      averageNightRate: 500000,
+      totalStayPrice: 1500000,
+      totalNights: 3,
+    });
+  });
+
   it('sorts properties by name ascending and descending', async () => {
     const propA = {
       id: 'pA', title: 'A Villa', city: 'Bandung', address: 'Jl. A',
