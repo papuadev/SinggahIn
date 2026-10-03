@@ -8,23 +8,16 @@ export interface DestinationInputProps {
   onChange: (city: string) => void;
 }
 
-function SuggestionItem({
-  sug,
-  onSelect,
-}: {
-  sug: GeocodeSuggestion;
-  onSelect: (s: GeocodeSuggestion) => void;
-}) {
+type SuggestionItemProps = { sug: GeocodeSuggestion; onSelect: (s: GeocodeSuggestion) => void };
+
+function SuggestionItem({ sug, onSelect }: SuggestionItemProps) {
+  const title = sug.city || sug.formattedAddress;
   return (
     <li>
-      <button
-        type="button"
-        onClick={() => onSelect(sug)}
-        className="w-full text-left px-3.5 py-2.5 hover:bg-primary-50 text-xs sm:text-sm text-gray-800 flex items-start gap-2 transition-colors border-b border-gray-100 last:border-b-0"
-      >
+      <button type="button" onClick={() => onSelect(sug)} className="w-full text-left px-3.5 py-2.5 hover:bg-primary-50 text-xs sm:text-sm text-gray-800 flex items-start gap-2 transition-colors border-b border-gray-100 last:border-b-0">
         <MapPin className="w-4 h-4 text-primary-600 shrink-0 mt-0.5" />
         <div className="flex flex-col">
-          <span className="font-semibold text-gray-900">{sug.city || sug.formattedAddress}</span>
+          <span className="font-semibold text-gray-900">{title}</span>
           <span className="text-xs text-gray-500 line-clamp-1">{sug.formattedAddress}</span>
         </div>
       </button>
@@ -32,13 +25,9 @@ function SuggestionItem({
   );
 }
 
-function SuggestionsDropdown({
-  list,
-  onSelect,
-}: {
-  list: GeocodeSuggestion[];
-  onSelect: (item: GeocodeSuggestion) => void;
-}) {
+type DropdownProps = { list: GeocodeSuggestion[]; onSelect: (item: GeocodeSuggestion) => void };
+
+function SuggestionsDropdown({ list, onSelect }: DropdownProps) {
   if (list.length === 0) return null;
   return (
     <ul className="absolute z-50 left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden max-h-56 overflow-y-auto">
@@ -49,39 +38,43 @@ function SuggestionsDropdown({
   );
 }
 
-function useOutsideClick(ref: React.RefObject<HTMLElement>, onOutside: () => void) {
+function useDropdownDismiss(ref: React.RefObject<HTMLElement>, isOpen: boolean, onDismiss: () => void) {
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onOutside();
+    if (!isOpen) return;
+    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onDismiss(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onDismiss(); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [ref, onOutside]);
+  }, [ref, isOpen, onDismiss]);
+}
+
+async function fetchGeocode(query: string, setList: (s: GeocodeSuggestion[]) => void, setLoading: (b: boolean) => void) {
+  setLoading(true);
+  try {
+    const res = await propertyApi.searchGeocode(query, 5);
+    setList(res.data || []);
+  } catch {
+    setList([]);
+  } finally {
+    setLoading(false);
+  }
 }
 
 function useDestinationSearch(value: string) {
   const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-
   useEffect(() => {
     if (!value || value.length < 2) {
       setSuggestions([]);
       return;
     }
-    const timer = setTimeout(async () => {
-      setIsLoading(true);
-      try {
-        const res = await propertyApi.searchGeocode(value, 5);
-        setSuggestions(res.data || []);
-      } catch {
-        setSuggestions([]);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 300);
+    const timer = setTimeout(() => fetchGeocode(value, setSuggestions, setIsLoading), 300);
     return () => clearTimeout(timer);
   }, [value]);
-
   return { suggestions, isLoading };
 }
 
@@ -98,66 +91,61 @@ function ClearDestinationButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function SearchInputField({
-  value,
-  onChange,
-  isLoading,
-  onFocus,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  isLoading: boolean;
-  onFocus: () => void;
-}) {
+function SearchInputIcon({ isLoading, value, onClear }: { isLoading: boolean; value: string; onClear: () => void }) {
+  if (isLoading) return <Loader2 className="w-4 h-4 text-primary-600 animate-spin absolute right-2.5 top-1/2 -translate-y-1/2" />;
+  if (value) return <ClearDestinationButton onClick={onClear} />;
+  return null;
+}
+
+type SearchInputProps = {
+  value: string; onChange: (v: string) => void; isLoading: boolean; onFocus: () => void; onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+};
+
+function SearchInputField({ value, onChange, isLoading, onFocus, onKeyDown }: SearchInputProps) {
   return (
     <div className="relative">
       <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={onFocus}
-        placeholder="Mau menginap di mana? (mis. Bandung)"
-        aria-label="Pencarian kota atau destinasi"
+        type="text" value={value} onChange={(e) => onChange(e.target.value)} onFocus={onFocus} onKeyDown={onKeyDown}
+        placeholder="Mau menginap di mana? (mis. Bandung)" aria-label="Pencarian kota atau destinasi"
         className="w-full h-11 border border-gray-200 rounded-xl pl-3.5 pr-8 text-sm text-gray-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
       />
-      {isLoading && (
-        <Loader2 className="w-4 h-4 text-primary-600 animate-spin absolute right-2.5 top-1/2 -translate-y-1/2" />
-      )}
-      {!isLoading && value && <ClearDestinationButton onClick={() => onChange('')} />}
+      <SearchInputIcon isLoading={isLoading} value={value} onClear={() => onChange('')} />
     </div>
   );
 }
 
-export function DestinationInput({
-  value,
-  onChange,
-}: DestinationInputProps): React.JSX.Element {
-  const { suggestions, isLoading } = useDestinationSearch(value);
+function DestinationHeader() {
+  return (
+    <span className="h-5 mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-600">
+      <MapPin className="w-3.5 h-3.5 text-primary-600" />
+      Kota atau Destinasi
+    </span>
+  );
+}
+
+function useDestinationInputState(onChange: (city: string) => void) {
   const [showDropdown, setShowDropdown] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  useOutsideClick(containerRef, () => setShowDropdown(false));
-
-  const handleSelect = (s: GeocodeSuggestion) => {
+  useDropdownDismiss(containerRef, showDropdown, () => setShowDropdown(false));
+  const onSelect = (s: GeocodeSuggestion) => {
     onChange(s.city || s.formattedAddress.split(',')[0].trim());
     setShowDropdown(false);
   };
-
-  const handleFocus = () => setShowDropdown(true);
-  const handleChange = (v: string) => {
-    onChange(v);
-    setShowDropdown(true);
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') setShowDropdown(false);
   };
+  return { showDropdown, setShowDropdown, containerRef, onSelect, onKeyDown };
+}
 
+export function DestinationInput({ value, onChange }: DestinationInputProps): React.JSX.Element {
+  const { suggestions, isLoading } = useDestinationSearch(value);
+  const s = useDestinationInputState(onChange);
+  const onValChange = (v: string) => { onChange(v); s.setShowDropdown(true); };
   return (
-    <div ref={containerRef} className="relative flex flex-col w-full">
-      <span className="h-5 mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-600">
-        <MapPin className="w-3.5 h-3.5 text-primary-600" />
-        Kota atau Destinasi
-      </span>
-      <SearchInputField value={value} onChange={handleChange} isLoading={isLoading} onFocus={handleFocus} />
-      {showDropdown && suggestions.length > 0 && (
-        <SuggestionsDropdown list={suggestions} onSelect={handleSelect} />
-      )}
+    <div ref={s.containerRef} className="relative flex flex-col w-full">
+      <DestinationHeader />
+      <SearchInputField value={value} onChange={onValChange} isLoading={isLoading} onFocus={() => s.setShowDropdown(true)} onKeyDown={s.onKeyDown} />
+      {s.showDropdown && <SuggestionsDropdown list={suggestions} onSelect={s.onSelect} />}
     </div>
   );
 }

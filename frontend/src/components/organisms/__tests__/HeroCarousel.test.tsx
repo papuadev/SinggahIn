@@ -62,4 +62,18 @@ describe('HeroCarousel Organism', () => {
 
     expect(mockCta).toHaveBeenCalledWith('hotel');
   });
+
+  it('sets fetchPriority high on first slide and lazy loading on subsequent slides', () => {
+    render(
+      <MemoryRouter>
+        <HeroCarousel />
+      </MemoryRouter>
+    );
+
+    const images = screen.getAllByRole('img');
+    expect(images[0]).toHaveAttribute('fetchpriority', 'high');
+    expect(images[0]).toHaveAttribute('loading', 'eager');
+    expect(images[1]).toHaveAttribute('loading', 'lazy');
+  });
 });
+
