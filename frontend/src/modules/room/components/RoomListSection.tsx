@@ -1,18 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Plus, BedDouble } from 'lucide-react';
 import { Room } from '../room.types';
-import { RoomFormData } from '../schemas/room.schema';
-import {
-  usePropertyRooms,
-  useCreateRoom,
-  useUpdateRoom,
-  useDeleteRoom,
-} from '../hooks/useRooms';
+import { usePropertyRooms } from '../hooks/useRooms';
+import { useRoomActions } from '../hooks/useRoomActions';
+import { useRoomListFilter } from '../hooks/useRoomListFilter';
+import { UseRoomListFilterReturn } from '../room-filter.types';
 import { RoomCard } from './RoomCard';
-import { RoomFormModal } from './RoomFormModal';
-import { RoomDeleteConfirmModal } from './RoomDeleteConfirmModal';
-import { PeakSeasonRateModal } from './PeakSeasonRateModal';
-import { RoomUnavailabilityModal } from './RoomUnavailabilityModal';
+import { RoomListControls } from './RoomListControls';
+import { RoomPagination } from './RoomPagination';
+import { RoomListEmptySearch } from './RoomListEmptySearch';
+import { RoomModalsSection } from './RoomModalsSection';
 import { Button } from '../../../components/atoms/Button';
 import { Spinner } from '../../../components/atoms/Spinner';
 import { Alert } from '../../../components/atoms/Alert';
@@ -20,6 +17,17 @@ import { Alert } from '../../../components/atoms/Alert';
 export interface RoomListSectionProps {
   propertyId: string;
 }
+
+type CardsProps = {
+  rooms: Room[];
+  onEdit: (r: Room) => void;
+  onDelete: (r: Room) => void;
+  onRates: (r: Room) => void;
+  onUnavail: (r: Room) => void;
+  isPending: boolean;
+};
+
+type BodyProps = Omit<CardsProps, 'rooms'> & { filter: UseRoomListFilterReturn };
 
 function RoomListHeader({ onAdd, count }: { onAdd: () => void; count: number }): React.JSX.Element {
   return (
@@ -47,117 +55,87 @@ function RoomListEmpty({ onAdd }: { onAdd: () => void }): React.JSX.Element {
   );
 }
 
-function RoomCardsView({
-  rooms, onEdit, onDelete, onRates, onUnavail, isPending,
-}: {
-  rooms: Room[];
-  onEdit: (r: Room) => void;
-  onDelete: (r: Room) => void;
-  onRates: (r: Room) => void;
-  onUnavail: (r: Room) => void;
-  isPending: boolean;
-}): React.JSX.Element {
+function RoomCardsView({ rooms, onEdit, onDelete, onRates, onUnavail, isPending }: CardsProps): React.JSX.Element {
   return (
     <div className="space-y-3">
       {rooms.map((room) => (
         <RoomCard
-          key={room.id}
-          room={room}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onManageRates={onRates}
-          onManageUnavailability={onUnavail}
-          disabled={isPending}
+          key={room.id} room={room} onEdit={onEdit} onDelete={onDelete}
+          onManageRates={onRates} onManageUnavailability={onUnavail} disabled={isPending}
         />
       ))}
     </div>
   );
 }
 
+function RoomListPagination({ filter }: { filter: UseRoomListFilterReturn }): React.JSX.Element {
+  return (
+    <RoomPagination
+      page={filter.currentPage} totalPages={filter.totalPages}
+      totalItems={filter.totalFiltered} pageSize={filter.pageSize} onPageChange={filter.setCurrentPage}
+    />
+  );
+}
+
+function RoomListBody(p: BodyProps): React.JSX.Element {
+  if (p.filter.totalFiltered === 0) {
+    return <RoomListEmptySearch query={p.filter.searchQuery} onReset={p.filter.resetFilters} />;
+  }
+  return (
+    <div className="space-y-4">
+      <RoomCardsView {...p} rooms={p.filter.paginatedRooms} />
+      <RoomListPagination filter={p.filter} />
+    </div>
+  );
+}
+
+function RoomListControlsPart({ filter }: { filter: UseRoomListFilterReturn }): React.JSX.Element {
+  return (
+    <RoomListControls
+      searchQuery={filter.searchQuery} onSearchChange={filter.setSearchQuery}
+      sortBy={filter.sortBy} onSortChange={filter.setSortBy}
+    />
+  );
+}
+
+type ListViewProps = {
+  rooms: Room[]; filter: UseRoomListFilterReturn; actions: ReturnType<typeof useRoomActions>; onAdd: () => void;
+};
+
+function RoomListView({ rooms, filter, actions, onAdd }: ListViewProps): React.JSX.Element {
+  if (rooms.length === 0) return <RoomListEmpty onAdd={onAdd} />;
+  return (
+    <div className="space-y-4">
+      <RoomListControlsPart filter={filter} />
+      <RoomListBody
+        filter={filter} onEdit={actions.openEdit} onDelete={actions.setDeletingRoom}
+        onRates={actions.setRateRoom} onUnavail={actions.setUnavailRoom} isPending={actions.isDeleteLoading}
+      />
+    </div>
+  );
+}
+
+function RoomListAlerts({ actionError, error }: { actionError: string | null; error: unknown }): React.JSX.Element {
+  return (
+    <>
+      {actionError && <Alert variant="error">{actionError}</Alert>}
+      {error && <Alert variant="error">{(error as Error).message}</Alert>}
+    </>
+  );
+}
+
 export function RoomListSection({ propertyId }: RoomListSectionProps): React.JSX.Element {
   const { data: rooms = [], isLoading, error } = usePropertyRooms(propertyId);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
-  const [deletingRoom, setDeletingRoom] = useState<Room | null>(null);
-  const [rateRoom, setRateRoom] = useState<Room | null>(null);
-  const [unavailRoom, setUnavailRoom] = useState<Room | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
-
-  const createMutation = useCreateRoom(propertyId);
-  const updateMutation = useUpdateRoom(propertyId, editingRoom?.id || '');
-  const deleteMutation = useDeleteRoom(propertyId);
-
-  const handleOpenCreate = () => { setActionError(null); setEditingRoom(null); setIsFormOpen(true); };
-  const handleOpenEdit = (r: Room) => { setActionError(null); setEditingRoom(r); setIsFormOpen(true); };
-  const handleCloseForm = () => { setIsFormOpen(false); setEditingRoom(null); };
-
-  const handleFormSubmit = async (data: RoomFormData) => {
-    try {
-      setActionError(null);
-      if (editingRoom) await updateMutation.mutateAsync(data);
-      else await createMutation.mutateAsync(data);
-      handleCloseForm();
-    } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Gagal menyimpan kamar');
-    }
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!deletingRoom) return;
-    try {
-      setActionError(null);
-      await deleteMutation.mutateAsync(deletingRoom.id);
-      setDeletingRoom(null);
-    } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Gagal menghapus kamar');
-    }
-  };
-
+  const filter = useRoomListFilter(rooms);
+  const actions = useRoomActions(propertyId);
   if (isLoading) return <div className="flex justify-center items-center py-12"><Spinner size="md" /></div>;
 
   return (
     <div className="space-y-4">
-      <RoomListHeader onAdd={handleOpenCreate} count={rooms.length} />
-      {actionError && <Alert variant="error">{actionError}</Alert>}
-      {error && <Alert variant="error">{(error as Error).message}</Alert>}
-      {rooms.length === 0 ? <RoomListEmpty onAdd={handleOpenCreate} /> : (
-        <RoomCardsView
-          rooms={rooms}
-          onEdit={handleOpenEdit}
-          onDelete={setDeletingRoom}
-          onRates={setRateRoom}
-          onUnavail={setUnavailRoom}
-          isPending={deleteMutation.isPending}
-        />
-      )}
-      <RoomFormModal
-        isOpen={isFormOpen}
-        onClose={handleCloseForm}
-        onSubmit={handleFormSubmit}
-        initialData={editingRoom}
-        isLoading={createMutation.isPending || updateMutation.isPending}
-        title={editingRoom ? 'Ubah Tipe Kamar' : 'Tambah Tipe Kamar'}
-      />
-      <RoomDeleteConfirmModal
-        room={deletingRoom}
-        isOpen={Boolean(deletingRoom)}
-        onClose={() => setDeletingRoom(null)}
-        onConfirm={handleDeleteConfirm}
-        isLoading={deleteMutation.isPending}
-      />
-      <PeakSeasonRateModal
-        roomId={rateRoom?.id || ''}
-        roomName={rateRoom?.name || ''}
-        propertyId={propertyId}
-        isOpen={Boolean(rateRoom)}
-        onClose={() => setRateRoom(null)}
-      />
-      <RoomUnavailabilityModal
-        roomId={unavailRoom?.id || ''}
-        roomName={unavailRoom?.name || ''}
-        isOpen={Boolean(unavailRoom)}
-        onClose={() => setUnavailRoom(null)}
-      />
+      <RoomListHeader onAdd={actions.openCreate} count={rooms.length} />
+      <RoomListAlerts actionError={actions.actionError} error={error} />
+      <RoomListView rooms={rooms} filter={filter} actions={actions} onAdd={actions.openCreate} />
+      <RoomModalsSection propertyId={propertyId} actions={actions} />
     </div>
   );
 }
