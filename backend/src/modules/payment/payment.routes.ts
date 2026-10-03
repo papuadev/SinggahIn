@@ -9,10 +9,16 @@ import {
   emergencyCancelSchema,
 } from './payment.schema';
 import {
+  midtransChargeSchema,
+  midtransWebhookSchema,
+} from './midtrans.schema';
+import {
   uploadPaymentProofHandler,
   approvePaymentProofHandler,
   rejectPaymentProofHandler,
   emergencyCancelHandler,
+  createSnapChargeHandler,
+  handleMidtransWebhookHandler,
 } from './payment.controller';
 
 const router = Router();
@@ -48,6 +54,20 @@ router.post(
   requireRole(Role.TENANT),
   validateRequest({ params: bookingIdParamSchema, body: emergencyCancelSchema }),
   emergencyCancelHandler
+);
+
+router.post(
+  '/midtrans-charge',
+  authenticate,
+  requireRole(Role.USER),
+  validateRequest({ body: midtransChargeSchema }),
+  createSnapChargeHandler
+);
+
+router.post(
+  '/midtrans-webhook',
+  validateRequest({ body: midtransWebhookSchema }),
+  handleMidtransWebhookHandler
 );
 
 export default router;

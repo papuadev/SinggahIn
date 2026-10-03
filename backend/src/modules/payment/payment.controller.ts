@@ -6,6 +6,7 @@ import {
   rejectPaymentProof,
   emergencyCancelBooking,
 } from './payment.service';
+import { createSnapTransaction, handleMidtransWebhook } from './midtrans.service';
 
 export async function uploadPaymentProofHandler(req: Request, res: Response, next: NextFunction) {
   try {
@@ -38,6 +39,24 @@ export async function emergencyCancelHandler(req: Request, res: Response, next: 
   try {
     const data = await emergencyCancelBooking(req.user!.userId, req.params.bookingId, req.body);
     sendSuccess(res, data, 'Pesanan berhasil dibatalkan secara darurat.');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createSnapChargeHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await createSnapTransaction(req.user!.userId, req.body.bookingId);
+    sendSuccess(res, data, 'Token transaksi Midtrans Snap berhasil dibuat.');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleMidtransWebhookHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await handleMidtransWebhook(req.body);
+    sendSuccess(res, data, 'Notifikasi pembayaran Midtrans berhasil diproses.');
   } catch (error) {
     next(error);
   }
