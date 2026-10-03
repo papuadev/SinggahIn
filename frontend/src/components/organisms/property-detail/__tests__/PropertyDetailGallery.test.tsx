@@ -55,4 +55,33 @@ describe('PropertyDetailGallery Component', () => {
 
     expect(screen.queryByRole('dialog', { name: /galeri foto properti/i })).not.toBeInTheDocument();
   });
+
+  it('dismisses lightbox when user clicks on overlay or stage background', () => {
+    render(<PropertyDetailGallery images={mockImages} title="Villa Keren" />);
+    fireEvent.click(screen.getByRole('button', { name: /lihat semua foto \(5\)/i }));
+
+    const overlay = screen.getByTestId('lightbox-overlay');
+    expect(overlay).toBeInTheDocument();
+
+    // Click stage background around image
+    const stage = screen.getByTestId('lightbox-stage');
+    fireEvent.click(stage);
+    expect(screen.queryByRole('dialog', { name: /galeri foto properti/i })).not.toBeInTheDocument();
+  });
+
+  it('does not dismiss lightbox when clicking on photo, thumbnails, or navigation', () => {
+    render(<PropertyDetailGallery images={mockImages} title="Villa Keren" />);
+    fireEvent.click(screen.getByRole('button', { name: /lihat semua foto \(5\)/i }));
+
+    // Click photo
+    const photo = screen.getByAltText(/foto properti 1/i);
+    fireEvent.click(photo);
+    expect(screen.getByRole('dialog', { name: /galeri foto properti/i })).toBeInTheDocument();
+
+    // Click thumbnail
+    const thumb3 = screen.getByRole('button', { name: /lihat foto 3/i });
+    fireEvent.click(thumb3);
+    expect(screen.getByText('3 / 5')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /galeri foto properti/i })).toBeInTheDocument();
+  });
 });
