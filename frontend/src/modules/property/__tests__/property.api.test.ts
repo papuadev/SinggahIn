@@ -159,6 +159,23 @@ describe('Property API Service Tests', () => {
     });
     expect(result.data).toEqual(mockCalendar);
   });
+
+  it('reorderImages should call /properties/:id/images/reorder with imageIds', async () => {
+    const mockReordered = [
+      { id: 'img-2', propertyId: 'prop-1', imageUrl: 'url-2', publicId: 'pub-2', isCover: false, order: 0 },
+      { id: 'img-1', propertyId: 'prop-1', imageUrl: 'url-1', publicId: 'pub-1', isCover: true, order: 1 },
+    ];
+    vi.mocked(apiClient.patch).mockResolvedValueOnce({
+      data: { success: true, message: 'Reordered', data: mockReordered },
+    });
+
+    const result = await propertyApi.reorderImages('prop-1', ['img-2', 'img-1']);
+
+    expect(apiClient.patch).toHaveBeenCalledWith('/properties/prop-1/images/reorder', {
+      imageIds: ['img-2', 'img-1'],
+    });
+    expect(result.data).toEqual(mockReordered);
+  });
 });
 
 

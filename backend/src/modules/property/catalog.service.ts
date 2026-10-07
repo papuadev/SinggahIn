@@ -106,7 +106,10 @@ function executePropertyQuery(where: Prisma.PropertyWhereInput, roomInclude: unk
     where,
     include: {
       category: { select: { name: true, slug: true } },
-      images: { select: { imageUrl: true, isCover: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
+      images: {
+        select: { imageUrl: true, isCover: true, createdAt: true, order: true },
+        orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      },
       reviews: { select: { rating: true } },
       rooms: { include: roomInclude as any },
     },

@@ -81,7 +81,9 @@ function StagedImageCard({
   const isCover = !hasExistingCover && index === 0;
   const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const from = Number(e.dataTransfer.getData('text/plain'));
+    const raw = e.dataTransfer.getData('text/plain');
+    if (raw.startsWith('uploaded:')) return;
+    const from = raw.startsWith('staged:') ? Number(raw.replace('staged:', '')) : Number(raw);
     if (!Number.isNaN(from)) onMove(from, index);
   };
   const cardBorder = isCover ? 'border-amber-400 ring-2 ring-amber-100' : 'border-gray-200 hover:border-gray-300';
@@ -89,7 +91,7 @@ function StagedImageCard({
   return (
     <div
       draggable={!disabled}
-      onDragStart={(e) => e.dataTransfer.setData('text/plain', String(index))}
+      onDragStart={(e) => e.dataTransfer.setData('text/plain', `staged:${index}`)}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
       className={`group relative rounded-xl overflow-hidden border bg-white shadow-2xs transition-all ${cardBorder}`}

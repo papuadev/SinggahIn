@@ -15,6 +15,7 @@ import {
   UpdatePropertySchema,
   PropertyIdParamSchema,
   PropertyImageParamSchema,
+  ReorderPropertyImagesSchema,
   ReverseGeocodeQuerySchema,
   SearchGeocodeQuerySchema,
 } from './property.schema';
@@ -112,6 +113,18 @@ router.post(
   validateRequest({ params: PropertyIdParamSchema }),
   uploadMultipleImages('images', 6),
   propertyController.uploadImages
+);
+
+// Tenant-Only: Reorder Property Images
+router.patch(
+  '/:id/images/reorder',
+  authenticate,
+  requireRole(Role.TENANT),
+  validateRequest({
+    params: PropertyIdParamSchema,
+    body: ReorderPropertyImagesSchema,
+  }),
+  propertyController.reorderImages
 );
 
 // Tenant-Only: Delete Property Image

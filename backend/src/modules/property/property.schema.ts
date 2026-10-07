@@ -70,10 +70,18 @@ export const SearchGeocodeQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(10).optional().default(5),
 });
 
+export const ReorderPropertyImagesSchema = z.object({
+  imageIds: z
+    .array(z.string().cuid('Format ID gambar tidak valid'))
+    .min(1, 'Daftar ID gambar tidak boleh kosong')
+    .max(6, 'Daftar ID gambar maksimal 6'),
+});
+
 export type CreatePropertyInput = z.infer<typeof CreatePropertySchema>;
 export type UpdatePropertyInput = z.infer<typeof UpdatePropertySchema>;
 export type PropertyIdParam = z.infer<typeof PropertyIdParamSchema>;
 export type PropertyImageParam = z.infer<typeof PropertyImageParamSchema>;
 export type ReverseGeocodeQuery = z.infer<typeof ReverseGeocodeQuerySchema>;
 export type SearchGeocodeQuery = z.infer<typeof SearchGeocodeQuerySchema>;
+export type ReorderPropertyImagesInput = z.infer<typeof ReorderPropertyImagesSchema>;
 

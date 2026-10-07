@@ -118,6 +118,17 @@ export const propertyApi = {
     return res.data;
   },
 
+  async reorderImages(
+    propertyId: string,
+    imageIds: string[]
+  ): Promise<ApiResponse<PropertyImage[]>> {
+    const res = await apiClient.patch<ApiResponse<PropertyImage[]>>(
+      `/properties/${propertyId}/images/reorder`,
+      { imageIds }
+    );
+    return res.data;
+  },
+
   async getCatalog(
     params?: CatalogQueryParams
   ): Promise<ApiResponse<CatalogPropertyItem[]>> {

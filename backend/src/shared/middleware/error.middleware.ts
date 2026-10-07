@@ -34,5 +34,6 @@ export function errorHandler(
     handleAppError(res, err);
     return;
   }
+  console.error('Unhandled error caught by errorHandler:', err);
   sendError(res, 'Terjadi kesalahan internal pada server.', 500);
 }

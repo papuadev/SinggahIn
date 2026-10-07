@@ -13,6 +13,7 @@ export interface PropertyImage {
   imageUrl: string;
   publicId: string;
   isCover: boolean;
+  order?: number;
   createdAt?: string;
 }
 

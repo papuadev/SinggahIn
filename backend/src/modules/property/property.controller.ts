@@ -143,6 +143,23 @@ export async function setCover(
   }
 }
 
+export async function reorderImages(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const images = await propertyImageService.reorderPropertyImages(
+      req.params.id,
+      req.user!.userId,
+      req.body.imageIds
+    );
+    sendSuccess(res, images, 'Urutan foto properti berhasil diperbarui.');
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function reverseGeocode(
   req: Request,
   res: Response,

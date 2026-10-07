@@ -1,7 +1,7 @@
+import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
 import { sendSuccess } from './shared/utils/response.util';
 import { notFoundHandler } from './shared/middleware/not-found.middleware';
 import { errorHandler } from './shared/middleware/error.middleware';
@@ -11,8 +11,6 @@ import { roomRoutes } from './modules/room/room.routes';
 import { bookingRoutes } from './modules/booking/booking.routes';
 import paymentRoutes from './modules/payment/payment.routes';
 import { initAutoCancelCron } from './modules/booking/booking-cron.service';
-
-dotenv.config();
 
 export const app = express();
 app.set('trust proxy', 1);

@@ -36,7 +36,8 @@ export async function createSnapTransaction(userId: string, bookingId: string) {
 }
 
 export function verifyMidtransSignature(payload: MidtransWebhookPayload): boolean {
-  const raw = `${payload.order_id}${payload.status_code}${payload.gross_amount}${serverKey}`;
+  const currentKey = process.env.MIDTRANS_SERVER_KEY || serverKey;
+  const raw = `${payload.order_id}${payload.status_code}${payload.gross_amount}${currentKey}`;
   const hash = crypto.createHash('sha512').update(raw).digest('hex');
   return hash === payload.signature_key;
 }
