@@ -34,3 +34,15 @@ export function useSetCoverPropertyImage(propertyId: string) {
     },
   });
 }
+
+export function useReorderPropertyImages(propertyId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (imageIds: string[]) => propertyApi.reorderImages(propertyId, imageIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PROPERTY_KEYS.detail(propertyId) });
+      queryClient.invalidateQueries({ queryKey: PROPERTY_KEYS.myProperties });
+    },
+  });
+}
+

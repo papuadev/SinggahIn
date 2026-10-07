@@ -119,4 +119,16 @@ describe('Property Image API Service', () => {
     expect(apiClient.patch).toHaveBeenCalledWith('/properties/prop-1/images/img-1/cover');
     expect(res.success).toBe(true);
   });
+
+  it('calls reorderImages with property and image ids', async () => {
+    vi.mocked(apiClient.patch).mockResolvedValueOnce({
+      data: { success: true, message: 'Reordered', data: [] },
+    });
+
+    const res = await propertyApi.reorderImages('prop-1', ['img-2', 'img-1']);
+    expect(apiClient.patch).toHaveBeenCalledWith('/properties/prop-1/images/reorder', {
+      imageIds: ['img-2', 'img-1'],
+    });
+    expect(res.success).toBe(true);
+  });
 });

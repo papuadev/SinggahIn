@@ -5,6 +5,7 @@ import {
   useUploadPropertyImages,
   useDeletePropertyImage,
   useSetCoverPropertyImage,
+  useReorderPropertyImages,
 } from './usePropertyImages';
 import { validateImageBatchAsync } from '../schemas/property-image.schema';
 
@@ -26,16 +27,27 @@ export function useGalleryManager(
 ) {
   const [valError, setValError] = useState<string | null>(null);
   const [stagedImages, setStagedImages] = useState<StagedImage[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<PropertyImage[]>(existingImages);
+
+  useEffect(() => {
+    setUploadedImages(existingImages);
+  }, [existingImages]);
+
   const uploadMut = useUploadPropertyImages(propertyId);
   const deleteMut = useDeletePropertyImage(propertyId);
   const coverMut = useSetCoverPropertyImage(propertyId);
-  const isBusy = uploadMut.isPending || deleteMut.isPending || coverMut.isPending;
+  const reorderMut = useReorderPropertyImages(propertyId);
+  const isBusy =
+    uploadMut.isPending ||
+    deleteMut.isPending ||
+    coverMut.isPending ||
+    reorderMut.isPending;
 
   useEffect(() => () => revokeStagedList(stagedImages), [stagedImages]);
 
   const handleStageFiles = async (files: File[]) => {
     setValError(null);
-    const total = existingImages.length + stagedImages.length;
+    const total = uploadedImages.length + stagedImages.length;
     const err = await validateImageBatchAsync(files, total);
     if (err) return setValError(err);
     const newItems = files.map(makeStagedImage);
@@ -65,6 +77,22 @@ export function useGalleryManager(
     });
   };
 
+  const handleMoveUploaded = async (from: number, to: number) => {
+    if (to < 0 || to >= uploadedImages.length || from === to) return;
+    const copy = [...uploadedImages];
+    const [moved] = copy.splice(from, 1);
+    copy.splice(to, 0, moved);
+    setUploadedImages(copy);
+    setValError(null);
+    try {
+      await reorderMut.mutateAsync(copy.map((img) => img.id));
+      onImagesUpdated?.();
+    } catch (err: unknown) {
+      setUploadedImages(existingImages);
+      setValError(err instanceof Error ? err.message : 'Gagal mengubah urutan foto.');
+    }
+  };
+
   const handleCommitUpload = async () => {
     if (stagedImages.length === 0) return;
     setValError(null);
@@ -81,14 +109,17 @@ export function useGalleryManager(
   return {
     valError,
     stagedImages,
+    uploadedImages,
     uploadMut,
     deleteMut,
     coverMut,
+    reorderMut,
     isBusy,
     handleStageFiles,
     handleRemoveStaged,
     handleClearAllStaged,
     handleMoveStaged,
+    handleMoveUploaded,
     handleCommitUpload,
   };
 }

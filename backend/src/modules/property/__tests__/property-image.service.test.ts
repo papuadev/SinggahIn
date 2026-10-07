@@ -5,6 +5,7 @@ import {
   uploadPropertyImages,
   deletePropertyImage,
   setCoverImage,
+  reorderPropertyImages,
 } from '../property-image.service';
 
 vi.mock('../../../shared/services/prisma.service', () => ({
@@ -70,6 +71,7 @@ describe('Property Image Service', () => {
           imageUrl: 'https://cdn.com/uploaded.webp',
           publicId: 'pub-test',
           isCover: true,
+          order: 0,
         },
       });
     });
@@ -149,6 +151,60 @@ describe('Property Image Service', () => {
       const result = await setCoverImage('prop-1', 'img-2', 'tenant-1');
       expect(prisma.$transaction).toHaveBeenCalled();
       expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('reorderPropertyImages', () => {
+    it('reorders images in transaction and returns updated list', async () => {
+      vi.mocked(prisma.property.findUnique).mockResolvedValueOnce({
+        id: 'prop-1',
+        tenantId: 'tenant-1',
+      } as any);
+      vi.mocked(prisma.propertyImage.findMany)
+        .mockResolvedValueOnce([
+          { id: 'img-1', propertyId: 'prop-1', order: 0 } as any,
+          { id: 'img-2', propertyId: 'prop-1', order: 1 } as any,
+        ])
+        .mockResolvedValueOnce([
+          { id: 'img-2', propertyId: 'prop-1', order: 0 } as any,
+          { id: 'img-1', propertyId: 'prop-1', order: 1 } as any,
+        ]);
+      vi.mocked(prisma.$transaction).mockResolvedValueOnce([{}, {}]);
+
+      const result = await reorderPropertyImages('prop-1', 'tenant-1', ['img-2', 'img-1']);
+      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(result).toHaveLength(2);
+      expect(result[0].id).toBe('img-2');
+    });
+
+    it('throws error when image count does not match existing images', async () => {
+      vi.mocked(prisma.property.findUnique).mockResolvedValueOnce({
+        id: 'prop-1',
+        tenantId: 'tenant-1',
+      } as any);
+      vi.mocked(prisma.propertyImage.findMany).mockResolvedValueOnce([
+        { id: 'img-1', propertyId: 'prop-1' } as any,
+        { id: 'img-2', propertyId: 'prop-1' } as any,
+      ]);
+
+      await expect(
+        reorderPropertyImages('prop-1', 'tenant-1', ['img-1'])
+      ).rejects.toThrow('Jumlah gambar tidak sesuai');
+    });
+
+    it('throws error when image ID does not belong to property', async () => {
+      vi.mocked(prisma.property.findUnique).mockResolvedValueOnce({
+        id: 'prop-1',
+        tenantId: 'tenant-1',
+      } as any);
+      vi.mocked(prisma.propertyImage.findMany).mockResolvedValueOnce([
+        { id: 'img-1', propertyId: 'prop-1' } as any,
+        { id: 'img-2', propertyId: 'prop-1' } as any,
+      ]);
+
+      await expect(
+        reorderPropertyImages('prop-1', 'tenant-1', ['img-1', 'img-unknown'])
+      ).rejects.toThrow('ID gambar tidak valid');
     });
   });
 });

@@ -11,6 +11,7 @@ export interface PropertyImageDto {
   imageUrl: string;
   publicId: string;
   isCover: boolean;
+  order: number;
   createdAt: Date;
 }
 

@@ -11,6 +11,7 @@ vi.mock('../services/property.api', () => ({
     uploadImages: vi.fn(),
     deleteImage: vi.fn(),
     setCoverImage: vi.fn(),
+    reorderImages: vi.fn(),
   },
 }));
 
@@ -236,5 +237,70 @@ describe('PropertyGalleryManager Component', () => {
 
     renderWithClient(<PropertyGalleryManager propertyId="prop-123" images={fullImages} />);
     expect(screen.getByText('Batas maksimal 6 foto telah tercapai.')).toBeInTheDocument();
+  });
+
+  it('allows user to sort/reorder already uploaded images using navigation buttons', async () => {
+    vi.mocked(propertyApi.reorderImages).mockResolvedValueOnce({
+      success: true,
+      message: 'Urutan foto diperbarui',
+      data: [mockImages[1], mockImages[0]],
+    });
+
+    renderWithClient(<PropertyGalleryManager propertyId="prop-123" images={mockImages} />);
+
+    // Click right move button on first uploaded photo
+    const moveRightButtons = screen.getAllByRole('button', { name: /Pindah urutan ke kanan/i });
+    expect(moveRightButtons[0]).toBeInTheDocument();
+    fireEvent.click(moveRightButtons[0]);
+
+    await waitFor(() => {
+      expect(propertyApi.reorderImages).toHaveBeenCalledWith('prop-123', ['img-2', 'img-1']);
+    });
+  });
+
+  it('allows user to sort/reorder already uploaded images using drag and drop', async () => {
+    vi.mocked(propertyApi.reorderImages).mockResolvedValueOnce({
+      success: true,
+      message: 'Urutan foto diperbarui',
+      data: [mockImages[1], mockImages[0]],
+    });
+
+    renderWithClient(<PropertyGalleryManager propertyId="prop-123" images={mockImages} />);
+
+    // Locate the uploaded images by looking for their container cards
+    const uploadedCard1 = screen.getByText('#1').closest('div[draggable="true"]')!;
+    const uploadedCard2 = screen.getByText('#2').closest('div[draggable="true"]')!;
+
+    fireEvent.dragStart(uploadedCard1, {
+      dataTransfer: {
+        setData: vi.fn(),
+        getData: vi.fn().mockReturnValue('uploaded:0'),
+      },
+    });
+
+    fireEvent.drop(uploadedCard2, {
+      dataTransfer: {
+        getData: () => 'uploaded:0',
+      },
+    });
+
+    await waitFor(() => {
+      expect(propertyApi.reorderImages).toHaveBeenCalledWith('prop-123', ['img-2', 'img-1']);
+    });
+  });
+
+  it('reverts uploaded images order and displays error message if reorder API call fails', async () => {
+    vi.mocked(propertyApi.reorderImages).mockRejectedValueOnce(
+      new Error('Gagal mengubah urutan foto di server')
+    );
+
+    renderWithClient(<PropertyGalleryManager propertyId="prop-123" images={mockImages} />);
+
+    const moveRightButtons = screen.getAllByRole('button', { name: /Pindah urutan ke kanan/i });
+    fireEvent.click(moveRightButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Gagal mengubah urutan foto di server/i)).toBeInTheDocument();
+    });
   });
 });

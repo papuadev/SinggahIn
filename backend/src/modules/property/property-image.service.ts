@@ -10,7 +10,7 @@ import { PropertyImageDto } from './property.types';
 async function validateImageLimit(
   propertyId: string,
   additionalCount: number
-): Promise<boolean> {
+): Promise<{ hasCover: boolean; currentCount: number }> {
   const count = await prisma.propertyImage.count({ where: { propertyId } });
   if (count + additionalCount > 6) {
     throw AppError.badRequest('Total foto properti tidak boleh melebihi 6 gambar.');
@@ -18,12 +18,13 @@ async function validateImageLimit(
   const coverCount = await prisma.propertyImage.count({
     where: { propertyId, isCover: true },
   });
-  return coverCount > 0;
+  return { hasCover: coverCount > 0, currentCount: count };
 }
 
 async function uploadSingleFile(
   file: Express.Multer.File,
   isCover: boolean,
+  order: number,
   propertyId: string
 ): Promise<PropertyImageDto> {
   const uploaded = await uploadToCloudinary(file.buffer, 'singgahin/properties');
@@ -33,6 +34,7 @@ async function uploadSingleFile(
       imageUrl: uploaded.secureUrl,
       publicId: uploaded.publicId,
       isCover,
+      order,
     },
   });
 }
@@ -43,11 +45,11 @@ export async function uploadPropertyImages(
   files: Express.Multer.File[]
 ): Promise<PropertyImageDto[]> {
   await verifyPropertyOwnership(propertyId, tenantId);
-  const hasCover = await validateImageLimit(propertyId, files.length);
+  const { hasCover, currentCount } = await validateImageLimit(propertyId, files.length);
   const results: PropertyImageDto[] = [];
   for (let i = 0; i < files.length; i++) {
     const isCover = !hasCover && i === 0;
-    const created = await uploadSingleFile(files[i], isCover, propertyId);
+    const created = await uploadSingleFile(files[i], isCover, currentCount + i, propertyId);
     results.push(created);
   }
   return results;
@@ -60,7 +62,7 @@ async function reassignCoverIfDeleted(
   if (!wasCover) return;
   const firstRemaining = await prisma.propertyImage.findFirst({
     where: { propertyId },
-    orderBy: { createdAt: 'asc' },
+    orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
   });
   if (firstRemaining) {
     await prisma.propertyImage.update({
@@ -111,6 +113,39 @@ export async function setCoverImage(
   ]);
   return prisma.propertyImage.findMany({
     where: { propertyId },
-    orderBy: { createdAt: 'asc' },
+    orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+  });
+}
+
+export async function reorderPropertyImages(
+  propertyId: string,
+  tenantId: string,
+  imageIds: string[]
+): Promise<PropertyImageDto[]> {
+  await verifyPropertyOwnership(propertyId, tenantId);
+  const existingImages = await prisma.propertyImage.findMany({
+    where: { propertyId },
+  });
+  if (existingImages.length !== imageIds.length) {
+    throw AppError.badRequest('Jumlah gambar tidak sesuai dengan data yang tersimpan.');
+  }
+  const existingIds = new Set(existingImages.map((img) => img.id));
+  const hasMismatch = imageIds.some((id) => !existingIds.has(id));
+  if (hasMismatch) {
+    throw AppError.badRequest('ID gambar tidak valid atau bukan milik properti ini.');
+  }
+
+  await prisma.$transaction(
+    imageIds.map((id, index) =>
+      prisma.propertyImage.update({
+        where: { id },
+        data: { order: index },
+      })
+    )
+  );
+
+  return prisma.propertyImage.findMany({
+    where: { propertyId },
+    orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
   });
 }

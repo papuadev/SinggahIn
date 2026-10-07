@@ -99,7 +99,7 @@ export async function getPropertyById(
     where: { id },
     include: {
       category: true,
-      images: { orderBy: { createdAt: 'asc' } },
+      images: { orderBy: [{ order: 'asc' }, { createdAt: 'asc' }] },
       rooms: { orderBy: { basePrice: 'asc' } },
     },
   });

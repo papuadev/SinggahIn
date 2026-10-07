@@ -24,7 +24,9 @@ vi.mock('../shared/services/prisma.service', () => ({
       count: vi.fn(),
       create: vi.fn(),
       delete: vi.fn(),
+      update: vi.fn(),
     },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -187,4 +189,65 @@ describe('Property HTTP Integration Tests', () => {
     expect(res.body.data[0].city).toBe('Bandung');
     expect(res.body.data[0].formattedAddress).toBe('Jl. Braga No. 10, Bandung');
   });
+
+  describe('PATCH /api/v1/properties/:id/images/reorder', () => {
+    const validImageId1 = 'cly1111111111111111111111';
+    const validImageId2 = 'cly2222222222222222222222';
+
+    it('should return 401 when unauthenticated', async () => {
+      const res = await request(app)
+        .patch(`/api/v1/properties/${validCuid}/images/reorder`)
+        .send({ imageIds: [validImageId1, validImageId2] });
+      expect(res.status).toBe(401);
+    });
+
+    it('should return 403 when user is not TENANT', async () => {
+      const userToken = signToken({
+        userId: 'u-123',
+        email: 'user@example.com',
+        role: Role.USER,
+      });
+      const res = await request(app)
+        .patch(`/api/v1/properties/${validCuid}/images/reorder`)
+        .set('Cookie', [`token=${userToken}`])
+        .send({ imageIds: [validImageId1, validImageId2] });
+      expect(res.status).toBe(403);
+    });
+
+    it('should return 400 when imageIds contains invalid cuid format', async () => {
+      const res = await request(app)
+        .patch(`/api/v1/properties/${validCuid}/images/reorder`)
+        .set('Cookie', [`token=${tenantToken}`])
+        .send({ imageIds: ['not-a-cuid'] });
+      expect(res.status).toBe(400);
+    });
+
+    it('should return 200 and reorder images when request is valid', async () => {
+      vi.mocked(prisma.property.findUnique).mockResolvedValueOnce({
+        id: validCuid,
+        tenantId: 't-123',
+      } as any);
+      vi.mocked(prisma.propertyImage.findMany)
+        .mockResolvedValueOnce([
+          { id: validImageId1, propertyId: validCuid, order: 0 } as any,
+          { id: validImageId2, propertyId: validCuid, order: 1 } as any,
+        ])
+        .mockResolvedValueOnce([
+          { id: validImageId2, propertyId: validCuid, order: 0 } as any,
+          { id: validImageId1, propertyId: validCuid, order: 1 } as any,
+        ]);
+      vi.mocked(prisma.$transaction).mockResolvedValueOnce([{}, {}]);
+
+      const res = await request(app)
+        .patch(`/api/v1/properties/${validCuid}/images/reorder`)
+        .set('Cookie', [`token=${tenantToken}`])
+        .send({ imageIds: [validImageId2, validImageId1] });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data[0].id).toBe(validImageId2);
+      expect(res.body.message).toContain('Urutan foto properti berhasil diperbarui');
+    });
+  });
 });
+
