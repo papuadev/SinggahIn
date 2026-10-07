@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ProfileForm } from '../components/ProfileForm';
 import { User } from '../../../types/auth.types';
 
@@ -78,5 +78,32 @@ describe('ProfileForm Organism', () => {
       expect(screen.getByText('Nama minimal 2 karakter')).toBeInTheDocument();
     });
     expect(handleUpdate).not.toHaveBeenCalled();
+  });
+
+  it('displays success toast on submit and dismisses after 5 seconds', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const handleUpdate = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <ProfileForm
+        user={mockUser}
+        onUpdateProfile={handleUpdate}
+        onUploadAvatar={vi.fn()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/Nama Lengkap/i), { target: { value: 'Rian Pratama Baru' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Simpan Perubahan/i }));
+    });
+
+    expect(screen.getByText('Profil Anda berhasil diperbarui.')).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(screen.queryByText('Profil Anda berhasil diperbarui.')).not.toBeInTheDocument();
+    vi.useRealTimers();
   });
 });
