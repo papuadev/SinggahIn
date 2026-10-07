@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { Room } from '../room.types';
 import {
+  BaseRoomFilterItem,
   RoomSortOption,
   UseRoomListFilterOptions,
   UseRoomListFilterReturn,
 } from '../room-filter.types';
 
-function matchesQuery(room: Room, query: string): boolean {
+function matchesQuery(room: BaseRoomFilterItem, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   const nameMatch = room.name.toLowerCase().includes(q);
@@ -14,7 +15,7 @@ function matchesQuery(room: Room, query: string): boolean {
   return nameMatch || descMatch;
 }
 
-function compareBySort(a: Room, b: Room, sort: RoomSortOption): number {
+function compareBySort(a: BaseRoomFilterItem, b: BaseRoomFilterItem, sort: RoomSortOption): number {
   switch (sort) {
     case 'price_asc': return a.basePrice - b.basePrice;
     case 'price_desc': return b.basePrice - a.basePrice;
@@ -25,7 +26,7 @@ function compareBySort(a: Room, b: Room, sort: RoomSortOption): number {
   }
 }
 
-function paginateList(items: Room[], page: number, pageSize: number): Room[] {
+function paginateList<T>(items: T[], page: number, pageSize: number): T[] {
   const startIndex = (page - 1) * pageSize;
   return items.slice(startIndex, startIndex + pageSize);
 }
@@ -40,7 +41,7 @@ function useFilterState() {
   return { searchQuery, setSearchQuery, sortBy, setSortBy, currentPage, setCurrentPage, resetFilters };
 }
 
-function useProcessedRooms(rooms: Room[], query: string, sort: RoomSortOption) {
+function useProcessedRooms<T extends BaseRoomFilterItem>(rooms: T[], query: string, sort: RoomSortOption) {
   const filtered = useMemo(() => rooms.filter((r) => matchesQuery(r, query)), [rooms, query]);
   return useMemo(() => [...filtered].sort((a, b) => compareBySort(a, b, sort)), [filtered, sort]);
 }
@@ -51,7 +52,10 @@ function usePaginationCalc(total: number, curPage: number, size: number) {
   return { totalPages, safePage };
 }
 
-export function useRoomListFilter(rooms: Room[], opts: UseRoomListFilterOptions = {}): UseRoomListFilterReturn {
+export function useRoomListFilter<T extends BaseRoomFilterItem = Room>(
+  rooms: T[],
+  opts: UseRoomListFilterOptions = {}
+): UseRoomListFilterReturn<T> {
   const pageSize = opts.pageSize || 5;
   const state = useFilterState();
   const sorted = useProcessedRooms(rooms, state.searchQuery, state.sortBy);
