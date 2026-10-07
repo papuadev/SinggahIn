@@ -1,6 +1,11 @@
 import React from 'react';
 import { BedDouble, Info } from 'lucide-react';
 import { PropertyRoomSummary } from '../../../modules/property/property.types';
+import { useRoomListFilter } from '../../../modules/room/hooks/useRoomListFilter';
+import { RoomListControls } from '../../../modules/room/components/RoomListControls';
+import { RoomListEmptySearch } from '../../../modules/room/components/RoomListEmptySearch';
+import { RoomPagination } from '../../../modules/room/components/RoomPagination';
+import { UseRoomListFilterReturn } from '../../../modules/room/room-filter.types';
 import { PropertyDetailRoomCard } from './PropertyDetailRoomCard';
 
 export interface PropertyDetailRoomListProps {
@@ -12,7 +17,20 @@ export interface PropertyDetailRoomListProps {
   onOpenCalendar?: (roomId: string) => void;
 }
 
-function RoomEmptyState() {
+interface RoomItemsProps {
+  rooms: PropertyRoomSummary[];
+  propId: string;
+  inDate?: string;
+  outDate?: string;
+  onBook?: (id: string) => void;
+  onCalendar?: (id: string) => void;
+}
+
+interface RoomViewProps extends Omit<RoomItemsProps, 'rooms'> {
+  filter: UseRoomListFilterReturn<PropertyRoomSummary>;
+}
+
+function RoomEmptyState(): React.JSX.Element {
   return (
     <div className="p-8 text-center bg-gray-50 rounded-2xl border border-gray-200">
       <BedDouble className="w-10 h-10 text-gray-400 mx-auto mb-2" />
@@ -24,7 +42,7 @@ function RoomEmptyState() {
   );
 }
 
-function RoomDatesBadge({ checkIn, checkOut }: { checkIn?: string; checkOut?: string }) {
+function RoomDatesBadge({ checkIn, checkOut }: { checkIn?: string; checkOut?: string }): React.JSX.Element | null {
   if (!checkIn || !checkOut) return null;
   return (
     <div className="inline-flex items-center gap-1.5 text-xs text-primary-700 bg-primary-50 px-3 py-1.5 rounded-lg border border-primary-200 self-start sm:self-auto">
@@ -34,7 +52,7 @@ function RoomDatesBadge({ checkIn, checkOut }: { checkIn?: string; checkOut?: st
   );
 }
 
-function RoomListHeader({ checkIn, checkOut }: { checkIn?: string; checkOut?: string }) {
+function RoomListHeader({ checkIn, checkOut }: { checkIn?: string; checkOut?: string }): React.JSX.Element {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
       <div>
@@ -46,21 +64,55 @@ function RoomListHeader({ checkIn, checkOut }: { checkIn?: string; checkOut?: st
   );
 }
 
-function RoomItems({ rooms, propId, inDate, outDate, onBook, onCalendar }: { rooms: PropertyRoomSummary[]; propId: string; inDate?: string; outDate?: string; onBook?: (id: string) => void; onCalendar?: (id: string) => void }) {
+function RoomItems({ rooms, propId, inDate, outDate, onBook, onCalendar }: RoomItemsProps): React.JSX.Element {
   return (
     <div className="flex flex-col gap-3">
       {rooms.map((r) => (
-        <PropertyDetailRoomCard key={r.id} room={r} propertyId={propId} checkIn={inDate} checkOut={outDate} onBook={onBook} onOpenCalendar={onCalendar} />
+        <PropertyDetailRoomCard
+          key={r.id} room={r} propertyId={propId} checkIn={inDate}
+          checkOut={outDate} onBook={onBook} onOpenCalendar={onCalendar}
+        />
       ))}
     </div>
   );
 }
 
-export function PropertyDetailRoomList({ propertyId, rooms = [], checkIn, checkOut, onBookRoom, onOpenCalendar }: PropertyDetailRoomListProps): React.JSX.Element {
+function RoomListBody({ filter, propId, inDate, outDate, onBook, onCalendar }: RoomViewProps): React.JSX.Element {
+  if (filter.totalFiltered === 0) {
+    return <RoomListEmptySearch query={filter.searchQuery} onReset={filter.resetFilters} />;
+  }
+  return (
+    <div className="flex flex-col gap-4">
+      <RoomItems rooms={filter.paginatedRooms} propId={propId} inDate={inDate} outDate={outDate} onBook={onBook} onCalendar={onCalendar} />
+      <RoomPagination
+        page={filter.currentPage} totalPages={filter.totalPages}
+        totalItems={filter.totalFiltered} pageSize={filter.pageSize} onPageChange={filter.setCurrentPage}
+      />
+    </div>
+  );
+}
+
+function RoomListActiveView(props: RoomViewProps): React.JSX.Element {
+  const { filter } = props;
+  return (
+    <div className="space-y-4">
+      <RoomListControls
+        searchQuery={filter.searchQuery} onSearchChange={filter.setSearchQuery}
+        sortBy={filter.sortBy} onSortChange={filter.setSortBy}
+      />
+      <RoomListBody {...props} />
+    </div>
+  );
+}
+
+export function PropertyDetailRoomList(p: PropertyDetailRoomListProps): React.JSX.Element {
+  const { propertyId, rooms = [], checkIn, checkOut, onBookRoom, onOpenCalendar } = p;
+  const filter = useRoomListFilter(rooms);
+  const activeProps = { propId: propertyId, inDate: checkIn, outDate: checkOut, onBook: onBookRoom, onCalendar: onOpenCalendar };
   return (
     <section id="pilihan-kamar" aria-labelledby="daftar-kamar-properti" className="py-6 border-b border-gray-100">
       <RoomListHeader checkIn={checkIn} checkOut={checkOut} />
-      {rooms.length === 0 ? <RoomEmptyState /> : <RoomItems rooms={rooms} propId={propertyId} inDate={checkIn} outDate={checkOut} onBook={onBookRoom} onCalendar={onOpenCalendar} />}
+      {rooms.length === 0 ? <RoomEmptyState /> : <RoomListActiveView filter={filter} {...activeProps} />}
     </section>
   );
 }

@@ -20,11 +20,19 @@ export const ROOM_SORT_OPTIONS: SortOptionItem[] = [
   { value: 'units_desc', label: 'Jumlah Unit: Terbanyak' },
 ];
 
+export interface BaseRoomFilterItem {
+  id: string;
+  name: string;
+  basePrice: number;
+  totalUnits: number;
+  description?: string | null;
+}
+
 export interface UseRoomListFilterOptions {
   pageSize?: number;
 }
 
-export interface UseRoomListFilterReturn {
+export interface UseRoomListFilterReturn<T = Room> {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   sortBy: RoomSortOption;
@@ -34,6 +42,6 @@ export interface UseRoomListFilterReturn {
   pageSize: number;
   totalFiltered: number;
   totalPages: number;
-  paginatedRooms: Room[];
+  paginatedRooms: T[];
   resetFilters: () => void;
 }
