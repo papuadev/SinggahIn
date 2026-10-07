@@ -33,17 +33,11 @@ function buildDateFilterRoomRelations(checkIn: string, checkOut: string) {
   const inDate = toUtcDate(checkIn);
   const outDate = toUtcDate(checkOut);
   const dateRange = { startDate: { lt: outDate }, endDate: { gte: inDate } };
+  const bookingWhere = { status: { not: BookingStatus.CANCELLED }, checkInDate: { lt: outDate }, checkOutDate: { gt: inDate } };
   return {
     modifiers: { where: dateRange },
     unavailabilities: { where: dateRange },
-    bookings: {
-      where: {
-        status: { not: BookingStatus.CANCELLED },
-        checkInDate: { lt: outDate },
-        checkOutDate: { gt: inDate },
-      },
-      select: { id: true },
-    },
+    bookings: { where: bookingWhere, select: { id: true } },
   };
 }
 
