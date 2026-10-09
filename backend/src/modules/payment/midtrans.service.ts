@@ -14,7 +14,7 @@ export { verifyMidtransSignature } from './midtrans.helper';
 
 const serverKey = process.env.MIDTRANS_SERVER_KEY || 'SB-Mid-server-default';
 const clientKey = process.env.MIDTRANS_CLIENT_KEY || 'SB-Mid-client-default';
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
 
 export const snapClient = new midtransClient.Snap({ isProduction, serverKey, clientKey });
 
@@ -51,9 +51,10 @@ export const snapCache = new Map<string, { snapToken: string; redirectUrl: strin
 function getExistingSnap(b: any) {
   if (snapCache.has(b.id)) return snapCache.get(b.id);
   if (b.payment?.proofPublicId && b.payment?.status === PaymentStatus.PENDING) {
+    const snapBase = isProduction ? 'https://app.midtrans.com' : 'https://app.sandbox.midtrans.com';
     return {
       snapToken: b.payment.proofPublicId,
-      redirectUrl: `https://app.sandbox.midtrans.com/snap/v2/vtweb/${b.payment.proofPublicId}`,
+      redirectUrl: `${snapBase}/snap/v2/vtweb/${b.payment.proofPublicId}`,
     };
   }
   return null;
