@@ -37,7 +37,8 @@ export function assertEmergencyCancelEligibility(booking: any, tenantId: string)
   if (booking.property?.tenantId !== tenantId) {
     throw AppError.forbidden('Anda tidak memiliki akses ke pesanan properti ini.');
   }
-  if (booking.status === BookingStatus.CANCELLED || booking.status === BookingStatus.COMPLETED) {
+  const terminalStatuses = [BookingStatus.CANCELLED, BookingStatus.COMPLETED, BookingStatus.REJECTED];
+  if (terminalStatuses.includes(booking.status)) {
     throw AppError.badRequest('Pesanan yang sudah dibatalkan atau selesai tidak dapat dibatalkan lagi.');
   }
 }

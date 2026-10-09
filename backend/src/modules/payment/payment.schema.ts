@@ -17,4 +17,5 @@ export const emergencyCancelSchema = z.object({
     .string({ required_error: 'Nomor kontak refund wajib diisi.' })
     .min(8, 'Nomor kontak refund minimal 8 karakter.')
     .max(50, 'Nomor kontak refund maksimal 50 karakter.'),
+  isForceMajeure: z.boolean().optional().default(false),
 });

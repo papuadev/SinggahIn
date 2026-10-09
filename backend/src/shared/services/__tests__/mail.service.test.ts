@@ -62,4 +62,17 @@ describe('Mail Service', () => {
     await sendEmergencyCancellationEmail('user@test.com', d);
     expect(sendMailMock).toHaveBeenCalledWith(expect.objectContaining({ to: 'user@test.com', html: expect.stringContaining('081234567890') }));
   });
+
+  it('should include force majeure notice in emergency cancel email when isForceMajeure is true', async () => {
+    const sendMailMock = vi.fn().mockResolvedValue({ messageId: 'm4' });
+    vi.mocked(nodemailer.createTransport).mockReturnValue({ sendMail: sendMailMock } as any);
+    const d = {
+      bookingCode: 'SGH-ABCD', propertyName: 'Villa',
+      cancellationReason: 'Bencana alam', refundContact: '081234567890', isForceMajeure: true,
+    };
+    await sendEmergencyCancellationEmail('user@test.com', d);
+    expect(sendMailMock).toHaveBeenCalledWith(expect.objectContaining({
+      to: 'user@test.com', html: expect.stringContaining('Force Majeure'),
+    }));
+  });
 });

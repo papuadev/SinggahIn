@@ -44,7 +44,7 @@ function fetchScheduleUnavailabilities(roomId: string, start: Date, end: Date) {
 function fetchScheduleBookings(roomId: string, start: Date, end: Date) {
   const where = {
     roomId,
-    status: { not: BookingStatus.CANCELLED },
+    status: { notIn: [BookingStatus.CANCELLED, BookingStatus.REJECTED] },
     checkInDate: { lte: end },
     checkOutDate: { gt: start },
   };
@@ -61,20 +61,13 @@ async function fetchRoomSchedule(roomId: string, start: Date, end: Date) {
 }
 
 function generateMonthCalendar(
-  year: number,
-  month: number,
-  room: { basePrice: number; weekendRatePercent?: number | null; totalUnits: number },
-  schedule: Awaited<ReturnType<typeof fetchRoomSchedule>>
+  year: number, month: number, room: any, schedule: Awaited<ReturnType<typeof fetchRoomSchedule>>
 ): CalendarDayItemDto[] {
-  const daysCount = getDaysInMonth(year, month);
-  const calendar: CalendarDayItemDto[] = [];
-  for (let day = 1; day <= daysCount; day += 1) {
-    const dateStr = formatDateString(year, month, day);
-    calendar.push(
-      buildCalendarDay(dateStr, room, schedule.modifiers, schedule.unavailabilities, schedule.bookings)
-    );
-  }
-  return calendar;
+  const count = getDaysInMonth(year, month);
+  return Array.from({ length: count }, (_, i) => {
+    const dateStr = formatDateString(year, month, i + 1);
+    return buildCalendarDay(dateStr, room, schedule.modifiers, schedule.unavailabilities, schedule.bookings);
+  });
 }
 
 export async function getPropertyCalendar(
