@@ -60,6 +60,17 @@ describe('Payment Schemas', () => {
       if (res.success) expect(res.data.isForceMajeure).toBe(false);
     });
 
+    it('accepts reason alias and maps to cancellationReason', () => {
+      const res = emergencyCancelSchema.safeParse({
+        reason: 'Pipa air kamar bocor parah tidak sempat diperbaiki',
+        refundContact: '081234567890 (Pak Budi)',
+      });
+      expect(res.success).toBe(true);
+      if (res.success) {
+        expect(res.data.cancellationReason).toBe('Pipa air kamar bocor parah tidak sempat diperbaiki');
+      }
+    });
+
     it('rejects cancellation reason shorter than 5 characters', () => {
       const res = emergencyCancelSchema.safeParse({ ...validData, cancellationReason: 'Rus' });
       expect(res.success).toBe(false);

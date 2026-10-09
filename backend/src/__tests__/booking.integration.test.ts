@@ -133,4 +133,21 @@ describe('Booking HTTP Integration Tests', () => {
       expect(res.body.meta.page).toBe(1);
     });
   });
+
+  describe('GET /api/v1/bookings/tenant', () => {
+    it('returns 403 when user is not a TENANT', async () => {
+      const res = await request(app).get('/api/v1/bookings/tenant').set('Authorization', `Bearer ${userToken}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('returns 200 with tenant property bookings', async () => {
+      vi.mocked(prisma.booking.findMany).mockResolvedValueOnce([{ id: bookingId }] as any);
+      vi.mocked(prisma.booking.count).mockResolvedValueOnce(1);
+      const res = await request(app).get('/api/v1/bookings/tenant?page=1&limit=10').set('Authorization', `Bearer ${tenantToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toHaveLength(1);
+    });
+  });
 });
+

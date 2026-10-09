@@ -20,16 +20,17 @@ function useFallbackRoomsQuery(id?: string, shouldFetch = false) {
   });
 }
 
-function usePropertyBooking(id?: string, checkIn?: string, checkOut?: string) {
+function buildCheckoutUrl(propertyId: string, roomId: string, inDate: string, outDate: string): string {
+  const p = new URLSearchParams({ propertyId, roomId, checkIn: inDate, checkOut: outDate });
+  return `/checkout?${p.toString()}`;
+}
+
+function usePropertyBooking(id?: string, inD?: string, outD?: string, onMissing?: () => void) {
   const navigate = useNavigate();
   return useCallback((roomId: string) => {
-    const params = new URLSearchParams();
-    if (checkIn) params.set('checkIn', checkIn);
-    if (checkOut) params.set('checkOut', checkOut);
-    params.set('propertyId', id!);
-    params.set('roomId', roomId);
-    navigate(`/checkout?${params.toString()}`);
-  }, [checkIn, checkOut, id, navigate]);
+    if (!inD || !outD) return onMissing?.();
+    navigate(buildCheckoutUrl(id!, roomId, inD, outD));
+  }, [inD, outD, id, navigate, onMissing]);
 }
 
 function computeLowestPrice(rooms: Array<{ basePrice: number }>) {
@@ -63,16 +64,26 @@ function useScrollToRooms() {
   }, []);
 }
 
+function useMissingDatesModal() {
+  const [isOpen, setIsOpen] = useState(false);
+  const openModal = useCallback(() => setIsOpen(true), []);
+  const closeModal = useCallback(() => setIsOpen(false), []);
+  const onPickDates = useCallback(() => {
+    document.getElementById('sidebar-date-trigger')?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+  return { isDateModalOpen: isOpen, openDateModal: openModal, closeDateModal: closeModal, handlePickDates: onPickDates };
+}
+
 export function usePropertyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const dates = useDateRangeParams();
+  const dateModal = useMissingDatesModal();
   const { data: property, isLoading, isError } = usePropertyQuery(id);
   const { rooms, lowestPrice } = useRoomSelection(property?.rooms, id);
   const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(undefined);
-  const scrollToRooms = useScrollToRooms();
-  const handleBookRoom = usePropertyBooking(id, dates.checkIn, dates.checkOut);
+  const handleBookRoom = usePropertyBooking(id, dates.checkIn, dates.checkOut, dateModal.openDateModal);
   return {
     id, property, rooms, lowestPrice, selectedRoomId, setSelectedRoomId,
-    isLoading, isError, scrollToRooms, handleBookRoom, ...dates,
+    isLoading, isError, scrollToRooms: useScrollToRooms(), handleBookRoom, ...dateModal, ...dates,
   };
 }

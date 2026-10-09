@@ -39,38 +39,12 @@ const mockProperty = {
   updatedAt: '2026-09-01T00:00:00.000Z',
   category: { id: 'cat1', name: 'Villa', slug: 'villa', description: null },
   images: [
-    {
-      id: 'img1',
-      propertyId: 'clprop123',
-      imageUrl: 'https://images.unsplash.com/cover.webp',
-      publicId: 'c1',
-      isCover: true,
-    },
-    {
-      id: 'img2',
-      propertyId: 'clprop123',
-      imageUrl: 'https://images.unsplash.com/room.webp',
-      publicId: 'c2',
-      isCover: false,
-    },
+    { id: 'img1', propertyId: 'clprop123', imageUrl: 'https://images.unsplash.com/cover.webp', publicId: 'c1', isCover: true },
+    { id: 'img2', propertyId: 'clprop123', imageUrl: 'https://images.unsplash.com/room.webp', publicId: 'c2', isCover: false },
   ],
   rooms: [
-    {
-      id: 'rm1',
-      name: 'Deluxe Mountain Suite',
-      basePrice: 750000,
-      capacity: 2,
-      totalUnits: 3,
-      description: 'Kamar luas dengan balkon panorama gunung.',
-    },
-    {
-      id: 'rm2',
-      name: 'Family Garden Suite',
-      basePrice: 1200000,
-      capacity: 4,
-      totalUnits: 2,
-      description: 'Kamar keluarga dengan akses langsung ke taman.',
-    },
+    { id: 'rm1', name: 'Deluxe Mountain Suite', basePrice: 750000, capacity: 2, totalUnits: 3, description: 'Kamar luas.' },
+    { id: 'rm2', name: 'Family Garden Suite', basePrice: 1200000, capacity: 4, totalUnits: 2, description: 'Kamar keluarga.' },
   ],
   averageRating: 4.9,
   totalReviews: 18,
@@ -177,6 +151,20 @@ describe('PropertyDetailPage Integration', () => {
     renderComponent('/properties/clprop123');
     await waitFor(() => {
       expect(screen.getAllByText('Fallback Suite').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it('shows popup alert modal when booking without selecting dates', async () => {
+    vi.mocked(propertyApi.getPropertyById).mockResolvedValueOnce({
+      success: true, message: 'OK', data: mockProperty as any,
+    });
+    renderComponent('/properties/clprop123');
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: 'Villa Nuansa Asri Dago' })).toBeInTheDocument());
+    fireEvent.click(screen.getAllByRole('button', { name: /pesan kamar/i })[0]);
+    await waitFor(() => {
+      expect(screen.getByText('Tanggal Belum Dipilih')).toBeInTheDocument();
+      expect(screen.getByText(/Tentukan Tanggal Menginap Anda/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Pilih Tanggal Sekarang/i })).toBeInTheDocument();
     });
   });
 });

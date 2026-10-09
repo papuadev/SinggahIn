@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BookingStatus, PaymentMethod, PaymentStatus, Role } from '@prisma/client';
 import { prisma } from '../../../shared/services/prisma.service';
 import * as pricingService from '../../room/pricing.service';
-import { createBooking, cancelBooking, getBookingById, getUserBookings } from '../booking.service';
+import { createBooking, cancelBooking, getBookingById, getUserBookings, getTenantBookings } from '../booking.service';
 
 vi.mock('../../../shared/services/prisma.service', () => ({
   prisma: {
@@ -144,4 +144,15 @@ describe('Booking Service', () => {
       expect(result.meta).toEqual({ page: 1, limit: 10, totalItems: 1, totalPages: 1 });
     });
   });
+
+  describe('getTenantBookings', () => {
+    it('should return paginated property bookings for tenant', async () => {
+      vi.mocked(prisma.booking.findMany).mockResolvedValueOnce([{ id: bookingId }] as any);
+      vi.mocked(prisma.booking.count).mockResolvedValueOnce(1);
+      const result = await getTenantBookings('tenant-1', { page: 1, limit: 10 });
+      expect(result.data).toHaveLength(1);
+      expect(result.meta).toEqual({ page: 1, limit: 10, totalItems: 1, totalPages: 1 });
+    });
+  });
 });
+

@@ -9,6 +9,7 @@ export interface CreateBookingInput {
 }
 
 export interface BookingResponseDto {
+  id: string;
   bookingId: string;
   bookingCode: string;
   status: BookingStatus;

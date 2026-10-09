@@ -46,12 +46,11 @@ describe('Payment Helper', () => {
       expect(() => assertUploadEligibility(b, 'u1')).toThrow('bukan transfer manual');
     });
 
-    it('passes when booking is eligible for manual proof upload', () => {
-      const b = {
-        userId: 'u1', status: BookingStatus.WAITING_PAYMENT, expiresAt: futureExpiry,
-        payment: { paymentMethod: PaymentMethod.MANUAL_TRANSFER },
-      };
-      expect(() => assertUploadEligibility(b, 'u1')).not.toThrow();
+    it('passes when booking is eligible for manual proof upload (WAITING_PAYMENT or WAITING_CONFIRMATION)', () => {
+      const b1 = { userId: 'u1', status: BookingStatus.WAITING_PAYMENT, expiresAt: futureExpiry, payment: { paymentMethod: PaymentMethod.MANUAL_TRANSFER } };
+      const b2 = { userId: 'u1', status: BookingStatus.WAITING_CONFIRMATION, expiresAt: futureExpiry, payment: { paymentMethod: PaymentMethod.MANUAL_TRANSFER } };
+      expect(() => assertUploadEligibility(b1, 'u1')).not.toThrow();
+      expect(() => assertUploadEligibility(b2, 'u1')).not.toThrow();
     });
   });
 

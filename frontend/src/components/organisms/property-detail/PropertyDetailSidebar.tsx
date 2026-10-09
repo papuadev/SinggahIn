@@ -133,7 +133,7 @@ function useSidebarBooking(props: PropertyDetailSidebarProps) {
   const activePrice = activeRoom?.basePrice || lowestPrice || 0;
   const nights = calculateStayNights(checkIn, checkOut);
   const handleCta = () => {
-    if (nights <= 0) { setIsCalOpen(true); return; }
+    if (nights <= 0) { setIsCalOpen(true); onBookRoom?.(activeRoom?.id || ''); return; }
     onBookRoom?.(activeRoom?.id || '');
   };
   return { isCalOpen, setIsCalOpen, activeRoom, activePrice, nights, handleCta };

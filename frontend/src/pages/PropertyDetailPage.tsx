@@ -12,6 +12,7 @@ import { PropertyDetailSidebar } from '../components/organisms/property-detail/P
 import { PropertyDetailMobileBar } from '../components/organisms/property-detail/PropertyDetailMobileBar';
 import { PropertyDetailSkeleton } from '../components/organisms/property-detail/PropertyDetailSkeleton';
 import { Button } from '../components/atoms/Button';
+import { MissingDatesModal } from '../components/organisms/property-detail/MissingDatesModal';
 import { SEOHead } from '../components/atoms/SEOHead';
 import { createLodgingBusinessSchema } from '../libs/seo';
 import { usePropertyDetailPage } from './usePropertyDetailPage';
@@ -109,6 +110,7 @@ export function PropertyDetailPage(): React.JSX.Element {
     <article className="pb-16 flex flex-col gap-6 max-w-7xl mx-auto">
       <PropertyDetailSEO property={state.property} lowestPrice={state.lowestPrice} />
       <PropertyDetailHero property={state.property} />
+      <MissingDatesModal isOpen={state.isDateModalOpen} onClose={state.closeDateModal} onPickDates={state.handlePickDates} />
       <PropertyDetailGrid state={state} />
       <PropertyDetailMobileBar lowestPrice={state.lowestPrice} onScrollToRooms={state.scrollToRooms} />
     </article>

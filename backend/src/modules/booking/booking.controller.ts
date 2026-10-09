@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { sendSuccess } from '../../shared/utils/response.util';
-import { createBooking, cancelBooking, getBookingById, getUserBookings } from './booking.service';
+import { createBooking, cancelBooking, getBookingById, getUserBookings, getTenantBookings } from './booking.service';
 
 export async function createBookingHandler(req: Request, res: Response, next: NextFunction) {
   try {
@@ -37,3 +37,13 @@ export async function getUserBookingsHandler(req: Request, res: Response, next: 
     next(error);
   }
 }
+
+export async function getTenantBookingsHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await getTenantBookings(req.user!.userId, req.query);
+    sendSuccess(res, result.data, 'Daftar pesanan properti berhasil diambil.', 200, result.meta);
+  } catch (error) {
+    next(error);
+  }
+}
+

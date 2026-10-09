@@ -13,6 +13,7 @@ import {
   cancelBookingHandler,
   getBookingByIdHandler,
   getUserBookingsHandler,
+  getTenantBookingsHandler,
 } from './booking.controller';
 
 export const bookingRoutes = Router();
@@ -34,11 +35,20 @@ bookingRoutes.post(
 );
 
 bookingRoutes.get(
+  '/tenant',
+  authenticate,
+  requireRole(Role.TENANT),
+  validateRequest({ query: listBookingsQuerySchema }),
+  getTenantBookingsHandler
+);
+
+bookingRoutes.get(
   '/:id',
   authenticate,
   validateRequest({ params: bookingIdParamSchema }),
   getBookingByIdHandler
 );
+
 
 bookingRoutes.get(
   '/',

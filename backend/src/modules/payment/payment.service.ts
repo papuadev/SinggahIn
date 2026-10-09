@@ -111,10 +111,12 @@ export async function emergencyCancelBooking(tenantId: string, bookingId: string
   const b = await findBookingForTenant(bookingId);
   assertEmergencyCancelEligibility(b, tenantId);
   const updated = await prisma.$transaction((tx) => executeEmergencyCancelTx(tx, bookingId, input));
-  await sendEmergencyCancellationEmail(b!.user.email, {
-    bookingCode: b!.bookingCode, propertyName: b!.property.title,
-    cancellationReason: input.cancellationReason, refundContact: input.refundContact,
-    isForceMajeure: input.isForceMajeure,
-  });
+  try {
+    await sendEmergencyCancellationEmail(b!.user.email, {
+      bookingCode: b!.bookingCode, propertyName: b!.property.title,
+      cancellationReason: input.cancellationReason, refundContact: input.refundContact,
+      isForceMajeure: input.isForceMajeure,
+    });
+  } catch (_e) {}
   return mapActionResponse(updated);
 }
