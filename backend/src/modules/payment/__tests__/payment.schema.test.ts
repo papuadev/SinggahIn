@@ -3,7 +3,9 @@ import {
   bookingIdParamSchema,
   rejectPaymentSchema,
   emergencyCancelSchema,
+  changePaymentMethodSchema,
 } from '../payment.schema';
+
 
 describe('Payment Schemas', () => {
   const validCuid = 'clh1234567890abcdefghijkl';
@@ -60,6 +62,17 @@ describe('Payment Schemas', () => {
       if (res.success) expect(res.data.isForceMajeure).toBe(false);
     });
 
+    it('accepts reason alias and maps to cancellationReason', () => {
+      const res = emergencyCancelSchema.safeParse({
+        reason: 'Pipa air kamar bocor parah tidak sempat diperbaiki',
+        refundContact: '081234567890 (Pak Budi)',
+      });
+      expect(res.success).toBe(true);
+      if (res.success) {
+        expect(res.data.cancellationReason).toBe('Pipa air kamar bocor parah tidak sempat diperbaiki');
+      }
+    });
+
     it('rejects cancellation reason shorter than 5 characters', () => {
       const res = emergencyCancelSchema.safeParse({ ...validData, cancellationReason: 'Rus' });
       expect(res.success).toBe(false);
@@ -75,4 +88,17 @@ describe('Payment Schemas', () => {
       expect(res.success).toBe(false);
     });
   });
+
+  describe('changePaymentMethodSchema', () => {
+    it('accepts valid payment methods', () => {
+      expect(changePaymentMethodSchema.safeParse({ paymentMethod: 'MANUAL_TRANSFER' }).success).toBe(true);
+      expect(changePaymentMethodSchema.safeParse({ paymentMethod: 'PAYMENT_GATEWAY' }).success).toBe(true);
+    });
+
+    it('rejects invalid or missing payment method', () => {
+      expect(changePaymentMethodSchema.safeParse({ paymentMethod: 'CRYPTO' }).success).toBe(false);
+      expect(changePaymentMethodSchema.safeParse({}).success).toBe(false);
+    });
+  });
 });
+

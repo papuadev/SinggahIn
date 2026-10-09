@@ -5,8 +5,16 @@ import {
   approvePaymentProof,
   rejectPaymentProof,
   emergencyCancelBooking,
+  changePaymentMethod,
 } from './payment.service';
-import { createSnapTransaction, handleMidtransWebhook } from './midtrans.service';
+
+import {
+  createSnapTransaction,
+  resetSnapTransaction,
+  handleMidtransWebhook,
+  syncMidtransTransactionStatus,
+} from './midtrans.service';
+
 
 export async function uploadPaymentProofHandler(req: Request, res: Response, next: NextFunction) {
   try {
@@ -47,7 +55,16 @@ export async function emergencyCancelHandler(req: Request, res: Response, next: 
 export async function createSnapChargeHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const data = await createSnapTransaction(req.user!.userId, req.body.bookingId);
-    sendSuccess(res, data, 'Token transaksi Midtrans Snap berhasil dibuat.');
+    sendSuccess(res, data, 'Sesi pembayaran otomatis berhasil disiapkan.');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function resetSnapChargeHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await resetSnapTransaction(req.user!.userId, req.params.bookingId);
+    sendSuccess(res, data, 'Sesi pembayaran otomatis berhasil diperbarui.');
   } catch (error) {
     next(error);
   }
@@ -56,8 +73,28 @@ export async function createSnapChargeHandler(req: Request, res: Response, next:
 export async function handleMidtransWebhookHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const data = await handleMidtransWebhook(req.body);
-    sendSuccess(res, data, 'Notifikasi pembayaran Midtrans berhasil diproses.');
+    sendSuccess(res, data, 'Notifikasi pembayaran otomatis berhasil diproses.');
   } catch (error) {
     next(error);
   }
 }
+
+export async function syncMidtransStatusHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await syncMidtransTransactionStatus(req.params.bookingId);
+    sendSuccess(res, data, 'Status pembayaran otomatis berhasil disinkronkan.');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function changePaymentMethodHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await changePaymentMethod(req.user!.userId, req.params.bookingId, req.body.paymentMethod);
+    sendSuccess(res, data, 'Metode pembayaran berhasil diubah.');
+  } catch (error) {
+    next(error);
+  }
+}
+
+

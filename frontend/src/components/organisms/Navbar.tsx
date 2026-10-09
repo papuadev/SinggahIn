@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, User as UserIcon, LayoutDashboard, Compass } from 'lucide-react';
+import { LogOut, User as UserIcon, LayoutDashboard, Compass, ClipboardList } from 'lucide-react';
 import { useAuthStore } from '../../stores/auth.store';
 import { RoleBadge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
@@ -22,23 +22,51 @@ function AccountInfoHeader({ user }: { user: NonNullable<ReturnType<typeof useAu
   );
 }
 
-function DropdownLinks({ isTenant, onSelect }: { isTenant: boolean; onSelect: () => void }): React.JSX.Element {
+function TenantLinks({ onSelect }: { onSelect: () => void }) {
   return (
-    <div className="py-1 text-sm text-gray-700">
-      {isTenant && (
-        <Link to="/tenant/properties" onClick={onSelect} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 hover:text-primary-600 transition-colors">
-          <LayoutDashboard className="w-4 h-4 text-primary-600 shrink-0" /> Dasbor Properti
-        </Link>
-      )}
+    <>
+      <Link to="/tenant/orders" onClick={onSelect} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 hover:text-primary-600 transition-colors">
+        <ClipboardList className="w-4 h-4 text-primary-600 shrink-0" /> Kelola Pesanan
+      </Link>
+      <Link to="/tenant/properties" onClick={onSelect} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 hover:text-primary-600 transition-colors">
+        <LayoutDashboard className="w-4 h-4 text-primary-600 shrink-0" /> Dasbor Properti
+      </Link>
+    </>
+  );
+}
+
+function UserOrderLink({ onSelect }: { onSelect: () => void }) {
+  return (
+    <Link to="/orders" onClick={onSelect} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 hover:text-primary-600 transition-colors">
+      <ClipboardList className="w-4 h-4 text-primary-600 shrink-0" /> Pesanan Saya
+    </Link>
+  );
+}
+
+function CommonLinks({ onSelect, isTenant }: { onSelect: () => void; isTenant: boolean }) {
+  return (
+    <>
+      {!isTenant && <UserOrderLink onSelect={onSelect} />}
       <Link to="/" onClick={onSelect} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 hover:text-primary-600 transition-colors">
         <Compass className="w-4 h-4 text-primary-600 shrink-0" /> Cari Penginapan
       </Link>
       <Link to="/profile" onClick={onSelect} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 hover:text-primary-600 transition-colors">
         <UserIcon className="w-4 h-4 text-primary-600 shrink-0" /> Profil Saya
       </Link>
+    </>
+  );
+}
+
+
+function DropdownLinks({ isTenant, onSelect }: { isTenant: boolean; onSelect: () => void }): React.JSX.Element {
+  return (
+    <div className="py-1 text-sm text-gray-700">
+      {isTenant && <TenantLinks onSelect={onSelect} />}
+      <CommonLinks onSelect={onSelect} isTenant={isTenant} />
     </div>
   );
 }
+
 
 function LogoutItem({ onLogout }: { onLogout: () => void }): React.JSX.Element {
   return (
@@ -102,19 +130,12 @@ function UserMenu(): React.JSX.Element {
 function GuestButtons(): React.JSX.Element {
   return (
     <div className="flex items-center gap-2">
-      <Link to="/login">
-        <Button variant="ghost" size="sm" leftIcon={<UserIcon className="w-4 h-4" />}>
-          Masuk
-        </Button>
-      </Link>
-      <Link to="/register" className="hidden sm:inline-block">
-        <Button variant="primary" size="sm">
-          Daftar
-        </Button>
-      </Link>
+      <Link to="/login"><Button variant="ghost" size="sm" leftIcon={<UserIcon className="w-4 h-4" />}>Masuk</Button></Link>
+      <Link to="/register" className="hidden sm:inline-block"><Button variant="primary" size="sm">Daftar</Button></Link>
     </div>
   );
 }
+
 
 function BrandLogo(): React.JSX.Element {
   return (

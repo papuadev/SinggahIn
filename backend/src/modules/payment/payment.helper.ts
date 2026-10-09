@@ -8,7 +8,8 @@ export function calculateGraceExpiry(hours = 1): Date {
 export function assertUploadEligibility(booking: any, userId: string): void {
   if (!booking) throw AppError.notFound('Pesanan tidak ditemukan.');
   if (booking.userId !== userId) throw AppError.forbidden('Anda tidak memiliki akses ke pesanan ini.');
-  if (booking.status !== BookingStatus.WAITING_PAYMENT) {
+  const allowed = [BookingStatus.WAITING_PAYMENT, BookingStatus.WAITING_CONFIRMATION];
+  if (!allowed.includes(booking.status)) {
     throw AppError.badRequest('Bukti transfer hanya dapat diunggah pada pesanan yang menunggu pembayaran.');
   }
   if (new Date() > booking.expiresAt) {
@@ -42,3 +43,15 @@ export function assertEmergencyCancelEligibility(booking: any, tenantId: string)
     throw AppError.badRequest('Pesanan yang sudah dibatalkan atau selesai tidak dapat dibatalkan lagi.');
   }
 }
+
+export function assertChangeMethodEligibility(booking: any, userId: string): void {
+  if (!booking) throw AppError.notFound('Pesanan tidak ditemukan.');
+  if (booking.userId !== userId) throw AppError.forbidden('Anda tidak memiliki akses ke pesanan ini.');
+  if (booking.status !== BookingStatus.WAITING_PAYMENT) {
+    throw AppError.badRequest('Metode pembayaran hanya dapat diubah pada pesanan yang menunggu pembayaran.');
+  }
+  if (new Date() > booking.expiresAt) {
+    throw AppError.badRequest('Batas waktu pembayaran pesanan ini telah berakhir.');
+  }
+}
+

@@ -1,10 +1,16 @@
-import crypto from 'crypto';
 import midtransClient from 'midtrans-client';
 import { BookingStatus, PaymentMethod, PaymentStatus, Prisma } from '@prisma/client';
 import { prisma } from '../../shared/services/prisma.service';
 import { AppError } from '../../shared/utils/app-error';
 import { sendBookingVoucherEmail } from '../../shared/services/mail.service';
 import { MidtransWebhookPayload } from './midtrans.schema';
+import {
+  verifyMidtransSignature,
+  parsePendingInfo,
+  extractBaseBookingCode,
+} from './midtrans.helper';
+
+export { verifyMidtransSignature } from './midtrans.helper';
 
 const serverKey = process.env.MIDTRANS_SERVER_KEY || 'SB-Mid-server-default';
 const clientKey = process.env.MIDTRANS_CLIENT_KEY || 'SB-Mid-client-default';
@@ -20,34 +26,69 @@ function validateChargeEligibility(b: any, userId: string): void {
   }
   if (new Date() > b.expiresAt) throw AppError.badRequest('Batas waktu pembayaran pesanan telah berakhir.');
   if (b.payment?.paymentMethod !== PaymentMethod.PAYMENT_GATEWAY) {
-    throw AppError.badRequest('Metode pembayaran pesanan ini bukan payment gateway.');
+    throw AppError.badRequest('Metode pembayaran pesanan ini bukan pembayaran otomatis.');
   }
+}
+
+async function requestSnapCharge(b: any, orderId?: string) {
+  try {
+    const res = await snapClient.createTransaction({
+      transaction_details: { order_id: orderId || b.bookingCode, gross_amount: b.totalPrice },
+      customer_details: { first_name: b.user.name || 'Tamu', email: b.user.email, phone: b.user.phoneNumber || undefined },
+    });
+    return { snapToken: res.token, redirectUrl: res.redirect_url };
+  } catch (err: any) {
+    const msg = err.ApiResponse?.error_messages?.[0] || err.message || '';
+    if (serverKey.includes('your_server_key') || err.httpStatusCode === '401' || msg.includes('Unauthorized')) {
+      throw AppError.badRequest('MIDTRANS_SERVER_KEY di backend/.env belum valid atau masih berupa placeholder.');
+    }
+    throw AppError.badRequest(`Gagal memproses pembayaran otomatis: ${msg}`);
+  }
+}
+
+export const snapCache = new Map<string, { snapToken: string; redirectUrl: string }>();
+
+function getExistingSnap(b: any) {
+  if (snapCache.has(b.id)) return snapCache.get(b.id);
+  if (b.payment?.proofPublicId && b.payment?.status === PaymentStatus.PENDING) {
+    return {
+      snapToken: b.payment.proofPublicId,
+      redirectUrl: `https://app.sandbox.midtrans.com/snap/v2/vtweb/${b.payment.proofPublicId}`,
+    };
+  }
+  return null;
 }
 
 export async function createSnapTransaction(userId: string, bookingId: string) {
   const b = await prisma.booking.findUnique({ where: { id: bookingId }, include: { payment: true, user: true } });
   validateChargeEligibility(b, userId);
-  const res = await snapClient.createTransaction({
-    transaction_details: { order_id: b!.bookingCode, gross_amount: b!.totalPrice },
-    customer_details: { first_name: b!.user.name || 'Tamu', email: b!.user.email, phone: b!.user.phoneNumber || undefined },
+  const existing = getExistingSnap(b);
+  if (existing) return existing;
+  const orderId = b!.payment?.gatewayOrderId || b!.bookingCode;
+  const result = await requestSnapCharge(b, orderId);
+  snapCache.set(bookingId, result);
+  await prisma.payment.update({
+    where: { bookingId },
+    data: { gatewayOrderId: orderId, proofPublicId: result.snapToken },
   });
-  await prisma.payment.update({ where: { bookingId }, data: { gatewayOrderId: b!.bookingCode } });
-  return { snapToken: res.token, redirectUrl: res.redirect_url };
+  return result;
 }
 
-function timingSafeMatch(expected: string, actual?: string): boolean {
-  if (!actual) return false;
-  const expectedBuf = Buffer.from(expected, 'utf8');
-  const actualBuf = Buffer.from(actual, 'utf8');
-  if (expectedBuf.length !== actualBuf.length) return false;
-  return crypto.timingSafeEqual(expectedBuf, actualBuf);
-}
-
-export function verifyMidtransSignature(payload: MidtransWebhookPayload): boolean {
-  const currentKey = process.env.MIDTRANS_SERVER_KEY || serverKey;
-  const raw = `${payload.order_id}${payload.status_code}${payload.gross_amount}${currentKey}`;
-  const hash = crypto.createHash('sha512').update(raw).digest('hex');
-  return timingSafeMatch(hash, payload.signature_key);
+export async function resetSnapTransaction(userId: string, bookingId: string) {
+  const b = await prisma.booking.findUnique({ where: { id: bookingId }, include: { payment: true, user: true } });
+  validateChargeEligibility(b, userId);
+  if (b!.payment?.gatewayOrderId) {
+    try { await (snapClient as any).transaction.cancel(b!.payment.gatewayOrderId); } catch {}
+  }
+  snapCache.delete(bookingId);
+  const nextOrderId = `${b!.bookingCode}_${Date.now().toString().slice(-4)}`;
+  const result = await requestSnapCharge(b, nextOrderId);
+  snapCache.set(bookingId, result);
+  await prisma.payment.update({
+    where: { bookingId },
+    data: { gatewayOrderId: nextOrderId, proofPublicId: result.snapToken },
+  });
+  return result;
 }
 
 async function executePaidTx(tx: Prisma.TransactionClient, bookingId: string, txId?: string) {
@@ -63,7 +104,7 @@ async function executePaidTx(tx: Prisma.TransactionClient, bookingId: string, tx
 async function executeCancelTx(tx: Prisma.TransactionClient, bookingId: string, txId: string | undefined, status: string) {
   const payStatus = status === 'expire' ? PaymentStatus.EXPIRED : PaymentStatus.CANCELLED;
   return tx.booking.update({
-    where: { id: bookingId }, data: { status: BookingStatus.CANCELLED, cancellationReason: `Midtrans ${status}` },
+    where: { id: bookingId }, data: { status: BookingStatus.CANCELLED, cancellationReason: `Pembayaran ${status}` },
   }).then(() => tx.payment.update({
     where: { bookingId }, data: { status: payStatus, gatewayTransactionId: txId },
   }));
@@ -85,9 +126,10 @@ async function processCancelledNotification(b: any, p: MidtransWebhookPayload) {
 }
 
 export async function handleMidtransWebhook(payload: MidtransWebhookPayload) {
-  if (!verifyMidtransSignature(payload)) throw AppError.unauthorized('Signature key Midtrans tidak valid.');
+  if (!verifyMidtransSignature(payload, serverKey)) throw AppError.unauthorized('Signature key tidak valid.');
+  const baseCode = extractBaseBookingCode(payload.order_id);
   const b = await prisma.booking.findUnique({
-    where: { bookingCode: payload.order_id },
+    where: { bookingCode: baseCode },
     include: { payment: true, user: true, property: true, room: true },
   });
   if (!b) throw AppError.notFound('Pesanan tidak ditemukan.');
@@ -98,4 +140,38 @@ export async function handleMidtransWebhook(payload: MidtransWebhookPayload) {
     await processCancelledNotification(b, payload);
   }
   return { orderId: payload.order_id, status: payload.transaction_status };
+}
+
+async function checkAndApplyMidtransStatus(b: any, statusRes: any) {
+  const isPaid = statusRes.transaction_status === 'settlement' ||
+    (statusRes.transaction_status === 'capture' && statusRes.fraud_status === 'accept');
+  if (isPaid) await processPaidNotification(b, statusRes);
+  else if (['deny', 'cancel', 'expire'].includes(statusRes.transaction_status)) {
+    await processCancelledNotification(b, statusRes);
+  }
+}
+
+async function fetchMidtransStatusSafe(orderCode: string) {
+  try {
+    return await (snapClient as any).transaction.status(orderCode);
+  } catch {
+    return null;
+  }
+}
+
+export async function syncMidtransTransactionStatus(bookingId: string) {
+  const b = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { payment: true, user: true, property: true, room: true },
+  });
+  if (!b || b.status === BookingStatus.PROCESSED) return b;
+  const targetOrderId = b.payment?.gatewayOrderId || b.bookingCode;
+  const statusRes = await fetchMidtransStatusSafe(targetOrderId);
+  if (statusRes) await checkAndApplyMidtransStatus(b, statusRes);
+  const updated = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { payment: true, property: true, room: true },
+  });
+  const pending = parsePendingInfo(statusRes);
+  return updated ? { ...updated, pendingPayment: pending } : null;
 }

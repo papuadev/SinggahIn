@@ -4,6 +4,7 @@ import { AppError } from '../../shared/utils/app-error';
 import { calculateStayPricing } from '../room/pricing.service';
 import { generateBookingCode, calculateBookingExpiry, parseAndValidateBookingDates } from './booking.helper';
 import { CreateBookingInput, BookingResponseDto, BookingListQuery } from './booking.types';
+import { syncMidtransTransactionStatus } from '../payment/midtrans.service';
 
 async function validateUserEligibility(tx: Prisma.TransactionClient, userId: string) {
   const user = await tx.user.findUnique({ where: { id: userId } });
@@ -86,7 +87,7 @@ export async function createBooking(userId: string, input: CreateBookingInput): 
   const pricing = await calculateStayPricing(input.roomId, input.checkInDate, input.checkOutDate);
   const b = await prisma.$transaction((tx) => executeBookingTx(tx, userId, input, dates, pricing));
   return {
-    bookingId: b.id, bookingCode: b.bookingCode, status: b.status,
+    id: b.id, bookingId: b.id, bookingCode: b.bookingCode, status: b.status,
     totalPrice: b.totalPrice, expiresAt: b.expiresAt.toISOString(),
   };
 }
@@ -116,6 +117,14 @@ export async function cancelBooking(userId: string, bookingId: string, reason?: 
   return prisma.$transaction((tx) => executeCancelTx(tx, userId, bookingId, reason));
 }
 
+async function syncBookingIfGateway(b: any) {
+  if (b.payment?.paymentMethod !== PaymentMethod.PAYMENT_GATEWAY || b.status !== BookingStatus.WAITING_PAYMENT) {
+    return b;
+  }
+  const updated = await syncMidtransTransactionStatus(b.id);
+  return updated ? { ...b, ...updated } : b;
+}
+
 export async function getBookingById(userId: string, bookingId: string, role?: Role) {
   const b = await prisma.booking.findUnique({
     where: { id: bookingId },
@@ -129,7 +138,7 @@ export async function getBookingById(userId: string, bookingId: string, role?: R
   const isOwner = b.userId === userId;
   const isTenant = role === Role.TENANT && b.property.tenantId === userId;
   if (!isOwner && !isTenant) throw AppError.forbidden('Akses ke data pesanan ini ditolak.');
-  return b;
+  return syncBookingIfGateway(b);
 }
 
 const BOOKING_SELECT = {
@@ -148,3 +157,22 @@ export async function getUserBookings(userId: string, query: BookingListQuery) {
   ]);
   return { data, meta: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) } };
 }
+
+const TENANT_BOOKING_SELECT = {
+  property: { select: { id: true, title: true, city: true, address: true } },
+  room: { select: { id: true, name: true, basePrice: true } },
+  user: { select: { id: true, name: true, email: true, phoneNumber: true } },
+  payment: true,
+};
+
+export async function getTenantBookings(tenantId: string, query: BookingListQuery) {
+  const page = query.page || 1;
+  const limit = query.limit || 10;
+  const where = { property: { tenantId }, ...(query.status && { status: query.status }) };
+  const [data, totalItems] = await Promise.all([
+    prisma.booking.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' }, include: TENANT_BOOKING_SELECT }),
+    prisma.booking.count({ where }),
+  ]);
+  return { data, meta: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) } };
+}
+

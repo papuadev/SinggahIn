@@ -32,29 +32,17 @@ function getButtonClass(variant: ButtonVariant, size: ButtonSize, custom: string
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  function Button(
-    {
-      children,
-      variant = 'primary',
-      size = 'md',
-      isLoading = false,
-      leftIcon,
-      rightIcon,
-      disabled,
-      className = '',
-      ...props
-    },
-    ref
-  ): React.JSX.Element {
+  function Button({ children, variant = 'primary', size = 'md', isLoading = false, leftIcon, rightIcon, disabled, className = '', ...props }, ref): React.JSX.Element {
     const isActuallyDisabled = disabled || isLoading;
     const finalClass = getButtonClass(variant, size, className);
     return (
       <button ref={ref} disabled={isActuallyDisabled} className={finalClass} {...props}>
         {isLoading && <Spinner size={size === 'lg' ? 'md' : 'sm'} />}
         {!isLoading && leftIcon}
-        <span>{children}</span>
+        <span className="inline-flex items-center justify-center gap-2">{children}</span>
         {!isLoading && rightIcon}
       </button>
     );
   }
 );
+

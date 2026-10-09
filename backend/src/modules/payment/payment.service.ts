@@ -1,4 +1,4 @@
-import { BookingStatus, PaymentStatus, Prisma } from '@prisma/client';
+import { BookingStatus, PaymentMethod, PaymentStatus, Prisma } from '@prisma/client';
 import { prisma } from '../../shared/services/prisma.service';
 import { uploadToCloudinary, deleteFromCloudinary, UploadResult } from '../../shared/services/cloudinary.service';
 import { sendBookingVoucherEmail, sendEmergencyCancellationEmail } from '../../shared/services/mail.service';
@@ -6,8 +6,10 @@ import {
   assertUploadEligibility,
   assertTenantActionEligibility,
   assertEmergencyCancelEligibility,
+  assertChangeMethodEligibility,
 } from './payment.helper';
 import { RejectPaymentInput, EmergencyCancelInput, PaymentActionResponse } from './payment.types';
+import { snapCache } from './midtrans.service';
 
 async function findBookingForUpload(bookingId: string) {
   return prisma.booking.findUnique({ where: { id: bookingId }, include: { payment: true } });
@@ -23,11 +25,13 @@ async function findBookingForTenant(bookingId: string) {
 function mapActionResponse(b: any): PaymentActionResponse {
   return {
     bookingId: b.id, bookingCode: b.bookingCode, bookingStatus: b.status,
-    paymentStatus: b.payment?.status, expiresAt: b.expiresAt?.toISOString(),
+    paymentStatus: b.payment?.status, paymentMethod: b.payment?.paymentMethod,
+    expiresAt: b.expiresAt?.toISOString(),
     proofImageUrl: b.payment?.proofImageUrl, cancellationReason: b.cancellationReason ?? undefined,
     refundContact: b.refundContact ?? undefined, isForceMajeure: b.isForceMajeure ?? false,
   };
 }
+
 
 async function executeProofUploadTx(tx: Prisma.TransactionClient, bookingId: string, res: UploadResult) {
   return tx.booking.update({
@@ -111,10 +115,36 @@ export async function emergencyCancelBooking(tenantId: string, bookingId: string
   const b = await findBookingForTenant(bookingId);
   assertEmergencyCancelEligibility(b, tenantId);
   const updated = await prisma.$transaction((tx) => executeEmergencyCancelTx(tx, bookingId, input));
-  await sendEmergencyCancellationEmail(b!.user.email, {
-    bookingCode: b!.bookingCode, propertyName: b!.property.title,
-    cancellationReason: input.cancellationReason, refundContact: input.refundContact,
-    isForceMajeure: input.isForceMajeure,
-  });
+  try {
+    await sendEmergencyCancellationEmail(b!.user.email, {
+      bookingCode: b!.bookingCode, propertyName: b!.property.title,
+      cancellationReason: input.cancellationReason, refundContact: input.refundContact,
+      isForceMajeure: input.isForceMajeure,
+    });
+  } catch (_e) {}
   return mapActionResponse(updated);
 }
+
+async function executeChangeMethodTx(tx: Prisma.TransactionClient, bookingId: string, method: PaymentMethod) {
+  return tx.booking.update({
+    where: { id: bookingId },
+    data: {
+      payment: {
+        update: {
+          paymentMethod: method, proofImageUrl: null,
+          proofPublicId: null, gatewayOrderId: null, gatewayTransactionId: null,
+        },
+      },
+    },
+    include: { payment: true },
+  });
+}
+
+export async function changePaymentMethod(userId: string, bookingId: string, newMethod: PaymentMethod): Promise<PaymentActionResponse> {
+  const b = await findBookingForUpload(bookingId);
+  assertChangeMethodEligibility(b, userId);
+  snapCache.delete(bookingId);
+  const updated = await prisma.$transaction((tx) => executeChangeMethodTx(tx, bookingId, newMethod));
+  return mapActionResponse(updated);
+}
+

@@ -124,4 +124,26 @@ describe('Midtrans HTTP Integration Tests', () => {
       expect(res.body.data.status).toBe('expire');
     });
   });
+
+  describe('POST /api/v1/payments/:bookingId/midtrans-reset', () => {
+    it('returns 200 and generates new snap token on reset', async () => {
+      const b = {
+        id: bookingId, userId, bookingCode: 'SGH-ABCD', totalPrice: 1000000,
+        status: BookingStatus.WAITING_PAYMENT, expiresAt: new Date(Date.now() + 3600000),
+        payment: { paymentMethod: PaymentMethod.PAYMENT_GATEWAY, gatewayOrderId: 'SGH-ABCD' },
+        user: { name: 'Ali', email: 'ali@test.com' },
+      };
+      vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
+      vi.spyOn(snapClient.transaction, 'cancel').mockResolvedValueOnce({} as any);
+      vi.spyOn(snapClient, 'createTransaction').mockResolvedValueOnce({
+        token: 'new-token-abc', redirect_url: 'https://midtrans/pay',
+      });
+      const res = await request(app)
+        .post(`/api/v1/payments/${bookingId}/midtrans-reset`)
+        .set('Authorization', `Bearer ${userToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body.data.snapToken).toBe('new-token-abc');
+    });
+  });
 });
+

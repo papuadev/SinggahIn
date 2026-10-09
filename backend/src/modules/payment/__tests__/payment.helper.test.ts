@@ -5,7 +5,9 @@ import {
   assertUploadEligibility,
   assertTenantActionEligibility,
   assertEmergencyCancelEligibility,
+  assertChangeMethodEligibility,
 } from '../payment.helper';
+
 
 describe('Payment Helper', () => {
   const futureExpiry = new Date(Date.now() + 3600000);
@@ -46,12 +48,11 @@ describe('Payment Helper', () => {
       expect(() => assertUploadEligibility(b, 'u1')).toThrow('bukan transfer manual');
     });
 
-    it('passes when booking is eligible for manual proof upload', () => {
-      const b = {
-        userId: 'u1', status: BookingStatus.WAITING_PAYMENT, expiresAt: futureExpiry,
-        payment: { paymentMethod: PaymentMethod.MANUAL_TRANSFER },
-      };
-      expect(() => assertUploadEligibility(b, 'u1')).not.toThrow();
+    it('passes when booking is eligible for manual proof upload (WAITING_PAYMENT or WAITING_CONFIRMATION)', () => {
+      const b1 = { userId: 'u1', status: BookingStatus.WAITING_PAYMENT, expiresAt: futureExpiry, payment: { paymentMethod: PaymentMethod.MANUAL_TRANSFER } };
+      const b2 = { userId: 'u1', status: BookingStatus.WAITING_CONFIRMATION, expiresAt: futureExpiry, payment: { paymentMethod: PaymentMethod.MANUAL_TRANSFER } };
+      expect(() => assertUploadEligibility(b1, 'u1')).not.toThrow();
+      expect(() => assertUploadEligibility(b2, 'u1')).not.toThrow();
     });
   });
 
@@ -99,4 +100,30 @@ describe('Payment Helper', () => {
       expect(() => assertEmergencyCancelEligibility(b, 't1')).not.toThrow();
     });
   });
+
+  describe('assertChangeMethodEligibility', () => {
+    it('throws 404 if booking not found', () => {
+      expect(() => assertChangeMethodEligibility(null, 'u1')).toThrow('Pesanan tidak ditemukan.');
+    });
+
+    it('throws 403 if user does not own booking', () => {
+      expect(() => assertChangeMethodEligibility({ userId: 'u2' }, 'u1')).toThrow('tidak memiliki akses');
+    });
+
+    it('throws 400 if booking is not WAITING_PAYMENT', () => {
+      const b = { userId: 'u1', status: BookingStatus.WAITING_CONFIRMATION, expiresAt: futureExpiry };
+      expect(() => assertChangeMethodEligibility(b, 'u1')).toThrow('menunggu pembayaran');
+    });
+
+    it('throws 400 if booking is expired', () => {
+      const b = { userId: 'u1', status: BookingStatus.WAITING_PAYMENT, expiresAt: pastExpiry };
+      expect(() => assertChangeMethodEligibility(b, 'u1')).toThrow('telah berakhir');
+    });
+
+    it('passes when booking is WAITING_PAYMENT and not expired', () => {
+      const b = { userId: 'u1', status: BookingStatus.WAITING_PAYMENT, expiresAt: futureExpiry };
+      expect(() => assertChangeMethodEligibility(b, 'u1')).not.toThrow();
+    });
+  });
 });
+
