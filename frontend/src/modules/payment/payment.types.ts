@@ -2,9 +2,11 @@ export interface PaymentActionResponse {
   bookingId: string;
   status: string;
   paymentStatus: string;
+  paymentMethod?: string;
   expiresAt?: string;
   isForceMajeure?: boolean;
 }
+
 
 export interface SnapTokenResponse {
   snapToken: string;

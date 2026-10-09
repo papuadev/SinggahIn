@@ -7,6 +7,7 @@ import {
   bookingIdParamSchema,
   rejectPaymentSchema,
   emergencyCancelSchema,
+  changePaymentMethodSchema,
 } from './payment.schema';
 import {
   midtransChargeSchema,
@@ -18,8 +19,13 @@ import {
   rejectPaymentProofHandler,
   emergencyCancelHandler,
   createSnapChargeHandler,
+  resetSnapChargeHandler,
   handleMidtransWebhookHandler,
+  syncMidtransStatusHandler,
+  changePaymentMethodHandler,
 } from './payment.controller';
+
+
 
 const router = Router();
 
@@ -65,9 +71,34 @@ router.post(
 );
 
 router.post(
+  '/:bookingId/midtrans-sync',
+  authenticate,
+  validateRequest({ params: bookingIdParamSchema }),
+  syncMidtransStatusHandler
+);
+
+router.post(
+  '/:bookingId/midtrans-reset',
+  authenticate,
+  requireRole(Role.USER),
+  validateRequest({ params: bookingIdParamSchema }),
+  resetSnapChargeHandler
+);
+
+router.post(
   '/midtrans-webhook',
   validateRequest({ body: midtransWebhookSchema }),
   handleMidtransWebhookHandler
 );
 
+
+router.patch(
+  '/:bookingId/method',
+  authenticate,
+  requireRole(Role.USER),
+  validateRequest({ params: bookingIdParamSchema, body: changePaymentMethodSchema }),
+  changePaymentMethodHandler
+);
+
 export default router;
+

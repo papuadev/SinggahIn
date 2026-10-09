@@ -55,10 +55,11 @@ function CardActions({ b, onPay, onCancel, onView }: any) {
       {b.status === 'WAITING_PAYMENT' && onCancel && (
         <Button variant="ghost" size="sm" onClick={() => onCancel(b.id)}>Batalkan</Button>
       )}
-      {b.status === 'WAITING_PAYMENT' && onPay && (
+      {b.status === 'WAITING_PAYMENT' && onPay ? (
         <Button variant="primary" size="sm" leftIcon={<CreditCard className="w-3.5 h-3.5" />} onClick={() => onPay(b.id)}>Bayar Sekarang</Button>
+      ) : (
+        <Button variant="primary" size="sm" rightIcon={<ChevronRight className="w-3.5 h-3.5" />} onClick={() => onView(b.id)}>Lihat Pesanan</Button>
       )}
-      <Button variant="outline" size="sm" rightIcon={<ChevronRight className="w-3.5 h-3.5" />} onClick={() => onView(b.id)}>Detail</Button>
     </div>
   );
 }

@@ -3,7 +3,9 @@ import {
   bookingIdParamSchema,
   rejectPaymentSchema,
   emergencyCancelSchema,
+  changePaymentMethodSchema,
 } from '../payment.schema';
+
 
 describe('Payment Schemas', () => {
   const validCuid = 'clh1234567890abcdefghijkl';
@@ -86,4 +88,17 @@ describe('Payment Schemas', () => {
       expect(res.success).toBe(false);
     });
   });
+
+  describe('changePaymentMethodSchema', () => {
+    it('accepts valid payment methods', () => {
+      expect(changePaymentMethodSchema.safeParse({ paymentMethod: 'MANUAL_TRANSFER' }).success).toBe(true);
+      expect(changePaymentMethodSchema.safeParse({ paymentMethod: 'PAYMENT_GATEWAY' }).success).toBe(true);
+    });
+
+    it('rejects invalid or missing payment method', () => {
+      expect(changePaymentMethodSchema.safeParse({ paymentMethod: 'CRYPTO' }).success).toBe(false);
+      expect(changePaymentMethodSchema.safeParse({}).success).toBe(false);
+    });
+  });
 });
+

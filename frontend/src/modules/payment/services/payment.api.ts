@@ -45,4 +45,23 @@ export const paymentApi = {
     const res = await apiClient.post<ApiResponse<PaymentActionResponse>>(`/payments/${bookingId}/emergency-cancel`, body);
     return res.data;
   },
+
+  async syncMidtransStatus(bookingId: string): Promise<ApiResponse<any>> {
+    const res = await apiClient.post<ApiResponse<any>>(`/payments/${bookingId}/midtrans-sync`);
+    return res.data;
+  },
+
+  async changePaymentMethod(bookingId: string, paymentMethod: string): Promise<ApiResponse<PaymentActionResponse>> {
+    const res = await apiClient.patch<ApiResponse<PaymentActionResponse>>(`/payments/${bookingId}/method`, {
+      paymentMethod,
+    });
+    return res.data;
+  },
+
+  async resetSnapCharge(bookingId: string): Promise<ApiResponse<SnapTokenResponse>> {
+    const res = await apiClient.post<ApiResponse<SnapTokenResponse>>(`/payments/${bookingId}/midtrans-reset`);
+    return res.data;
+  },
 };
+
+

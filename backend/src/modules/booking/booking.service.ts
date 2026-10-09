@@ -4,6 +4,7 @@ import { AppError } from '../../shared/utils/app-error';
 import { calculateStayPricing } from '../room/pricing.service';
 import { generateBookingCode, calculateBookingExpiry, parseAndValidateBookingDates } from './booking.helper';
 import { CreateBookingInput, BookingResponseDto, BookingListQuery } from './booking.types';
+import { syncMidtransTransactionStatus } from '../payment/midtrans.service';
 
 async function validateUserEligibility(tx: Prisma.TransactionClient, userId: string) {
   const user = await tx.user.findUnique({ where: { id: userId } });
@@ -116,6 +117,14 @@ export async function cancelBooking(userId: string, bookingId: string, reason?: 
   return prisma.$transaction((tx) => executeCancelTx(tx, userId, bookingId, reason));
 }
 
+async function syncBookingIfGateway(b: any) {
+  if (b.payment?.paymentMethod !== PaymentMethod.PAYMENT_GATEWAY || b.status !== BookingStatus.WAITING_PAYMENT) {
+    return b;
+  }
+  const updated = await syncMidtransTransactionStatus(b.id);
+  return updated ? { ...b, ...updated } : b;
+}
+
 export async function getBookingById(userId: string, bookingId: string, role?: Role) {
   const b = await prisma.booking.findUnique({
     where: { id: bookingId },
@@ -129,7 +138,7 @@ export async function getBookingById(userId: string, bookingId: string, role?: R
   const isOwner = b.userId === userId;
   const isTenant = role === Role.TENANT && b.property.tenantId === userId;
   if (!isOwner && !isTenant) throw AppError.forbidden('Akses ke data pesanan ini ditolak.');
-  return b;
+  return syncBookingIfGateway(b);
 }
 
 const BOOKING_SELECT = {

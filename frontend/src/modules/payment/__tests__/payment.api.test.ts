@@ -6,8 +6,10 @@ vi.mock('../../../libs/axios', () => ({
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),
+    patch: vi.fn(),
   },
 }));
+
 
 describe('paymentApi', () => {
   beforeEach(() => { vi.clearAllMocks(); });
@@ -53,4 +55,27 @@ describe('paymentApi', () => {
       isForceMajeure: true,
     });
   });
+
+  it('syncMidtransStatus posts to /payments/:bookingId/midtrans-sync', async () => {
+    vi.mocked(apiClient.post).mockResolvedValueOnce({ data: { success: true, data: { status: 'settlement' } } });
+    const res = await paymentApi.syncMidtransStatus('b1');
+    expect(apiClient.post).toHaveBeenCalledWith('/payments/b1/midtrans-sync');
+    expect(res.data.status).toBe('settlement');
+  });
+
+  it('changePaymentMethod patches to /payments/:bookingId/method', async () => {
+    vi.mocked(apiClient.patch).mockResolvedValueOnce({ data: { success: true, data: { paymentMethod: 'PAYMENT_GATEWAY' } } });
+    const res = await paymentApi.changePaymentMethod('b1', 'PAYMENT_GATEWAY');
+    expect(apiClient.patch).toHaveBeenCalledWith('/payments/b1/method', { paymentMethod: 'PAYMENT_GATEWAY' });
+    expect(res.data.paymentMethod).toBe('PAYMENT_GATEWAY');
+  });
+
+  it('resetSnapCharge posts to /payments/:bookingId/midtrans-reset', async () => {
+    vi.mocked(apiClient.post).mockResolvedValueOnce({ data: { success: true, data: { snapToken: 'reset-tok' } } });
+    const res = await paymentApi.resetSnapCharge('b1');
+    expect(apiClient.post).toHaveBeenCalledWith('/payments/b1/midtrans-reset');
+    expect(res.data.snapToken).toBe('reset-tok');
+  });
 });
+
+

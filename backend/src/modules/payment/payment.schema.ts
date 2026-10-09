@@ -27,3 +27,10 @@ export const emergencyCancelSchema = z.preprocess(
     isForceMajeure: z.boolean().optional().default(false),
   })
 );
+
+export const changePaymentMethodSchema = z.object({
+  paymentMethod: z.enum(['MANUAL_TRANSFER', 'PAYMENT_GATEWAY'], {
+    errorMap: () => ({ message: 'Metode pembayaran tidak valid.' }),
+  }),
+});
+

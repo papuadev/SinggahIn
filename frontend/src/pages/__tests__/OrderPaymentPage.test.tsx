@@ -4,6 +4,8 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OrderPaymentPage } from '../OrderPaymentPage';
 import { bookingApi } from '../../modules/booking/services/booking.api';
+import { paymentApi } from '../../modules/payment/services/payment.api';
+
 
 vi.mock('../../modules/booking/services/booking.api', () => ({
   bookingApi: {
@@ -16,8 +18,10 @@ vi.mock('../../modules/payment/services/payment.api', () => ({
   paymentApi: {
     uploadPaymentProof: vi.fn(),
     createSnapCharge: vi.fn(),
+    changePaymentMethod: vi.fn(),
   },
 }));
+
 
 const mockBooking = {
   id: 'bk-123',
@@ -97,4 +101,45 @@ describe('OrderPaymentPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Unggah Ulang/i }));
     expect(screen.getByText(/Pilih atau Seret Foto Bukti Transfer/i)).toBeInTheDocument();
   });
+
+  it('renders exactly one Lihat Pesanan button when status is PROCESSED', async () => {
+    const processedBooking = {
+      ...mockBooking,
+      status: 'PROCESSED',
+      payment: { paymentMethod: 'PAYMENT_GATEWAY', status: 'SUCCESS' },
+    };
+    vi.mocked(bookingApi.getBookingById).mockResolvedValueOnce({
+      success: true,
+      message: 'OK',
+      data: processedBooking as any,
+    });
+    renderOrderPayment();
+    await waitFor(() => {
+      expect(screen.getByText(/Pembayaran Berhasil Diverifikasi!/i)).toBeInTheDocument();
+    });
+    const buttons = screen.getAllByRole('button', { name: /Lihat Pesanan/i });
+    expect(buttons).toHaveLength(1);
+  });
+
+  it('allows user to switch payment method from MANUAL_TRANSFER to PAYMENT_GATEWAY', async () => {
+    vi.mocked(bookingApi.getBookingById).mockResolvedValue({
+      success: true, message: 'OK', data: mockBooking as any,
+    });
+    vi.mocked(paymentApi.changePaymentMethod).mockResolvedValueOnce({
+      success: true, message: 'OK', data: { ...mockBooking, payment: { paymentMethod: 'PAYMENT_GATEWAY' } } as any,
+    });
+
+    renderOrderPayment();
+    await waitFor(() => {
+      expect(screen.getByText('Transfer Bank Manual')).toBeInTheDocument();
+      expect(screen.getByText('Pembayaran Otomatis')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Pembayaran Otomatis'));
+    await waitFor(() => {
+      expect(paymentApi.changePaymentMethod).toHaveBeenCalledWith('bk-123', 'PAYMENT_GATEWAY');
+    });
+  });
+
 });
+
+

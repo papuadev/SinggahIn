@@ -8,7 +8,9 @@ import {
   approvePaymentProof,
   rejectPaymentProof,
   emergencyCancelBooking,
+  changePaymentMethod,
 } from '../payment.service';
+
 
 vi.mock('../../../shared/services/prisma.service', () => ({
   prisma: {
@@ -162,4 +164,22 @@ describe('Payment Service', () => {
       expect(mailService.sendEmergencyCancellationEmail).toHaveBeenCalledWith('guest@example.com', expect.objectContaining({ isForceMajeure: true }));
     });
   });
+
+  describe('changePaymentMethod', () => {
+    it('successfully changes payment method and clears gateway/proof data', async () => {
+      const b = {
+        id: bookingId, userId, bookingCode: 'SGH-20261010-ABCD', status: BookingStatus.WAITING_PAYMENT,
+        expiresAt: new Date(Date.now() + 3600000), payment: { paymentMethod: PaymentMethod.MANUAL_TRANSFER },
+      };
+      vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
+      const txMock = {
+        booking: { update: vi.fn().mockResolvedValue({ ...b, payment: { paymentMethod: PaymentMethod.PAYMENT_GATEWAY, status: PaymentStatus.PENDING } }) },
+      };
+      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb(txMock));
+      const res = await changePaymentMethod(userId, bookingId, PaymentMethod.PAYMENT_GATEWAY);
+      expect(txMock.booking.update).toHaveBeenCalled();
+      expect(res.paymentMethod).toBe(PaymentMethod.PAYMENT_GATEWAY);
+    });
+  });
 });
+

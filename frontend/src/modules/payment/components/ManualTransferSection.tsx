@@ -70,26 +70,26 @@ function ExistingProofImage({ url }: { url: string }) {
   );
 }
 
-// function ExistingProofActions({ url, onReupload }: { url: string; onReupload: () => void }) {
-//   return (
-//     <div className="flex items-center justify-between pt-1 text-xs">
-//       <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-primary-600 hover:text-primary-700 underline">
-//         <span>Buka Gambar Penuh</span>
-//         <ExternalLink className="w-3.5 h-3.5" />
-//       </a>
-//       <Button variant="ghost" size="sm" onClick={onReupload} leftIcon={<RefreshCw className="w-3 h-3" />}>
-//         Unggah Ulang
-//       </Button>
-//     </div>
-//   );
-// }
+function ExistingProofActions({ url, onReupload }: { url: string; onReupload: () => void }) {
+  return (
+    <div className="flex items-center justify-between pt-1 text-xs">
+      <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-primary-600 hover:text-primary-700 underline">
+        <span>Buka Gambar Penuh</span>
+        <ExternalLink className="w-3.5 h-3.5" />
+      </a>
+      <Button variant="ghost" size="sm" onClick={onReupload} leftIcon={<RefreshCw className="w-3 h-3" />}>
+        Unggah Ulang
+      </Button>
+    </div>
+  );
+}
 
 function ExistingProofCard({ url, onReupload }: { url: string; onReupload: () => void }) {
   return (
     <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-3">
       <ExistingProofHeader />
       <ExistingProofImage url={url} />
-      {/* <ExistingProofActions url={url} onReupload={onReupload} /> */}
+      <ExistingProofActions url={url} onReupload={onReupload} />
     </div>
   );
 }

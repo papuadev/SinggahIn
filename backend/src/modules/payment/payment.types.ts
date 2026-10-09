@@ -1,4 +1,4 @@
-import { BookingStatus, PaymentStatus } from '@prisma/client';
+import { BookingStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
 
 export interface RejectPaymentInput {
   reason?: string;
@@ -15,9 +15,11 @@ export interface PaymentActionResponse {
   bookingCode: string;
   bookingStatus: BookingStatus;
   paymentStatus: PaymentStatus;
+  paymentMethod?: PaymentMethod;
   expiresAt?: string;
   proofImageUrl?: string | null;
   cancellationReason?: string | null;
   refundContact?: string | null;
   isForceMajeure?: boolean;
 }
+

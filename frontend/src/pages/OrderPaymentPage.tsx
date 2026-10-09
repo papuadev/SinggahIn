@@ -5,7 +5,9 @@ import { CountdownTimerBadge } from '../modules/booking/components/CountdownTime
 import { OrderSummaryCard } from '../modules/booking/components/OrderSummaryCard';
 import { ManualTransferSection } from '../modules/payment/components/ManualTransferSection';
 import { MidtransPaymentSection } from '../modules/payment/components/MidtransPaymentSection';
+import { PaymentMethodSwitcher } from '../modules/payment/components/PaymentMethodSwitcher';
 import { CancelOrderModal } from '../modules/booking/components/CancelOrderModal';
+
 import { getStatusBadge } from '../modules/booking/components/OrderHistoryCard';
 import { Button } from '../components/atoms/Button';
 
@@ -22,37 +24,67 @@ function PaymentHeader({ code, status }: { code: string; status: any }) {
   );
 }
 
+function ManualPaymentRenderer({ p, b }: any) {
+  const proofUrl = b.payment?.proofImageUrl || b.payment?.paymentProofUrl;
+  return (
+    <ManualTransferSection
+      isUploading={p.isUploading} uploadError={p.uploadError}
+      uploadSuccess={p.uploadSuccess} onUpload={p.uploadProof}
+      existingProofUrl={proofUrl}
+    />
+  );
+}
+
 function PaymentMethodRenderer({ p }: { p: ReturnType<typeof useOrderPayment> }) {
   const b = p.booking!;
-  const isManual = b.payment?.paymentMethod === 'MANUAL_TRANSFER';
-  const proofUrl = b.payment?.proofImageUrl || b.payment?.paymentProofUrl;
-  if (isManual) {
+  if (b.payment?.paymentMethod === 'MANUAL_TRANSFER') {
+    return <ManualPaymentRenderer p={p} b={b} />;
+  }
+  return (
+    <MidtransPaymentSection
+      isPayingSnap={p.isPayingSnap} snapError={p.snapError}
+      onPay={p.payWithSnap} isPaid={b.status === 'PROCESSED'}
+      pendingPayment={(b as any).pendingPayment}
+      isResetting={p.isResettingSnap} onReset={p.resetPaymentMethod}
+    />
+  );
+}
+
+
+function PaymentActions({ isWaiting, onCancel }: { isWaiting: boolean; onCancel: () => void }) {
+  if (!isWaiting) {
     return (
-      <ManualTransferSection
-        isUploading={p.isUploading} uploadError={p.uploadError}
-        uploadSuccess={p.uploadSuccess} onUpload={p.uploadProof}
-        existingProofUrl={proofUrl}
-      />
+      <div className="pt-2">
+        <Link to="/orders"><Button variant="primary" size="md" className="w-full">Lihat Pesanan</Button></Link>
+      </div>
     );
   }
-  return <MidtransPaymentSection isPayingSnap={p.isPayingSnap} snapError={p.snapError} onPay={p.payWithSnap} isPaid={b.status === 'PROCESSED'} />;
+  return (
+    <div className="flex justify-between items-center pt-2">
+      <Link to="/orders"><Button variant="ghost" size="sm">Kembali ke Pesanan Saya</Button></Link>
+      <Button variant="danger" size="sm" onClick={onCancel}>Batalkan Pesanan</Button>
+    </div>
+  );
 }
 
 function PaymentLeftCol({ p, onCancel }: { p: ReturnType<typeof useOrderPayment>; onCancel: () => void }) {
   const b = p.booking!;
+  const isWait = b.status === 'WAITING_PAYMENT';
   return (
     <div className="lg:col-span-7 space-y-6">
-      {b.status === 'WAITING_PAYMENT' && <CountdownTimerBadge timer={p.timer} />}
-      <PaymentMethodRenderer p={p} />
-      {b.status === 'WAITING_PAYMENT' && (
-        <div className="flex justify-between items-center pt-2">
-          <Link to="/orders"><Button variant="ghost" size="sm">Kembali ke Pesanan Saya</Button></Link>
-          <Button variant="danger" size="sm" onClick={onCancel}>Batalkan Pesanan</Button>
-        </div>
+      {isWait && <CountdownTimerBadge timer={p.timer} />}
+      {isWait && (
+        <PaymentMethodSwitcher
+          currentMethod={b.payment?.paymentMethod || 'MANUAL_TRANSFER'}
+          isSwitching={p.isSwitching} switchError={p.switchError} onSwitch={p.changeMethod}
+        />
       )}
+      <PaymentMethodRenderer p={p} />
+      <PaymentActions isWaiting={isWait} onCancel={onCancel} />
     </div>
   );
 }
+
 
 function OrderPaymentLoading() {
   return (

@@ -36,8 +36,9 @@ function PaymentSelector({ current, onSelect }: { current: PaymentMethod; onSele
       <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-primary-600" /> Metode Pembayaran</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <MethodOption id="MANUAL_TRANSFER" label="Transfer Bank Manual" desc="Upload bukti transfer (Batas waktu 2 jam)" active={current === 'MANUAL_TRANSFER'} onSelect={onSelect} />
-        <MethodOption id="PAYMENT_GATEWAY" label="Payment Gateway (Midtrans)" desc="QRIS, GoPay, Virtual Account otomatis" active={current === 'PAYMENT_GATEWAY'} onSelect={onSelect} />
+        <MethodOption id="PAYMENT_GATEWAY" label="Pembayaran Otomatis" desc="QRIS, GoPay, Virtual Account instan" active={current === 'PAYMENT_GATEWAY'} onSelect={onSelect} />
       </div>
+
     </div>
   );
 }

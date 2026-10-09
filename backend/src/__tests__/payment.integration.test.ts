@@ -123,4 +123,32 @@ describe('Payment HTTP Integration Tests', () => {
       expect(res.body.data.isForceMajeure).toBe(true);
     });
   });
+
+  describe('PATCH /api/v1/payments/:bookingId/method', () => {
+    it('returns 200 and updates paymentMethod when user changes method', async () => {
+      const b = {
+        id: bookingId, userId, bookingCode: 'SGH-ABCD', status: BookingStatus.WAITING_PAYMENT,
+        expiresAt: new Date(Date.now() + 3600000), payment: { paymentMethod: PaymentMethod.MANUAL_TRANSFER },
+      };
+      vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
+      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb({
+        booking: { update: vi.fn().mockResolvedValue({ ...b, payment: { paymentMethod: PaymentMethod.PAYMENT_GATEWAY, status: PaymentStatus.PENDING } }) },
+      }));
+      const res = await request(app)
+        .patch(`/api/v1/payments/${bookingId}/method`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ paymentMethod: 'PAYMENT_GATEWAY' });
+      expect(res.status).toBe(200);
+      expect(res.body.data.paymentMethod).toBe(PaymentMethod.PAYMENT_GATEWAY);
+    });
+
+    it('returns 400 when invalid payment method is provided', async () => {
+      const res = await request(app)
+        .patch(`/api/v1/payments/${bookingId}/method`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ paymentMethod: 'CRYPTO' });
+      expect(res.status).toBe(400);
+    });
+  });
 });
+
