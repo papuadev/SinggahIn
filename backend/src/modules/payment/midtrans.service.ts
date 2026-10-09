@@ -35,11 +35,19 @@ export async function createSnapTransaction(userId: string, bookingId: string) {
   return { snapToken: res.token, redirectUrl: res.redirect_url };
 }
 
+function timingSafeMatch(expected: string, actual?: string): boolean {
+  if (!actual) return false;
+  const expectedBuf = Buffer.from(expected, 'utf8');
+  const actualBuf = Buffer.from(actual, 'utf8');
+  if (expectedBuf.length !== actualBuf.length) return false;
+  return crypto.timingSafeEqual(expectedBuf, actualBuf);
+}
+
 export function verifyMidtransSignature(payload: MidtransWebhookPayload): boolean {
   const currentKey = process.env.MIDTRANS_SERVER_KEY || serverKey;
   const raw = `${payload.order_id}${payload.status_code}${payload.gross_amount}${currentKey}`;
   const hash = crypto.createHash('sha512').update(raw).digest('hex');
-  return hash === payload.signature_key;
+  return timingSafeMatch(hash, payload.signature_key);
 }
 
 async function executePaidTx(tx: Prisma.TransactionClient, bookingId: string, txId?: string) {
