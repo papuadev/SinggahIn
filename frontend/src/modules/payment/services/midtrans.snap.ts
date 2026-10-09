@@ -23,12 +23,18 @@ export interface SnapCallbacks {
   onClose?: () => void;
 }
 
-const MIDTRANS_SNAP_URL = 'https://app.sandbox.midtrans.com/snap/snap.js';
+function getSnapScriptUrl(): string {
+  const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY || '';
+  const isProd = import.meta.env.VITE_MIDTRANS_IS_PRODUCTION === 'true' || (clientKey.length > 0 && !clientKey.startsWith('SB-'));
+  return isProd
+    ? 'https://app.midtrans.com/snap/snap.js'
+    : 'https://app.sandbox.midtrans.com/snap/snap.js';
+}
 
-function injectSnapScript(resolve: () => void, reject: (err: Error) => void): void {
+function injectSnapScript(url: string, resolve: () => void, reject: (err: Error) => void): void {
   const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY || 'SB-Mid-client-default';
   const script = document.createElement('script');
-  script.src = MIDTRANS_SNAP_URL;
+  script.src = url;
   script.setAttribute('data-client-key', clientKey);
   script.async = true;
   script.onload = () => resolve();
@@ -43,9 +49,10 @@ function handleExistingScript(existing: Element, resolve: () => void): void {
 export function loadMidtransSnapScript(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (window.snap) return resolve();
-    const existing = document.querySelector(`script[src="${MIDTRANS_SNAP_URL}"]`);
+    const snapUrl = getSnapScriptUrl();
+    const existing = document.querySelector(`script[src="${snapUrl}"]`);
     if (existing) return handleExistingScript(existing, resolve);
-    injectSnapScript(resolve, reject);
+    injectSnapScript(snapUrl, resolve, reject);
   });
 }
 
