@@ -33,21 +33,17 @@ export async function getUnavailabilitiesByRoom(
   });
 }
 
-export async function deleteUnavailability(
-  tenantId: string,
-  roomId: string,
-  unavailabilityId: string
-): Promise<void> {
-  await verifyRoomOwnership(roomId, tenantId);
-  const record = await prisma.roomUnavailability.findUnique({
-    where: { id: unavailabilityId },
-  });
+async function assertUnavailabilityExists(unavailabilityId: string, roomId: string) {
+  const record = await prisma.roomUnavailability.findUnique({ where: { id: unavailabilityId } });
   if (!record || record.roomId !== roomId) {
     throw AppError.notFound('Data pemblokiran kamar tidak ditemukan.');
   }
-  await prisma.roomUnavailability.delete({
-    where: { id: unavailabilityId },
-  });
+}
+
+export async function deleteUnavailability(tenantId: string, roomId: string, unavailabilityId: string): Promise<void> {
+  await verifyRoomOwnership(roomId, tenantId);
+  await assertUnavailabilityExists(unavailabilityId, roomId);
+  await prisma.roomUnavailability.delete({ where: { id: unavailabilityId } });
 }
 
 async function countOverlappingUnavailabilities(
@@ -72,40 +68,28 @@ async function countOverlappingBookings(
   return prisma.booking.count({
     where: {
       roomId,
-      status: { not: BookingStatus.CANCELLED },
+      status: { notIn: [BookingStatus.CANCELLED, BookingStatus.REJECTED] },
       checkInDate: { lt: checkOutDate },
       checkOutDate: { gt: checkInDate },
     },
   });
 }
 
-export async function calculateRoomAvailability(
-  roomId: string,
-  checkInDate: Date,
-  checkOutDate: Date
-): Promise<RoomAvailabilityCalculationDto> {
-  const room = await getRoomById(roomId);
-  const unavailCount = await countOverlappingUnavailabilities(
-    roomId,
-    checkInDate,
-    checkOutDate
-  );
-  const bookedUnits = await countOverlappingBookings(
-    roomId,
-    checkInDate,
-    checkOutDate
-  );
-  const isBlocked = unavailCount > 0;
-  const availableUnits = isBlocked
-    ? 0
-    : Math.max(0, room.totalUnits - bookedUnits);
-
+function buildAvailabilityDto(rId: string, total: number, booked: number, blocked: boolean): RoomAvailabilityCalculationDto {
+  const availableUnits = blocked ? 0 : Math.max(0, total - booked);
   return {
-    roomId,
-    totalUnits: room.totalUnits,
-    bookedUnits,
-    isBlockedByUnavailability: isBlocked,
-    availableUnits,
-    isAvailable: availableUnits > 0,
+    roomId: rId, totalUnits: total, bookedUnits: booked,
+    isBlockedByUnavailability: blocked, availableUnits, isAvailable: availableUnits > 0,
   };
+}
+
+export async function calculateRoomAvailability(
+  roomId: string, checkInDate: Date, checkOutDate: Date
+): Promise<RoomAvailabilityCalculationDto> {
+  const [room, unavailCount, bookedUnits] = await Promise.all([
+    getRoomById(roomId),
+    countOverlappingUnavailabilities(roomId, checkInDate, checkOutDate),
+    countOverlappingBookings(roomId, checkInDate, checkOutDate),
+  ]);
+  return buildAvailabilityDto(roomId, room.totalUnits, bookedUnits, unavailCount > 0);
 }

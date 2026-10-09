@@ -83,12 +83,15 @@ describe('Payment Helper', () => {
       expect(() => assertEmergencyCancelEligibility({ property: { tenantId: 't2' } }, 't1')).toThrow('Anda tidak memiliki akses');
     });
 
-    it('throws 400 if booking is already CANCELLED or COMPLETED', () => {
+    it('throws 400 if booking is already CANCELLED, COMPLETED, or REJECTED', () => {
       const bCancelled = { property: { tenantId: 't1' }, status: BookingStatus.CANCELLED };
       expect(() => assertEmergencyCancelEligibility(bCancelled, 't1')).toThrow('tidak dapat dibatalkan lagi');
 
       const bCompleted = { property: { tenantId: 't1' }, status: BookingStatus.COMPLETED };
       expect(() => assertEmergencyCancelEligibility(bCompleted, 't1')).toThrow('tidak dapat dibatalkan lagi');
+
+      const bRejected = { property: { tenantId: 't1' }, status: BookingStatus.REJECTED };
+      expect(() => assertEmergencyCancelEligibility(bRejected, 't1')).toThrow('tidak dapat dibatalkan lagi');
     });
 
     it('passes for WAITING_PAYMENT or WAITING_CONFIRMATION or PROCESSED', () => {

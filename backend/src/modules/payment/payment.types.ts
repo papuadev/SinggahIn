@@ -7,6 +7,7 @@ export interface RejectPaymentInput {
 export interface EmergencyCancelInput {
   cancellationReason: string;
   refundContact: string;
+  isForceMajeure?: boolean;
 }
 
 export interface PaymentActionResponse {
@@ -16,4 +17,7 @@ export interface PaymentActionResponse {
   paymentStatus: PaymentStatus;
   expiresAt?: string;
   proofImageUrl?: string | null;
+  cancellationReason?: string | null;
+  refundContact?: string | null;
+  isForceMajeure?: boolean;
 }

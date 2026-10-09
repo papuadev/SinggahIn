@@ -101,7 +101,7 @@ describe('Payment Service', () => {
     });
   });
 
-  describe('rejectPaymentProof (AC-002 Grace Period)', () => {
+  describe('rejectPaymentProof (Tenant Payment Rejection)', () => {
     function setupRejectMock() {
       const b = {
         id: bookingId, bookingCode: 'SGH-20261010-ABCD', status: BookingStatus.WAITING_CONFIRMATION,
@@ -110,21 +110,20 @@ describe('Payment Service', () => {
       vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
       const txMock = {
         booking: { update: vi.fn().mockImplementation(({ data }) => Promise.resolve({
-          ...b, status: data.status, expiresAt: data.expiresAt, payment: { status: PaymentStatus.REJECTED },
+          ...b, status: data.status, cancellationReason: data.cancellationReason, payment: { status: PaymentStatus.REJECTED },
         })) },
       };
       vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb(txMock));
       return { txMock, b };
     }
 
-    it('reverts status to WAITING_PAYMENT and extends expiry by 1 hour', async () => {
+    it('sets booking status and payment status to REJECTED', async () => {
       setupRejectMock();
-      const beforeTime = Date.now() + 3500000;
       const res = await rejectPaymentProof(tenantId, bookingId, { reason: 'Bukti transfer buram' });
 
-      expect(res.bookingStatus).toBe(BookingStatus.WAITING_PAYMENT);
+      expect(res.bookingStatus).toBe(BookingStatus.REJECTED);
       expect(res.paymentStatus).toBe(PaymentStatus.REJECTED);
-      expect(new Date(res.expiresAt!).getTime()).toBeGreaterThanOrEqual(beforeTime);
+      expect(res.cancellationReason).toBe('Bukti transfer buram');
     });
   });
 
@@ -136,7 +135,9 @@ describe('Payment Service', () => {
       };
       vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
       const txMock = {
-        booking: { update: vi.fn().mockResolvedValue({ ...b, status: BookingStatus.CANCELLED, payment: { status: PaymentStatus.CANCELLED } }) },
+        booking: { update: vi.fn().mockImplementation(({ data }) => Promise.resolve({
+          ...b, status: BookingStatus.CANCELLED, isForceMajeure: data.isForceMajeure, payment: { status: PaymentStatus.CANCELLED },
+        })) },
       };
       vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb(txMock));
     }
@@ -147,7 +148,18 @@ describe('Payment Service', () => {
       const res = await emergencyCancelBooking(tenantId, bookingId, input);
 
       expect(res.bookingStatus).toBe(BookingStatus.CANCELLED);
+      expect(res.isForceMajeure).toBe(false);
       expect(mailService.sendEmergencyCancellationEmail).toHaveBeenCalledWith('guest@example.com', expect.objectContaining(input));
+    });
+
+    it('cancels booking and marks transaction as force majeure when isForceMajeure is true', async () => {
+      setupEmergencyMock();
+      const input = { cancellationReason: 'Bencana gempa bumi', refundContact: '081234567890', isForceMajeure: true };
+      const res = await emergencyCancelBooking(tenantId, bookingId, input);
+
+      expect(res.bookingStatus).toBe(BookingStatus.CANCELLED);
+      expect(res.isForceMajeure).toBe(true);
+      expect(mailService.sendEmergencyCancellationEmail).toHaveBeenCalledWith('guest@example.com', expect.objectContaining({ isForceMajeure: true }));
     });
   });
 });

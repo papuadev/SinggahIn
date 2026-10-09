@@ -24,6 +24,7 @@ enum BookingStatus {
   PROCESSED
   CANCELLED
   COMPLETED
+  REJECTED
 }
 
 enum PaymentMethod {
@@ -201,6 +202,7 @@ model Booking {
   status             BookingStatus @default(WAITING_PAYMENT)
   cancellationReason String?
   refundContact      String?
+  isForceMajeure     Boolean       @default(false)
   expiresAt          DateTime
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt

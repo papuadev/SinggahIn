@@ -47,7 +47,7 @@ describe('Payment HTTP Integration Tests', () => {
     const b = { id: bookingId, bookingCode: 'SGH-ABCD', status: BookingStatus.WAITING_CONFIRMATION, property: { tenantId }, payment: { paymentMethod: PaymentMethod.MANUAL_TRANSFER } };
     vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
     vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb({
-      booking: { update: vi.fn().mockResolvedValue({ ...b, status: BookingStatus.WAITING_PAYMENT, expiresAt: new Date(Date.now() + 3600000), payment: { status: PaymentStatus.REJECTED } }) },
+      booking: { update: vi.fn().mockImplementation(({ data }) => Promise.resolve({ ...b, status: BookingStatus.REJECTED, payment: { status: PaymentStatus.REJECTED }, cancellationReason: data.cancellationReason })) },
     }));
   }
 
@@ -55,7 +55,7 @@ describe('Payment HTTP Integration Tests', () => {
     const b = { id: bookingId, bookingCode: 'SGH-ABCD', status: BookingStatus.PROCESSED, property: { tenantId, title: 'Villa' }, user: { email: 'guest@test.com' } };
     vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
     vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb({
-      booking: { update: vi.fn().mockResolvedValue({ ...b, status: BookingStatus.CANCELLED, payment: { status: PaymentStatus.CANCELLED } }) },
+      booking: { update: vi.fn().mockImplementation(({ data }) => Promise.resolve({ ...b, status: BookingStatus.CANCELLED, isForceMajeure: data.isForceMajeure, payment: { status: PaymentStatus.CANCELLED } })) },
     }));
   }
 
@@ -99,11 +99,11 @@ describe('Payment HTTP Integration Tests', () => {
   });
 
   describe('POST /api/v1/payments/:bookingId/reject', () => {
-    it('returns 200 and extends expiry by 1 hour when tenant rejects proof', async () => {
+    it('returns 200 and sets status to REJECTED when tenant rejects proof', async () => {
       setupRejectMock();
       const res = await request(app).post(`/api/v1/payments/${bookingId}/reject`).set('Authorization', `Bearer ${tenantToken}`).send({ reason: 'Buram' });
       expect(res.status).toBe(200);
-      expect(res.body.data.bookingStatus).toBe(BookingStatus.WAITING_PAYMENT);
+      expect(res.body.data.bookingStatus).toBe(BookingStatus.REJECTED);
       expect(res.body.data.paymentStatus).toBe(PaymentStatus.REJECTED);
     });
   });
@@ -114,11 +114,13 @@ describe('Payment HTTP Integration Tests', () => {
       expect(res.status).toBe(400);
     });
 
-    it('returns 200 on valid emergency cancellation', async () => {
+    it('returns 200 on valid emergency cancellation with force majeure', async () => {
       setupEmergencyMock();
-      const res = await request(app).post(`/api/v1/payments/${bookingId}/emergency-cancel`).set('Authorization', `Bearer ${tenantToken}`).send({ cancellationReason: 'Bencana gempa bumi', refundContact: '081234567890' });
+      const payload = { cancellationReason: 'Bencana gempa bumi', refundContact: '081234567890', isForceMajeure: true };
+      const res = await request(app).post(`/api/v1/payments/${bookingId}/emergency-cancel`).set('Authorization', `Bearer ${tenantToken}`).send(payload);
       expect(res.status).toBe(200);
       expect(res.body.data.bookingStatus).toBe(BookingStatus.CANCELLED);
+      expect(res.body.data.isForceMajeure).toBe(true);
     });
   });
 });

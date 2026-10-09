@@ -48,6 +48,18 @@ describe('Payment Schemas', () => {
       expect(res.success).toBe(true);
     });
 
+    it('accepts valid payload with explicit isForceMajeure true', () => {
+      const res = emergencyCancelSchema.safeParse({ ...validData, isForceMajeure: true });
+      expect(res.success).toBe(true);
+      if (res.success) expect(res.data.isForceMajeure).toBe(true);
+    });
+
+    it('defaults isForceMajeure to false when omitted', () => {
+      const res = emergencyCancelSchema.safeParse(validData);
+      expect(res.success).toBe(true);
+      if (res.success) expect(res.data.isForceMajeure).toBe(false);
+    });
+
     it('rejects cancellation reason shorter than 5 characters', () => {
       const res = emergencyCancelSchema.safeParse({ ...validData, cancellationReason: 'Rus' });
       expect(res.success).toBe(false);

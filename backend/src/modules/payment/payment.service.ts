@@ -3,7 +3,6 @@ import { prisma } from '../../shared/services/prisma.service';
 import { uploadToCloudinary, deleteFromCloudinary, UploadResult } from '../../shared/services/cloudinary.service';
 import { sendBookingVoucherEmail, sendEmergencyCancellationEmail } from '../../shared/services/mail.service';
 import {
-  calculateGraceExpiry,
   assertUploadEligibility,
   assertTenantActionEligibility,
   assertEmergencyCancelEligibility,
@@ -25,7 +24,8 @@ function mapActionResponse(b: any): PaymentActionResponse {
   return {
     bookingId: b.id, bookingCode: b.bookingCode, bookingStatus: b.status,
     paymentStatus: b.payment?.status, expiresAt: b.expiresAt?.toISOString(),
-    proofImageUrl: b.payment?.proofImageUrl,
+    proofImageUrl: b.payment?.proofImageUrl, cancellationReason: b.cancellationReason ?? undefined,
+    refundContact: b.refundContact ?? undefined, isForceMajeure: b.isForceMajeure ?? false,
   };
 }
 
@@ -75,11 +75,12 @@ export async function approvePaymentProof(tenantId: string, bookingId: string): 
   return mapActionResponse(updated);
 }
 
-async function executeRejectTx(tx: Prisma.TransactionClient, bookingId: string, expiresAt: Date, reason?: string) {
+async function executeRejectTx(tx: Prisma.TransactionClient, bookingId: string, reason?: string) {
   return tx.booking.update({
     where: { id: bookingId },
     data: {
-      status: BookingStatus.WAITING_PAYMENT, expiresAt, cancellationReason: reason || null,
+      status: BookingStatus.REJECTED,
+      cancellationReason: reason || 'Bukti transfer ditolak oleh tenant',
       payment: { update: { status: PaymentStatus.REJECTED } },
     },
     include: { payment: true },
@@ -89,8 +90,7 @@ async function executeRejectTx(tx: Prisma.TransactionClient, bookingId: string, 
 export async function rejectPaymentProof(tenantId: string, bookingId: string, input?: RejectPaymentInput): Promise<PaymentActionResponse> {
   const b = await findBookingForTenant(bookingId);
   assertTenantActionEligibility(b, tenantId);
-  const newExpiry = calculateGraceExpiry(1);
-  const updated = await prisma.$transaction((tx) => executeRejectTx(tx, bookingId, newExpiry, input?.reason));
+  const updated = await prisma.$transaction((tx) => executeRejectTx(tx, bookingId, input?.reason));
   return mapActionResponse(updated);
 }
 
@@ -100,6 +100,7 @@ async function executeEmergencyCancelTx(tx: Prisma.TransactionClient, bookingId:
     data: {
       status: BookingStatus.CANCELLED,
       cancellationReason: input.cancellationReason, refundContact: input.refundContact,
+      isForceMajeure: Boolean(input.isForceMajeure),
       payment: { update: { status: PaymentStatus.CANCELLED } },
     },
     include: { payment: true },
@@ -113,6 +114,7 @@ export async function emergencyCancelBooking(tenantId: string, bookingId: string
   await sendEmergencyCancellationEmail(b!.user.email, {
     bookingCode: b!.bookingCode, propertyName: b!.property.title,
     cancellationReason: input.cancellationReason, refundContact: input.refundContact,
+    isForceMajeure: input.isForceMajeure,
   });
   return mapActionResponse(updated);
 }

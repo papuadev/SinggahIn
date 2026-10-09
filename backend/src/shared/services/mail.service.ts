@@ -10,6 +10,7 @@ export interface BookingVoucherEmailData {
 
 export interface EmergencyCancelEmailData {
   bookingCode: string; propertyName: string; cancellationReason: string; refundContact: string;
+  isForceMajeure?: boolean;
 }
 
 function getTransporter(): nodemailer.Transporter {
@@ -59,8 +60,9 @@ export async function sendBookingVoucherEmail(to: string, data: BookingVoucherEm
 }
 
 function buildEmergencyCancelHtml(d: EmergencyCancelEmailData): string {
+  const fm = d.isForceMajeure ? '<p><strong>Status:</strong> Pembatalan Keadaan Kahar (Force Majeure)</p>' : '';
   return `<div style="font-family:sans-serif;max-width:600px;padding:20px;">
-    <h2>Pemberitahuan Pembatalan Darurat</h2>
+    <h2>Pemberitahuan Pembatalan Darurat</h2>${fm}
     <p>Pesanan <strong>${d.bookingCode}</strong> di <strong>${d.propertyName}</strong> telah dibatalkan oleh pihak pengelola.</p>
     <p><strong>Alasan:</strong> ${d.cancellationReason}</p>
     <p>Hubungi nomor berikut untuk penyelesaian refund: <strong>${d.refundContact}</strong></p>
