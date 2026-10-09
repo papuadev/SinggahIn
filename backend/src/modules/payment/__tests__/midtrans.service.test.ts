@@ -65,9 +65,24 @@ describe('Midtrans Service', () => {
       expect(verifyMidtransSignature({ ...payload, signature_key })).toBe(true);
     });
 
-    it('rejects invalid signature key', () => {
+    it('rejects invalid signature key of different length', () => {
       const p = { order_id: 'SGH-01', status_code: '200', gross_amount: '500000.00', signature_key: 'fake', transaction_status: 'settlement' };
       expect(verifyMidtransSignature(p)).toBe(false);
+    });
+
+    it('rejects signature key with same length but mismatched content', () => {
+      const payload = { order_id: 'SGH-01', status_code: '200', gross_amount: '500000.00', transaction_status: 'settlement' };
+      const raw = `SGH-01200500000.00${serverKey}`;
+      const validSig = crypto.createHash('sha512').update(raw).digest('hex');
+      const tampered = validSig.slice(0, -1) + (validSig.endsWith('a') ? 'b' : 'a');
+      expect(verifyMidtransSignature({ ...payload, signature_key: tampered })).toBe(false);
+    });
+
+    it('rejects when signature key is undefined or empty', () => {
+      const p1 = { order_id: 'SGH-01', status_code: '200', gross_amount: '500000.00', signature_key: '', transaction_status: 'settlement' };
+      const p2 = { order_id: 'SGH-01', status_code: '200', gross_amount: '500000.00', signature_key: undefined as any, transaction_status: 'settlement' };
+      expect(verifyMidtransSignature(p1)).toBe(false);
+      expect(verifyMidtransSignature(p2)).toBe(false);
     });
   });
 
