@@ -14,6 +14,7 @@ const TENANT_TABS: Array<{ label: string; value?: BookingStatus }> = [
   { label: 'Menunggu Bayar', value: 'WAITING_PAYMENT' },
   { label: 'Selesai', value: 'COMPLETED' },
   { label: 'Dibatalkan', value: 'CANCELLED' },
+  { label: 'Ditolak', value: 'REJECTED' },
 ];
 
 function TenantTabs({ current, onSelect }: { current?: BookingStatus; onSelect: (s?: BookingStatus) => void }) {
