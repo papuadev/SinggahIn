@@ -5,6 +5,8 @@ import { Booking } from '../../booking/booking.types';
 import { EmergencyCancelPayload } from '../payment.types';
 import { formatRupiah, formatDateID } from '../../../libs/formatters';
 
+import { getStatusBadge } from '../../booking/components/OrderHistoryCard';
+
 export interface TenantOrderApprovalModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -16,12 +18,19 @@ export interface TenantOrderApprovalModalProps {
 }
 
 function GuestInfoRow({ b }: { b: Booking }) {
+  const badge = getStatusBadge(b.status);
   return (
     <div className="bg-gray-50 p-3 rounded-lg border text-xs space-y-1">
-      <p className="font-semibold text-gray-800">Tamu: {b.user?.name || 'Tamu'} ({b.user?.email})</p>
+      <div className="flex justify-between items-center">
+        <p className="font-semibold text-gray-800">Tamu: {b.user?.name || 'Tamu'} ({b.user?.email})</p>
+        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${badge.style}`}>{badge.label}</span>
+      </div>
       <p className="text-gray-500">No. HP: {b.user?.phoneNumber || '-'}</p>
       <p className="text-gray-600 font-medium">{formatDateID(b.checkInDate, 'dd MMM yyyy')} - {formatDateID(b.checkOutDate, 'dd MMM yyyy')}</p>
       <p className="text-primary-700 font-bold">{formatRupiah(b.totalPrice)} • {b.payment?.paymentMethod}</p>
+      {b.status === 'REJECTED' && b.cancellationReason && (
+        <p className="text-rose-700 bg-rose-50 p-1.5 rounded border border-rose-200 mt-1">Alasan Penolakan: {b.cancellationReason}</p>
+      )}
     </div>
   );
 }

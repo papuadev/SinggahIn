@@ -96,4 +96,17 @@ describe('TenantOrderManagementPage', () => {
     expect(screen.getByText('Alasan Pembatalan')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Batalkan Darurat/i })).toBeInTheDocument();
   });
+
+  it('renders Ditolak tab and filters orders by REJECTED status', async () => {
+    vi.mocked(bookingApi.getTenantBookings).mockResolvedValue({
+      success: true, message: 'OK', data: [] as any,
+    });
+    renderTenantOrders();
+    const rejectedTab = screen.getByRole('button', { name: 'Ditolak' });
+    expect(rejectedTab).toBeInTheDocument();
+    fireEvent.click(rejectedTab);
+    expect(bookingApi.getTenantBookings).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'REJECTED' })
+    );
+  });
 });
