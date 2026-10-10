@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Ticket, MapPin, Calendar, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, Ticket, MapPin, Calendar } from 'lucide-react';
 import { Booking } from '../booking.types';
 import { formatDateID, formatRupiah } from '../../../libs/formatters';
 import { Button } from '../../../components/atoms/Button';
@@ -72,7 +72,7 @@ export function ConfirmedStaySection({ booking }: { booking: Booking }): React.J
       <ConfirmedPaymentCard booking={booking} />
       <div className="pt-2">
         <Link to="/orders">
-          <Button variant="outline" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />} className="w-full">
+          <Button variant="primary" size="md" className="w-full">
             Lihat Pesanan
           </Button>
         </Link>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useOrderPayment } from '../modules/booking/hooks/useOrderPayment';
 import { CountdownTimerBadge } from '../modules/booking/components/CountdownTimerBadge';
 import { OrderSummaryCard } from '../modules/booking/components/OrderSummaryCard';
@@ -124,11 +124,21 @@ function OrderPaymentError() {
   );
 }
 
+function useAutoRedirectOnUpload(uploadSuccess: string | null): void {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!uploadSuccess) return;
+    const timer = setTimeout(() => navigate('/orders'), 3000);
+    return () => clearTimeout(timer);
+  }, [uploadSuccess, navigate]);
+}
+
 export function OrderPaymentPage(): React.JSX.Element {
   const { id = '' } = useParams<{ id: string }>();
   const p = useOrderPayment(id);
   const [showCancel, setShowCancel] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  useAutoRedirectOnUpload(p.uploadSuccess);
   if (p.isLoading) return <OrderPaymentLoading />;
   if (p.isError || !p.booking) return <OrderPaymentError />;
   return (
