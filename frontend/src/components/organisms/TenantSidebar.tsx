@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Building2, PlusCircle, Compass, Calendar, ClipboardList } from 'lucide-react';
+import { Building2, PlusCircle, Compass, Calendar, ClipboardList, BarChart3, CalendarRange } from 'lucide-react';
 
 interface SidebarLinkProps {
   to: string;
@@ -34,6 +34,16 @@ function SidebarNavGroup({ p }: { p: string }) {
   );
 }
 
+function SidebarReportGroup({ p }: { p: string }) {
+  return (
+    <div className="space-y-1">
+      <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider pt-3 mb-2">Laporan & Analitik</p>
+      <SidebarLink to="/tenant/reports/sales" icon={<BarChart3 className="w-4 h-4" />} label="Laporan Penjualan" isActive={p === '/tenant/reports/sales'} />
+      <SidebarLink to="/tenant/reports/occupancy" icon={<CalendarRange className="w-4 h-4" />} label="Matriks Okupansi" isActive={p === '/tenant/reports/occupancy'} />
+    </div>
+  );
+}
+
 function SidebarFooter() {
   return (
     <div className="pt-6 border-t border-gray-100">
@@ -48,6 +58,7 @@ export function TenantSidebar(): React.JSX.Element {
   return (
     <aside className="hidden lg:block w-64 shrink-0 bg-white border-r border-gray-200 min-h-[calc(100vh-4rem)] p-4 space-y-6">
       <SidebarNavGroup p={pathname} />
+      <SidebarReportGroup p={pathname} />
       <SidebarFooter />
     </aside>
   );
