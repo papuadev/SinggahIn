@@ -32,13 +32,13 @@ function OrderTableRow({ b, onSelect }: { b: Booking; onSelect: (b: Booking) => 
   const badge = getStatusBadge(b.status);
   return (
     <tr className="border-b hover:bg-gray-50/50 transition-colors">
-      <td className="p-3 font-mono font-bold text-gray-700">{b.bookingCode}</td>
+      <td className="p-3 font-mono font-bold text-gray-700 whitespace-nowrap">{b.bookingCode}</td>
       <td className="p-3"><div><p className="font-semibold text-gray-900">{b.user?.name || 'Tamu'}</p><p className="text-gray-400 text-xs">{b.user?.email}</p></div></td>
       <td className="p-3"><p className="font-medium text-gray-800">{b.property.title}</p><p className="text-gray-400 text-xs">{b.room.name}</p></td>
-      <td className="p-3 text-xs text-gray-600">{formatDateID(b.checkInDate, 'dd MMM')} - {formatDateID(b.checkOutDate, 'dd MMM yyyy')}</td>
-      <td className="p-3 font-semibold text-gray-900">{formatRupiah(b.totalPrice)}</td>
-      <td className="p-3"><span className={`text-xs px-2.5 py-0.5 rounded-full border ${badge.style}`}>{badge.label}</span></td>
-      <td className="p-3 text-right"><Button variant="outline" size="sm" leftIcon={<Eye className="w-3.5 h-3.5" />} onClick={() => onSelect(b)}>Tinjau</Button></td>
+      <td className="p-3 text-xs text-gray-600 whitespace-nowrap">{formatDateID(b.checkInDate, 'dd MMM')} - {formatDateID(b.checkOutDate, 'dd MMM yyyy')}</td>
+      <td className="p-3 font-semibold text-gray-900 whitespace-nowrap">{formatRupiah(b.totalPrice)}</td>
+      <td className="p-3 whitespace-nowrap"><span className={`inline-block text-xs px-2.5 py-1 rounded-full border whitespace-nowrap font-medium ${badge.style}`}>{badge.label}</span></td>
+      <td className="p-3 text-right whitespace-nowrap"><Button variant="outline" size="sm" className="p-2 h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-gray-100" onClick={() => onSelect(b)} aria-label="Tinjau" title="Tinjau Pesanan"><Eye className="w-4 h-4 text-gray-700" /></Button></td>
     </tr>
   );
 }
@@ -48,7 +48,7 @@ function OrderTable({ bookings, onSelect }: { bookings: Booking[]; onSelect: (b:
     <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-xs">
       <table className="w-full text-left text-xs text-gray-600">
         <thead className="bg-gray-50 text-gray-700 font-semibold border-b">
-          <tr><th className="p-3">Kode</th><th className="p-3">Tamu</th><th className="p-3">Properti</th><th className="p-3">Tanggal</th><th className="p-3">Total</th><th className="p-3">Status</th><th className="p-3 text-right">Aksi</th></tr>
+          <tr><th className="p-3 whitespace-nowrap">Kode</th><th className="p-3">Tamu</th><th className="p-3">Properti</th><th className="p-3 whitespace-nowrap">Tanggal</th><th className="p-3 whitespace-nowrap">Total</th><th className="p-3 whitespace-nowrap">Status</th><th className="p-3 text-right whitespace-nowrap w-12">Aksi</th></tr>
         </thead>
         <tbody>{bookings.map((b) => <OrderTableRow key={b.id} b={b} onSelect={onSelect} />)}</tbody>
       </table>

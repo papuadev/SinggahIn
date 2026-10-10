@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, CheckCircle2, AlertCircle, ExternalLink, RefreshCw } from 'lucide-react';
+import { UploadCloud, CheckCircle2, AlertCircle, ExternalLink, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '../../../components/atoms/Button';
 
 export interface ManualTransferSectionProps {
@@ -29,15 +29,30 @@ function ProofPreview({ preview, onClear }: { preview: string; onClear: () => vo
   return (
     <div className="relative border rounded-xl overflow-hidden bg-gray-100 max-h-48 flex items-center justify-center">
       <img src={preview} alt="Pratinjau Bukti" className="object-contain max-h-48 w-full" />
-      <button type="button" onClick={onClear} className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-md">Ganti</button>
+      <button
+        type="button"
+        onClick={onClear}
+        className="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white p-2 rounded-lg shadow-md transition-colors cursor-pointer"
+        title="Hapus Bukti Transfer"
+        aria-label="Hapus Bukti Transfer"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
     </div>
   );
 }
 
-function DropzonePrompt({ onClick }: { onClick: () => void }) {
+function DropzonePrompt({ onClick, onDropFile }: { onClick: () => void; onDropFile: (f: File) => void }) {
+  const [isDrag, setIsDrag] = useState(false);
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setIsDrag(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) onDropFile(file);
+  };
+  const cls = isDrag ? 'border-primary-600 bg-primary-50 ring-2 ring-primary-200' : 'border-gray-300 hover:border-primary-500 bg-gray-50/50';
   return (
-    <div onClick={onClick} className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-primary-500 cursor-pointer transition-colors bg-gray-50/50">
-      <UploadCloud className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+    <div onClick={onClick} onDragOver={(e) => { e.preventDefault(); setIsDrag(true); }} onDragLeave={() => setIsDrag(false)} onDrop={onDrop} className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${cls}`}>
+      <UploadCloud className={`w-8 h-8 mx-auto mb-2 transition-colors ${isDrag ? 'text-primary-600' : 'text-gray-400'}`} />
       <p className="text-sm font-medium text-gray-700">Pilih atau Seret Foto Bukti Transfer</p>
       <p className="text-xs text-gray-400 mt-1">Format JPG atau PNG (Maksimal 1MB)</p>
     </div>
@@ -98,13 +113,13 @@ function useFileSelect() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const processFile = (f: File) => { setSelectedFile(f); setPreview(URL.createObjectURL(f)); };
   const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (!f) return;
-    setSelectedFile(f); setPreview(URL.createObjectURL(f));
+    if (f) processFile(f);
   };
   const clearSelection = () => { setSelectedFile(null); setPreview(null); };
-  return { selectedFile, preview, fileInputRef, handleSelect, clearSelection };
+  return { selectedFile, preview, fileInputRef, handleSelect, processFile, clearSelection };
 }
 
 function UploadActions({ isUploading, uploadError, selectedFile, onUpload }: any) {
@@ -125,7 +140,8 @@ function UploadFormSection({ f, props, onCancelReupload }: any) {
       </div>
       <BankAccountInfo />
       <input type="file" ref={f.fileInputRef} onChange={f.handleSelect} accept="image/png,image/jpeg,image/jpg,image/webp" className="hidden" />
-      {f.preview ? <ProofPreview preview={f.preview} onClear={f.clearSelection} /> : <DropzonePrompt onClick={() => f.fileInputRef.current?.click()} />}
+      {f.preview ? <ProofPreview preview={f.preview} onClear={f.clearSelection} />
+        : <DropzonePrompt onClick={() => f.fileInputRef.current?.click()} onDropFile={f.processFile} />}
       <UploadActions isUploading={props.isUploading} uploadError={props.uploadError} selectedFile={f.selectedFile} onUpload={props.onUpload} />
     </div>
   );

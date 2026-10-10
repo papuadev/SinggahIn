@@ -31,4 +31,26 @@ describe('ManualTransferSection', () => {
     expect(screen.getByText(/Pilih atau Seret Foto Bukti Transfer/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Batal/i })).toBeInTheDocument();
   });
+
+  it('handles drag and drop of file onto dropzone', () => {
+    render(<ManualTransferSection isUploading={false} uploadError={null} onUpload={vi.fn()} />);
+    const dropzone = screen.getByText(/Pilih atau Seret Foto Bukti Transfer/i).closest('div')!;
+    const file = new File(['dummy-content'], 'receipt.jpg', { type: 'image/jpeg' });
+    fireEvent.dragOver(dropzone);
+    fireEvent.drop(dropzone, { dataTransfer: { files: [file] } });
+    expect(screen.getByAltText('Pratinjau Bukti')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Kirim Bukti Pembayaran/i })).toBeInTheDocument();
+  });
+
+  it('renders trash icon button on file preview and clears selection when clicked', () => {
+    render(<ManualTransferSection isUploading={false} uploadError={null} onUpload={vi.fn()} />);
+    const dropzone = screen.getByText(/Pilih atau Seret Foto Bukti Transfer/i).closest('div')!;
+    const file = new File(['dummy-content'], 'receipt.jpg', { type: 'image/jpeg' });
+    fireEvent.drop(dropzone, { dataTransfer: { files: [file] } });
+    const trashBtn = screen.getByRole('button', { name: /Hapus Bukti Transfer/i });
+    expect(trashBtn).toBeInTheDocument();
+    fireEvent.click(trashBtn);
+    expect(screen.queryByAltText('Pratinjau Bukti')).not.toBeInTheDocument();
+    expect(screen.getByText(/Pilih atau Seret Foto Bukti Transfer/i)).toBeInTheDocument();
+  });
 });
