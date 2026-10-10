@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, X, ArrowUpDown } from 'lucide-react';
 import { RoomSortOption, ROOM_SORT_OPTIONS } from '../room-filter.types';
+import { Select } from '../../../components/atoms/Select';
 
 export interface RoomListControlsProps {
   searchQuery: string;
@@ -13,7 +14,6 @@ type SearchInputProps = { value: string; onChange: (v: string) => void };
 type SortSelectProps = { value: RoomSortOption; onChange: (v: RoomSortOption) => void };
 
 const SEARCH_CLS = 'w-full pl-9 pr-9 py-2 text-xs sm:text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all';
-const SORT_CLS = 'w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none cursor-pointer font-medium text-gray-700';
 
 function ClearButton({ onClear }: { onClear: () => void }): React.JSX.Element {
   return (
@@ -51,15 +51,16 @@ function SortOptions(): React.JSX.Element {
 
 function SortSelectField({ value, onChange }: SortSelectProps): React.JSX.Element {
   return (
-    <div className="relative flex items-center min-w-[200px]">
-      <ArrowUpDown className="w-4 h-4 text-gray-400 absolute left-3 pointer-events-none" />
-      <select
-        value={value} onChange={(e) => onChange(e.target.value as RoomSortOption)}
-        aria-label="Urutkan kamar" className={SORT_CLS}
-      >
-        <SortOptions />
-      </select>
-    </div>
+    <Select
+      value={value}
+      onChange={(e) => onChange(e.target.value as RoomSortOption)}
+      aria-label="Urutkan kamar"
+      leftIcon={<ArrowUpDown className="w-4 h-4 text-gray-400" />}
+      wrapperClassName="min-w-[200px]"
+      className="rounded-xl border-gray-200 text-xs sm:text-sm font-medium text-gray-700"
+    >
+      <SortOptions />
+    </Select>
   );
 }
 

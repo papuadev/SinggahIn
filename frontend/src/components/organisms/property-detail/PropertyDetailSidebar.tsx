@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { ShieldCheck, Zap, Sparkles, ChevronDown } from 'lucide-react';
+import { ShieldCheck, Zap, Sparkles } from 'lucide-react';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { Button } from '../../atoms/Button';
+import { Select } from '../../atoms/Select';
 import { formatRupiah } from '../../../libs/formatters';
 import { DateTriggerBox, CalendarPopover } from './sidebar/CalendarPopover';
 
@@ -80,16 +81,15 @@ type RoomSelectProps = {
 
 function RoomSelectField({ rooms, activeId, onChange }: RoomSelectProps) {
   return (
-    <div className="relative flex items-center">
-      <select
-        id="sidebar-room-select" value={activeId || rooms[0]?.id}
-        onChange={(e) => onChange?.(e.target.value)} aria-label="Pilih Tipe Kamar"
-        className="w-full appearance-none text-xs sm:text-sm font-semibold text-gray-800 bg-gray-50/70 border border-gray-200 rounded-xl pl-3.5 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer transition-all"
-      >
-        <RoomOptions rooms={rooms} />
-      </select>
-      <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-    </div>
+    <Select
+      id="sidebar-room-select"
+      value={activeId || rooms[0]?.id}
+      onChange={(e) => onChange?.(e.target.value)}
+      aria-label="Pilih Tipe Kamar"
+      className="bg-gray-50/70 font-semibold rounded-xl text-xs sm:text-sm text-gray-800 border-gray-200"
+    >
+      <RoomOptions rooms={rooms} />
+    </Select>
   );
 }
 

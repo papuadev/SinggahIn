@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar } from 'lucide-react';
+import { Select } from '../../../components/atoms/Select';
 
 const MONTH_NAMES = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -20,12 +21,9 @@ function MonthSelector({ m, onM }: { m: number; onM: (v: number) => void }) {
   return (
     <div>
       <label className="block text-xs font-medium text-gray-500 mb-1">Bulan</label>
-      <select
-        value={m} onChange={(e) => onM(Number(e.target.value))}
-        className="text-xs border border-gray-300 rounded-lg px-2.5 py-1.5 bg-white focus:ring-1 focus:ring-primary-500"
-      >
+      <Select size="sm" value={m} onChange={(e) => onM(Number(e.target.value))}>
         {MONTH_NAMES.map((name, idx) => (<option key={idx + 1} value={idx + 1}>{name}</option>))}
-      </select>
+      </Select>
     </div>
   );
 }
@@ -35,12 +33,9 @@ function YearSelector({ y, onY }: { y: number; onY: (v: number) => void }) {
   return (
     <div>
       <label className="block text-xs font-medium text-gray-500 mb-1">Tahun</label>
-      <select
-        value={y} onChange={(e) => onY(Number(e.target.value))}
-        className="text-xs border border-gray-300 rounded-lg px-2.5 py-1.5 bg-white focus:ring-1 focus:ring-primary-500"
-      >
+      <Select size="sm" value={y} onChange={(e) => onY(Number(e.target.value))}>
         {years.map((yr) => (<option key={yr} value={yr}>{yr}</option>))}
-      </select>
+      </Select>
     </div>
   );
 }
@@ -49,13 +44,10 @@ function PropertyFilterSelect({ p, propsList, onP }: any) {
   return (
     <div className="w-full sm:w-auto">
       <label className="block text-xs font-medium text-gray-500 mb-1">Filter Properti</label>
-      <select
-        value={p} onChange={(e) => onP(e.target.value)}
-        className="w-full text-xs border border-gray-300 rounded-lg px-2.5 py-1.5 bg-white focus:ring-1 focus:ring-primary-500"
-      >
+      <Select size="sm" value={p} onChange={(e) => onP(e.target.value)}>
         <option value="">Semua Properti</option>
         {propsList?.map((prop: any) => (<option key={prop.id} value={prop.id}>{prop.title}</option>))}
-      </select>
+      </Select>
     </div>
   );
 }

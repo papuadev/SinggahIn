@@ -2,6 +2,7 @@ import React from 'react';
 import { Filter, RotateCcw, Database } from 'lucide-react';
 import { SalesGroupBy, SalesSortOption } from '../report.types';
 import { Button } from '../../../components/atoms/Button';
+import { Select } from '../../../components/atoms/Select';
 import { DatePickerInput } from '../../../components/molecules/DatePickerInput';
 
 const MONTH_NAMES = [
@@ -34,12 +35,9 @@ function MonthSelect({ m, isAll, onM }: { m: number; isAll: boolean; onM: (v: nu
   return (
     <div>
       <label htmlFor="sales-month" className="block text-xs font-medium text-gray-600 mb-1.5">Bulan</label>
-      <select
-        id="sales-month" value={m} disabled={isAll} onChange={(e) => onM(Number(e.target.value))}
-        className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary-500 disabled:bg-gray-50 disabled:text-gray-400"
-      >
+      <Select id="sales-month" value={m} disabled={isAll} onChange={(e) => onM(Number(e.target.value))}>
         {MONTH_NAMES.map((name, idx) => (<option key={idx + 1} value={idx + 1}>{name}</option>))}
-      </select>
+      </Select>
     </div>
   );
 }
@@ -49,12 +47,9 @@ function YearSelect({ y, isAll, onY }: { y: number; isAll: boolean; onY: (v: num
   return (
     <div>
       <label htmlFor="sales-year" className="block text-xs font-medium text-gray-600 mb-1.5">Tahun</label>
-      <select
-        id="sales-year" value={y} disabled={isAll} onChange={(e) => onY(Number(e.target.value))}
-        className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary-500 disabled:bg-gray-50 disabled:text-gray-400"
-      >
+      <Select id="sales-year" value={y} disabled={isAll} onChange={(e) => onY(Number(e.target.value))}>
         {years.map((yr) => (<option key={yr} value={yr}>{yr}</option>))}
-      </select>
+      </Select>
     </div>
   );
 }
@@ -87,14 +82,11 @@ function GroupSelect({ g, onG }: { g: SalesGroupBy; onG: (v: SalesGroupBy) => vo
   return (
     <div>
       <label htmlFor="sales-group" className="block text-xs font-medium text-gray-600 mb-1.5">Grup Laporan</label>
-      <select
-        id="sales-group" value={g} onChange={(e) => onG(e.target.value as SalesGroupBy)}
-        className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary-500"
-      >
+      <Select id="sales-group" value={g} onChange={(e) => onG(e.target.value as SalesGroupBy)}>
         <option value="PROPERTY">Per Properti</option>
         <option value="TRANSACTION">Per Transaksi</option>
         <option value="USER">Per Pengguna</option>
-      </select>
+      </Select>
     </div>
   );
 }
@@ -103,13 +95,10 @@ function PropertySelect({ p, list, onP }: { p: string; list?: { id: string; titl
   return (
     <div>
       <label htmlFor="sales-property" className="block text-xs font-medium text-gray-600 mb-1.5">Pilih Properti</label>
-      <select
-        id="sales-property" value={p} onChange={(e) => onP(e.target.value)}
-        className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary-500"
-      >
+      <Select id="sales-property" value={p} onChange={(e) => onP(e.target.value)}>
         <option value="">Semua Properti</option>
         {list?.map((item) => (<option key={item.id} value={item.id}>{item.title}</option>))}
-      </select>
+      </Select>
     </div>
   );
 }
@@ -118,15 +107,12 @@ function SortSelect({ s, onS }: { s: SalesSortOption; onS: (v: SalesSortOption) 
   return (
     <div>
       <label htmlFor="sales-sort" className="block text-xs font-medium text-gray-600 mb-1.5">Urutan</label>
-      <select
-        id="sales-sort" value={s} onChange={(e) => onS(e.target.value as SalesSortOption)}
-        className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary-500"
-      >
+      <Select id="sales-sort" value={s} onChange={(e) => onS(e.target.value as SalesSortOption)}>
         <option value="TERTINGGI">Tertinggi</option>
         <option value="TERENDAH">Terendah</option>
         <option value="TERBARU">Terbaru</option>
         <option value="TERLAMA">Terlama</option>
-      </select>
+      </Select>
     </div>
   );
 }
