@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowUpDown } from 'lucide-react';
+import { Select } from '../../atoms/Select';
 
 export type SortValue = 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'rating_desc';
 
@@ -36,11 +37,18 @@ function SortLabel() {
 
 function SortDropdown({ val, onChange }: { val: SortValue; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void }) {
   return (
-    <select value={val} onChange={onChange} aria-label="Urutkan hasil pencarian" className="text-xs sm:text-sm font-medium border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
+    <Select
+      size="sm"
+      value={val}
+      onChange={onChange}
+      aria-label="Urutkan hasil pencarian"
+      wrapperClassName="w-auto"
+      className="font-medium border-gray-200 rounded-xl text-gray-800"
+    >
       {SORT_OPTIONS.map((opt) => (
         <option key={opt.value} value={opt.value}>{opt.label}</option>
       ))}
-    </select>
+    </Select>
   );
 }
 

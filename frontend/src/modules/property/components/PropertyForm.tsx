@@ -5,6 +5,7 @@ import { PropertyFormData } from '../schemas/property.schema';
 import { PropertyCategory, GeocodeSuggestion } from '../property.types';
 import { FormField } from '../../../components/molecules/FormField';
 import { Input } from '../../../components/atoms/Input';
+import { Select } from '../../../components/atoms/Select';
 import { Button } from '../../../components/atoms/Button';
 import { Spinner } from '../../../components/atoms/Spinner';
 import { PropertyMapPin } from './PropertyMapPin';
@@ -29,13 +30,15 @@ interface CategorySelectProps {
 function CategorySelectField({ register, error, categories, isLoading }: CategorySelectProps) {
   return (
     <FormField label="Kategori Properti" required error={error}>
-      <select
-        {...register('categoryId')} disabled={isLoading} aria-label="Kategori Properti"
-        className="w-full rounded-lg border border-gray-300 py-2.5 px-3.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 focus:border-primary-500 disabled:bg-gray-50"
+      <Select
+        {...register('categoryId')}
+        disabled={isLoading}
+        hasError={Boolean(error)}
+        aria-label="Kategori Properti"
       >
         <option value="">{isLoading ? 'Memuat kategori...' : '-- Pilih Kategori --'}</option>
         {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-      </select>
+      </Select>
     </FormField>
   );
 }

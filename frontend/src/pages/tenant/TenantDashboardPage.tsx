@@ -5,6 +5,7 @@ import { useTenantProperties, usePropertyDetail } from '../../modules/property/h
 import { TenantRoomStatusCalendar } from '../../modules/room/components/TenantRoomStatusCalendar';
 import { Property } from '../../modules/property/property.types';
 import { Button } from '../../components/atoms/Button';
+import { Select } from '../../components/atoms/Select';
 import { Spinner } from '../../components/atoms/Spinner';
 import { Alert } from '../../components/atoms/Alert';
 
@@ -52,27 +53,27 @@ interface SelectorProps {
   onChange: (id: string) => void;
 }
 
-function PropertySelectorBar({ properties, selectedId, onChange }: SelectorProps): React.JSX.Element {
+function PropertySelectorDropdown({ properties, selectedId, onChange }: SelectorProps): React.JSX.Element {
+  return (
+    <div className="flex items-center gap-2 flex-1 min-w-0">
+      <label htmlFor="dashboard-prop-select" className="text-xs sm:text-sm font-semibold text-gray-700 shrink-0">
+        Pilih Properti:
+      </label>
+      <Select
+        id="dashboard-prop-select" size="sm" value={selectedId} onChange={(e) => onChange(e.target.value)}
+        wrapperClassName="w-auto flex-1 max-w-sm" className="font-medium text-gray-800 truncate"
+      >
+        {properties.map((p) => (<option key={p.id} value={p.id}>{p.title} ({p.city})</option>))}
+      </Select>
+    </div>
+  );
+}
+
+function PropertySelectorBar(props: SelectorProps): React.JSX.Element {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white rounded-xl border border-gray-200 mb-6 shadow-xs">
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <label htmlFor="dashboard-prop-select" className="text-xs sm:text-sm font-semibold text-gray-700 shrink-0">
-          Pilih Properti:
-        </label>
-        <select
-          id="dashboard-prop-select"
-          value={selectedId}
-          onChange={(e) => onChange(e.target.value)}
-          className="text-xs sm:text-sm rounded-lg border border-gray-300 py-1.5 px-3 bg-white font-medium text-gray-800 focus:ring-2 focus:ring-primary-100 focus:border-primary-500 truncate"
-        >
-          {properties.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.title} ({p.city})
-            </option>
-          ))}
-        </select>
-      </div>
-      <Link to={`/tenant/properties/${selectedId}/edit`}>
+      <PropertySelectorDropdown {...props} />
+      <Link to={`/tenant/properties/${props.selectedId}/edit`}>
         <Button variant="outline" size="sm" leftIcon={<Edit className="w-3.5 h-3.5" />}>
           Kelola Properti Ini
         </Button>

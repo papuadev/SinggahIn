@@ -14,6 +14,7 @@ import { Modal } from '../../../components/molecules/Modal';
 import { FormField } from '../../../components/molecules/FormField';
 import { DatePickerInput } from '../../../components/molecules/DatePickerInput';
 import { Input } from '../../../components/atoms/Input';
+import { Select } from '../../../components/atoms/Select';
 import { CurrencyInput } from '../../../components/atoms/CurrencyInput';
 import { Button } from '../../../components/atoms/Button';
 import { Alert } from '../../../components/atoms/Alert';
@@ -82,10 +83,10 @@ function RateValueInput({ control, register, errors, type }: ValInputProps) {
 function AdjustmentTypeSelect({ register, error }: { register: UseFormRegister<PeakRateFormData>; error?: string }) {
   return (
     <FormField label="Tipe Penyesuaian" htmlFor="peak-adj-type" required error={error}>
-      <select id="peak-adj-type" {...register('adjustmentType')} className="w-full rounded-lg border border-gray-300 py-2.5 px-3 text-sm bg-white focus:ring-2 focus:ring-primary-100 focus:border-primary-500">
+      <Select id="peak-adj-type" hasError={Boolean(error)} {...register('adjustmentType')}>
         <option value="PERCENTAGE">Persentase (%)</option>
         <option value="NOMINAL">Nominal (Rp)</option>
-      </select>
+      </Select>
     </FormField>
   );
 }

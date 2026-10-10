@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, BedDouble } from 'lucide-react';
+import { Select } from '../../../atoms/Select';
 import { formatDateID } from '../../../../libs/formatters';
 
 interface RoomOption {
@@ -48,18 +49,20 @@ function RoomSelector({ rooms, selectedId, onChange }: { rooms: RoomOption[]; se
   return (
     <div className="flex items-center gap-1.5">
       <BedDouble className="w-3.5 h-3.5 text-primary-600 shrink-0" />
-      <select
+      <Select
+        size="sm"
         value={selectedId || rooms[0]?.id}
         onChange={(e) => onChange?.(e.target.value)}
         aria-label="Pilih Tipe Kamar untuk Kalender"
-        className="text-xs font-semibold text-gray-800 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
+        wrapperClassName="w-auto"
+        className="font-semibold text-gray-800 bg-gray-50 border-gray-200"
       >
         {rooms.map((room) => (
           <option key={room.id} value={room.id}>
             {room.name}
           </option>
         ))}
-      </select>
+      </Select>
     </div>
   );
 }
