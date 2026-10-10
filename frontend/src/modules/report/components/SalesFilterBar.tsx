@@ -135,7 +135,7 @@ function ActionButtons({ isAll, onToggle, onReset }: { isAll: boolean; onToggle:
   return (
     <div className="flex items-center gap-2">
       <Button variant={isAll ? 'primary' : 'outline'} onClick={onToggle} className="w-full h-10 text-xs sm:text-sm" leftIcon={<Database className="w-4 h-4" />}>
-        Semua
+        Semua Data
       </Button>
       <Button variant="outline" onClick={onReset} className="w-full h-10 text-xs sm:text-sm" leftIcon={<RotateCcw className="w-4 h-4" />}>
         Reset

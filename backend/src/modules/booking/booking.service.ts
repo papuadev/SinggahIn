@@ -132,6 +132,7 @@ export async function getBookingById(userId: string, bookingId: string, role?: R
       property: { select: { id: true, title: true, city: true, address: true, tenantId: true } },
       room: { select: { id: true, name: true, basePrice: true } },
       payment: true,
+      review: { select: { id: true, rating: true, comment: true } },
     },
   });
   if (!b) throw AppError.notFound('Pesanan tidak ditemukan.');
@@ -145,6 +146,7 @@ const BOOKING_SELECT = {
   property: { select: { id: true, title: true, city: true, address: true } },
   room: { select: { id: true, name: true, basePrice: true } },
   payment: true,
+  review: { select: { id: true, rating: true, comment: true } },
 };
 
 export async function getUserBookings(userId: string, query: BookingListQuery) {

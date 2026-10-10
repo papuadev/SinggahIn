@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Calendar, CreditCard, ChevronRight } from 'lucide-react';
+import { Building2, Calendar, CreditCard, ChevronRight, Star } from 'lucide-react';
 import { Booking, BookingStatus } from '../booking.types';
 import { formatRupiah, formatDateID } from '../../../libs/formatters';
 import { Button } from '../../../components/atoms/Button';
@@ -9,6 +9,7 @@ export interface OrderHistoryCardProps {
   onPay?: (id: string) => void;
   onCancel?: (id: string) => void;
   onViewDetail: (id: string) => void;
+  onReview?: (booking: Booking) => void;
 }
 
 export function getStatusBadge(status: BookingStatus): { label: string; style: string } {
@@ -49,12 +50,30 @@ function CardBody({ b }: { b: Booking }) {
   );
 }
 
-function CardActions({ b, onPay, onCancel, onView }: any) {
+function CardReviewAction({ b, onReview }: { b: Booking; onReview?: (b: Booking) => void }) {
+  if (b.status !== 'COMPLETED') return null;
+  if (b.review) {
+    return (
+      <span className="text-xs font-medium text-amber-700 flex items-center gap-1 px-2.5 py-1 bg-amber-50 rounded-lg border border-amber-200">
+        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> Sudah Diulas ({b.review.rating}★)
+      </span>
+    );
+  }
+  return onReview ? (
+    <Button variant="outline" size="sm" className="text-amber-700 border-amber-300 hover:bg-amber-50"
+      leftIcon={<Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />} onClick={() => onReview(b)}>
+      Beri Ulasan
+    </Button>
+  ) : null;
+}
+
+function CardActions({ b, onPay, onCancel, onView, onReview }: any) {
   return (
     <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
       {b.status === 'WAITING_PAYMENT' && onCancel && (
         <Button variant="ghost" size="sm" onClick={() => onCancel(b.id)}>Batalkan</Button>
       )}
+      <CardReviewAction b={b} onReview={onReview} />
       {b.status === 'WAITING_PAYMENT' && onPay ? (
         <Button variant="primary" size="sm" leftIcon={<CreditCard className="w-3.5 h-3.5" />} onClick={() => onPay(b.id)}>Bayar Sekarang</Button>
       ) : (
@@ -64,12 +83,12 @@ function CardActions({ b, onPay, onCancel, onView }: any) {
   );
 }
 
-export function OrderHistoryCard({ booking, onPay, onCancel, onViewDetail }: OrderHistoryCardProps): React.JSX.Element {
+export function OrderHistoryCard({ booking, onPay, onCancel, onViewDetail, onReview }: OrderHistoryCardProps): React.JSX.Element {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-xs hover:border-gray-300 transition-colors">
       <CardHeader code={booking.bookingCode} status={booking.status} />
       <CardBody b={booking} />
-      <CardActions b={booking} onPay={onPay} onCancel={onCancel} onView={onViewDetail} />
+      <CardActions b={booking} onPay={onPay} onCancel={onCancel} onView={onViewDetail} onReview={onReview} />
     </div>
   );
 }

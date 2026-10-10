@@ -75,6 +75,13 @@ export async function getTenantProperties(
 
 export const getPropertyTenant = getTenantProperties;
 
+function computeRatingSummary(reviews: { rating: number }[]) {
+  const total = reviews.length;
+  if (total === 0) return { averageRating: 0, totalReviews: 0 };
+  const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+  return { averageRating: Math.round((sum / total) * 10) / 10, totalReviews: total };
+}
+
 export async function getPropertyById(id: string): Promise<PropertyResponseDto> {
   const query = {
     where: { id },
@@ -82,11 +89,13 @@ export async function getPropertyById(id: string): Promise<PropertyResponseDto> 
       category: true,
       images: { orderBy: [{ order: 'asc' as const }, { createdAt: 'asc' as const }] },
       rooms: { orderBy: { basePrice: 'asc' as const } },
+      reviews: { select: { rating: true } },
     },
   };
   const property = await prisma.property.findUnique(query);
   if (!property) throw AppError.notFound('Properti tidak ditemukan.');
-  return property;
+  const ratingInfo = computeRatingSummary((property as any).reviews || []);
+  return { ...(property as any), ...ratingInfo };
 }
 
 export async function updateProperty(

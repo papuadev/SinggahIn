@@ -11,7 +11,8 @@ import { roomRoutes } from './modules/room/room.routes';
 import { bookingRoutes } from './modules/booking/booking.routes';
 import paymentRoutes from './modules/payment/payment.routes';
 import reportRoutes from './modules/report/report.routes';
-import { initAutoCancelCron } from './modules/booking/booking-cron.service';
+import { reviewRoutes } from './modules/review/review.routes';
+import { initBookingCrons } from './modules/booking/booking-cron.service';
 
 export const app = express();
 app.set('trust proxy', 1);
@@ -42,7 +43,7 @@ app.use('/api/v1/rooms', roomRoutes);
 app.use('/api/v1/bookings', bookingRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/reports', reportRoutes);
-
+app.use('/api/v1/reviews', reviewRoutes);
 
 // 404 Handler for undefined routes
 app.use(notFoundHandler);
@@ -51,7 +52,7 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
-  initAutoCancelCron();
+  initBookingCrons();
   app.listen(PORT, () => {
     // Server running on configured PORT
   });

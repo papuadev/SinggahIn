@@ -13,6 +13,7 @@ import { PropertyDetailMobileBar } from '../components/organisms/property-detail
 import { PropertyDetailSkeleton } from '../components/organisms/property-detail/PropertyDetailSkeleton';
 import { Button } from '../components/atoms/Button';
 import { MissingDatesModal } from '../components/organisms/property-detail/MissingDatesModal';
+import { ReviewList } from '../modules/review/components/ReviewList';
 import { SEOHead } from '../components/atoms/SEOHead';
 import { createLodgingBusinessSchema } from '../libs/seo';
 import { usePropertyDetailPage } from './usePropertyDetailPage';
@@ -62,6 +63,7 @@ function PropertyMainCol({ property, rooms, checkIn, checkOut, onBook }: MainCol
       <PropertyDetailFacilities facilities={property.facilities} />
       <PropertyDetailRoomList propertyId={property.id} rooms={rooms} checkIn={checkIn} checkOut={checkOut} onBookRoom={onBook} />
       <PropertyDetailMap latitude={property.latitude} longitude={property.longitude} address={property.address} city={property.city} />
+      <ReviewList propertyId={property.id} />
     </div>
   );
 }

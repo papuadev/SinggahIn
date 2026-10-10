@@ -140,6 +140,39 @@ describe('OrderPaymentPage', () => {
     });
   });
 
+  it('renders completed stay details and review prompt for COMPLETED booking without payment form', async () => {
+    const completedBooking = {
+      ...mockBooking,
+      status: 'COMPLETED',
+      review: null,
+    };
+    vi.mocked(bookingApi.getBookingById).mockResolvedValueOnce({
+      success: true, message: 'OK', data: completedBooking as any,
+    });
+    renderOrderPayment();
+    await waitFor(() => {
+      expect(screen.getByText('Detail Pesanan Selesai')).toBeInTheDocument();
+      expect(screen.getByText('Masa Menginap Telah Selesai')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Beri Ulasan Sekarang/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Bayar Sekarang/i })).not.toBeInTheDocument();
+    });
+  });
+
+  it('renders existing review comment when COMPLETED booking already has review', async () => {
+    const reviewedBooking = {
+      ...mockBooking,
+      status: 'COMPLETED',
+      review: { id: 'rev-1', rating: 5, comment: 'Pengalaman luar biasa!' },
+    };
+    vi.mocked(bookingApi.getBookingById).mockResolvedValueOnce({
+      success: true, message: 'OK', data: reviewedBooking as any,
+    });
+    renderOrderPayment();
+    await waitFor(() => {
+      expect(screen.getByText('"Pengalaman luar biasa!"')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Beri Ulasan Sekarang/i })).not.toBeInTheDocument();
+    });
+  });
 });
 
 

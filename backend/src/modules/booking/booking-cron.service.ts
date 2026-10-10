@@ -24,12 +24,36 @@ export async function cancelExpiredBookings(now = new Date()) {
   return { cancelledCount: expired.length };
 }
 
+export async function autoCompleteFinishedBookings(now = new Date()) {
+  const finished = await prisma.booking.findMany({
+    where: {
+      status: BookingStatus.PROCESSED,
+      checkOutDate: { lte: now },
+    },
+    select: { id: true },
+  });
+  if (finished.length === 0) return { completedCount: 0 };
+  const ids = finished.map((b) => b.id);
+  await prisma.booking.updateMany({
+    where: { id: { in: ids } },
+    data: { status: BookingStatus.COMPLETED },
+  });
+  return { completedCount: finished.length };
+}
+
 export function initAutoCancelCron() {
   return cron.schedule('*/1 * * * *', async () => {
-    try {
-      await cancelExpiredBookings();
-    } catch {
-      // Catch and continue on background job failures
-    }
+    try { await cancelExpiredBookings(); } catch {}
   });
+}
+
+export function initAutoCompleteCron() {
+  return cron.schedule('0 12 * * *', async () => {
+    try { await autoCompleteFinishedBookings(); } catch {}
+  }, { timezone: 'Asia/Jakarta' });
+}
+
+export function initBookingCrons() {
+  initAutoCancelCron();
+  initAutoCompleteCron();
 }

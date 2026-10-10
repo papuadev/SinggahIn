@@ -15,6 +15,15 @@ vi.mock('../../modules/room/services/room.api', () => ({
   roomApi: { getRoomsByProperty: vi.fn() },
 }));
 
+vi.mock('../../modules/review/services/review.api', () => ({
+  reviewApi: {
+    getPropertyReviews: vi.fn().mockResolvedValue({
+      success: true,
+      data: { reviews: [], totalReviews: 0, averageRating: 0, page: 1, limit: 5, totalPages: 1 },
+    }),
+  },
+}));
+
 vi.mock('react-leaflet', () => ({
   MapContainer: ({ children }: { children?: React.ReactNode }) => (
     <div data-testid="map-container">{children}</div>
