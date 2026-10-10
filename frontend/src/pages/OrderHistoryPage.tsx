@@ -4,6 +4,7 @@ import { ClipboardList, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useOrderHistory } from '../modules/booking/hooks/useOrderHistory';
 import { OrderHistoryCard } from '../modules/booking/components/OrderHistoryCard';
 import { CancelOrderModal } from '../modules/booking/components/CancelOrderModal';
+import { ReviewFormModal } from '../modules/review/components/ReviewFormModal';
 import { bookingApi } from '../modules/booking/services/booking.api';
 import { BookingStatus, Booking } from '../modules/booking/booking.types';
 import { Button } from '../components/atoms/Button';
@@ -54,11 +55,13 @@ function HistoryPagination({ meta, page, setPage }: any) {
   );
 }
 
-function OrderListContent({ bookings, meta, page, setPage, navigate, setCancelId }: any) {
+function OrderListContent({ bookings, meta, page, setPage, navigate, setCancelId, onReview }: any) {
   return (
     <div className="space-y-4">
       {bookings.map((b: Booking) => (
-        <OrderHistoryCard key={b.id} booking={b} onPay={(id) => navigate(`/orders/${id}/payment`)} onCancel={(id) => setCancelId(id)} onViewDetail={(id) => navigate(`/orders/${id}/payment`)} />
+        <OrderHistoryCard key={b.id} booking={b} onPay={(id) => navigate(`/orders/${id}/payment`)}
+          onCancel={(id) => setCancelId(id)} onViewDetail={(id) => navigate(`/orders/${id}/payment`)}
+          onReview={onReview} />
       ))}
       <HistoryPagination meta={meta} page={page} setPage={setPage} />
     </div>
@@ -79,6 +82,7 @@ function useOrderCancellationState(refetch: () => void) {
 
 export function OrderHistoryPage(): React.JSX.Element {
   const navigate = useNavigate();
+  const [reviewBooking, setReviewBooking] = useState<Booking | null>(null);
   const { bookings, meta, isLoading, status, setStatus, page, setPage, refetch } = useOrderHistory();
   const { cancelId, setCancelId, cancelling, handleCancel } = useOrderCancellationState(refetch);
   return (
@@ -86,9 +90,10 @@ export function OrderHistoryPage(): React.JSX.Element {
       <h1 className="text-2xl font-bold text-gray-900">Riwayat Pesanan Saya</h1>
       <StatusFilterTabs current={status} onSelect={setStatus} />
       {isLoading ? <div className="py-12 text-center text-sm text-gray-500">Memuat pesanan...</div> : bookings.length === 0 ? <HistoryEmpty /> : (
-        <OrderListContent bookings={bookings} meta={meta} page={page} setPage={setPage} navigate={navigate} setCancelId={setCancelId} />
+        <OrderListContent bookings={bookings} meta={meta} page={page} setPage={setPage} navigate={navigate} setCancelId={setCancelId} onReview={setReviewBooking} />
       )}
       <CancelOrderModal isOpen={Boolean(cancelId)} onClose={() => setCancelId(null)} onConfirm={handleCancel} isCancelling={cancelling} />
+      <ReviewFormModal isOpen={Boolean(reviewBooking)} onClose={() => { setReviewBooking(null); refetch(); }} bookingId={reviewBooking?.id || ''} propertyTitle={reviewBooking?.property?.title} />
     </div>
   );
 }

@@ -72,6 +72,7 @@ export interface Booking {
   room: BookingRoom;
   payment?: BookingPayment | null;
   user?: BookingUser;
+  review?: { id: string; rating: number; comment?: string } | null;
 }
 
 export interface CreateBookingPayload {
