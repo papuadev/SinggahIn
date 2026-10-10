@@ -58,22 +58,24 @@ async function syncAndFinish(bookingId: string, onDone: () => void) {
 
 async function executeSnapCharge(bookingId: string, onDone: () => void, setError: (e: string) => void) {
   const { data } = await paymentApi.createSnapCharge(bookingId);
+  if (!data?.snapToken) throw new Error('Data token pembayaran tidak tersedia.');
   const handleDone = () => syncAndFinish(bookingId, onDone);
   await openMidtransSnap(data.snapToken, {
     onSuccess: handleDone,
     onPending: handleDone,
     onError: () => setError('Pembayaran gagal diproses.'),
     onClose: handleDone,
-  });
+  }, data.redirectUrl);
 }
 
 async function executeResetSnap(bookingId: string, onDone: () => void, setError: (e: string) => void) {
   const { data } = await paymentApi.resetSnapCharge(bookingId);
+  if (!data?.snapToken) throw new Error('Data token pembayaran tidak tersedia.');
   const handleDone = () => syncAndFinish(bookingId, onDone);
   await openMidtransSnap(data.snapToken, {
     onSuccess: handleDone, onPending: handleDone,
     onError: () => setError('Pembayaran gagal diproses.'), onClose: handleDone,
-  });
+  }, data.redirectUrl);
 }
 
 export function useOrderMidtrans(bookingId: string, onDone: () => void) {

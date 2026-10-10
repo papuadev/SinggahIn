@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { InteractivePriceCalendar } from '../InteractivePriceCalendar';
@@ -43,9 +43,14 @@ function renderCalendar(props: Partial<Parameters<typeof InteractivePriceCalenda
 describe('InteractivePriceCalendar Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.setSystemTime(new Date('2026-10-01T00:00:00Z'));
     vi.mocked(propertyApi.getCalendar).mockResolvedValue({
       success: true, message: 'OK', data: mockCalendarData,
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('renders section title, room selector options, and legend chips', async () => {

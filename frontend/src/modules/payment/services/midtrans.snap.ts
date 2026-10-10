@@ -23,12 +23,28 @@ export interface SnapCallbacks {
   onClose?: () => void;
 }
 
-function getSnapScriptUrl(): string {
-  const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY || '';
-  const isProd = import.meta.env.VITE_MIDTRANS_IS_PRODUCTION === 'true' || (clientKey.length > 0 && !clientKey.startsWith('SB-'));
-  return isProd
+export function isProductionEnv(redirectUrl?: string): boolean {
+  if (redirectUrl) {
+    if (redirectUrl.includes('sandbox.midtrans.com')) return false;
+    if (redirectUrl.includes('app.midtrans.com')) return true;
+  }
+  return import.meta.env.VITE_MIDTRANS_IS_PRODUCTION === 'true';
+}
+
+export function getSnapScriptUrl(redirectUrl?: string): string {
+  return isProductionEnv(redirectUrl)
     ? 'https://app.midtrans.com/snap/snap.js'
     : 'https://app.sandbox.midtrans.com/snap/snap.js';
+}
+
+function cleanupMismatchedScript(targetUrl: string): void {
+  const scripts = document.querySelectorAll('script[src*="midtrans.com/snap/snap.js"]');
+  scripts.forEach((el) => {
+    if ((el as HTMLScriptElement).src !== targetUrl) {
+      el.remove();
+      delete (window as any).snap;
+    }
+  });
 }
 
 function injectSnapScript(url: string, resolve: () => void, reject: (err: Error) => void): void {
@@ -46,18 +62,30 @@ function handleExistingScript(existing: Element, resolve: () => void): void {
   existing.addEventListener('load', () => resolve());
 }
 
-export function loadMidtransSnapScript(): Promise<void> {
+export function loadMidtransSnapScript(redirectUrl?: string): Promise<void> {
   return new Promise((resolve, reject) => {
+    const snapUrl = getSnapScriptUrl(redirectUrl);
+    cleanupMismatchedScript(snapUrl);
     if (window.snap) return resolve();
-    const snapUrl = getSnapScriptUrl();
     const existing = document.querySelector(`script[src="${snapUrl}"]`);
     if (existing) return handleExistingScript(existing, resolve);
     injectSnapScript(snapUrl, resolve, reject);
   });
 }
 
-export async function openMidtransSnap(snapToken: string, callbacks: SnapCallbacks): Promise<void> {
-  await loadMidtransSnapScript();
+function validateSnapToken(snapToken: string): void {
+  if (!snapToken || typeof snapToken !== 'string' || !snapToken.trim()) {
+    throw new Error('Data token pembayaran tidak tersedia. Silakan muat ulang atau coba lagi.');
+  }
+}
+
+export async function openMidtransSnap(
+  snapToken: string,
+  callbacks: SnapCallbacks,
+  redirectUrl?: string
+): Promise<void> {
+  validateSnapToken(snapToken);
+  await loadMidtransSnapScript(redirectUrl);
   if (!window.snap) {
     throw new Error('Midtrans Snap tidak tersedia');
   }
