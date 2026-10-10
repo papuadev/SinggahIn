@@ -10,6 +10,7 @@ import { propertyRoutes } from './modules/property/property.routes';
 import { roomRoutes } from './modules/room/room.routes';
 import { bookingRoutes } from './modules/booking/booking.routes';
 import paymentRoutes from './modules/payment/payment.routes';
+import reportRoutes from './modules/report/report.routes';
 import { initAutoCancelCron } from './modules/booking/booking-cron.service';
 
 export const app = express();
@@ -40,6 +41,7 @@ app.use('/api/v1/properties', propertyRoutes);
 app.use('/api/v1/rooms', roomRoutes);
 app.use('/api/v1/bookings', bookingRoutes);
 app.use('/api/v1/payments', paymentRoutes);
+app.use('/api/v1/reports', reportRoutes);
 
 
 // 404 Handler for undefined routes

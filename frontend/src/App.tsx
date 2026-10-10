@@ -15,6 +15,8 @@ import { TenantPropertyListPage } from "./pages/tenant/TenantPropertyListPage";
 import { TenantPropertyCreatePage } from "./pages/tenant/TenantPropertyCreatePage";
 import { TenantPropertyEditPage } from "./pages/tenant/TenantPropertyEditPage";
 import { TenantOrderManagementPage } from "./pages/tenant/TenantOrderManagementPage";
+import { TenantSalesReportPage } from "./pages/tenant/TenantSalesReportPage";
+import { TenantOccupancyMatrixPage } from "./pages/tenant/TenantOccupancyMatrixPage";
 import { HomePage } from "./pages/HomePage";
 import { CatalogSearchPage } from "./pages/CatalogSearchPage";
 import { PropertyDetailPage } from "./pages/PropertyDetailPage";
@@ -55,6 +57,8 @@ function TenantRoutes(): React.JSX.Element {
       <Route path="properties/new" element={<TenantPropertyCreatePage />} />
       <Route path="properties/:id/edit" element={<TenantPropertyEditPage />} />
       <Route path="orders" element={<TenantOrderManagementPage />} />
+      <Route path="reports/sales" element={<TenantSalesReportPage />} />
+      <Route path="reports/occupancy" element={<TenantOccupancyMatrixPage />} />
     </Route>
   );
 }
