@@ -13,11 +13,22 @@ import {
   calculateOccupancyRate,
 } from './report.helper';
 
-function resolveDateFilter(start?: string, end?: string) {
-  const filter: any = {};
-  if (start) filter.gte = new Date(`${start}T00:00:00.000Z`);
-  if (end) filter.lte = new Date(`${end}T23:59:59.999Z`);
-  return Object.keys(filter).length > 0 ? { createdAt: filter } : {};
+function resolveMonthFilter(year?: number, month?: number) {
+  if (!year || !month) return {};
+  const s = new Date(Date.UTC(year, month - 1, 1));
+  const e = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+  return { createdAt: { gte: s, lte: e } };
+}
+
+function resolveDateFilter(q: SalesReportQueryInput) {
+  if (q.allData) return {};
+  if (q.startDate || q.endDate) {
+    const filter: any = {};
+    if (q.startDate) filter.gte = new Date(`${q.startDate}T00:00:00.000Z`);
+    if (q.endDate) filter.lte = new Date(`${q.endDate}T23:59:59.999Z`);
+    return Object.keys(filter).length > 0 ? { createdAt: filter } : {};
+  }
+  return resolveMonthFilter(q.year, q.month);
 }
 
 async function getTenantPropertyIds(tenantId: string, requestedId?: string): Promise<string[]> {
@@ -31,29 +42,29 @@ async function getTenantPropertyIds(tenantId: string, requestedId?: string): Pro
 
 function processSalesBreakdown(bookings: any[], groupBy: string, sortBy?: string, order: 'asc' | 'desc' = 'desc') {
   if (groupBy === 'TRANSACTION') {
-    const list = mapBookingsToTransactions(bookings);
-    return sortSalesBreakdown(list, sortBy || 'createdAt', order);
+    return sortSalesBreakdown(mapBookingsToTransactions(bookings), sortBy, order, groupBy);
   }
   if (groupBy === 'USER') {
-    const list = groupBookingsByUser(bookings);
-    return sortSalesBreakdown(list, sortBy || 'totalSpent', order);
+    return sortSalesBreakdown(groupBookingsByUser(bookings), sortBy, order, groupBy);
   }
-  const list = groupBookingsByProperty(bookings);
-  return sortSalesBreakdown(list, sortBy || 'revenue', order);
+  return sortSalesBreakdown(groupBookingsByProperty(bookings), sortBy, order, groupBy);
 }
 
-export async function getSalesReport(tenantId: string, query: SalesReportQueryInput): Promise<SalesReportResponseDto> {
-  const propertyIds = await getTenantPropertyIds(tenantId, query.propertyId);
-  const dateFilter = resolveDateFilter(query.startDate, query.endDate);
-  const bookings = await prisma.booking.findMany({
+async function fetchSalesBookings(propertyIds: string[], query: SalesReportQueryInput) {
+  return prisma.booking.findMany({
     where: {
       propertyId: { in: propertyIds },
       status: { in: [BookingStatus.PROCESSED, BookingStatus.COMPLETED] },
-      ...dateFilter,
+      ...resolveDateFilter(query),
     },
     include: { property: true, room: true, user: true, payment: true },
     orderBy: { createdAt: 'desc' },
   });
+}
+
+export async function getSalesReport(tenantId: string, query: SalesReportQueryInput): Promise<SalesReportResponseDto> {
+  const propertyIds = await getTenantPropertyIds(tenantId, query.propertyId);
+  const bookings = await fetchSalesBookings(propertyIds, query);
   const totalRevenue = bookings.reduce((sum, b) => sum + b.totalPrice, 0);
   const breakdown = processSalesBreakdown(bookings, query.groupBy, query.sortBy, query.sortOrder);
   return { totalRevenue, totalBookings: bookings.length, breakdown };
@@ -92,10 +103,16 @@ function mapPropertiesToMatrix(props: any[], days: { date: string; day: number }
   return matrix;
 }
 
+async function fetchOccupancyBookings(roomIds: string[], start: Date, end: Date) {
+  const status = [BookingStatus.WAITING_CONFIRMATION, BookingStatus.PROCESSED, BookingStatus.COMPLETED];
+  return prisma.booking.findMany({
+    where: { roomId: { in: roomIds }, status: { in: status }, checkInDate: { lte: end }, checkOutDate: { gt: start } },
+  });
+}
+
 export async function getOccupancyMatrix(tenantId: string, query: OccupancyMatrixQueryInput): Promise<OccupancyMatrixResponseDto> {
-  const now = new Date();
-  const month = query.month || now.getMonth() + 1;
-  const year = query.year || now.getFullYear();
+  const month = query.month || new Date().getMonth() + 1;
+  const year = query.year || new Date().getFullYear();
   const days = buildDaysArray(year, month);
   const start = new Date(Date.UTC(year, month - 1, 1));
   const end = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
@@ -103,11 +120,7 @@ export async function getOccupancyMatrix(tenantId: string, query: OccupancyMatri
     where: { tenantId, ...(query.propertyId ? { id: query.propertyId } : {}) },
     include: { rooms: { include: { unavailabilities: true }, orderBy: { name: 'asc' } } },
   });
-  const roomIds = props.flatMap((p) => p.rooms.map((r) => r.id));
-  const validStatus = [BookingStatus.WAITING_CONFIRMATION, BookingStatus.PROCESSED, BookingStatus.COMPLETED];
-  const bookings = await prisma.booking.findMany({
-    where: { roomId: { in: roomIds }, status: { in: validStatus }, checkInDate: { lte: end }, checkOutDate: { gt: start } },
-  });
+  const bookings = await fetchOccupancyBookings(props.flatMap((p) => p.rooms.map((r) => r.id)), start, end);
   const matrix = mapPropertiesToMatrix(props, days, bookings);
   return { month, year, totalDays: days.length, occupancyRate: calculateOccupancyRate(matrix, days.length), matrix };
 }

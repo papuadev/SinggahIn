@@ -55,6 +55,21 @@ describe('Report Helpers', () => {
     expect(sorted[2].revenue).toBe(100);
   });
 
+  it('sorts using the 4 standardized options (TERENDAH, TERTINGGI, TERBARU, TERLAMA)', () => {
+    const items = [
+      { id: '1', revenue: 100, createdAt: '2026-10-01T00:00:00Z', latestTransactionDate: '2026-10-01T00:00:00Z' },
+      { id: '2', revenue: 500, createdAt: '2026-10-05T00:00:00Z', latestTransactionDate: '2026-10-05T00:00:00Z' },
+    ];
+    const lowest = sortSalesBreakdown(items, 'TERENDAH', 'asc', 'PROPERTY');
+    expect(lowest[0].revenue).toBe(100);
+    const highest = sortSalesBreakdown(items, 'TERTINGGI', 'desc', 'PROPERTY');
+    expect(highest[0].revenue).toBe(500);
+    const newest = sortSalesBreakdown(items, 'TERBARU', 'desc', 'PROPERTY');
+    expect(newest[0].id).toBe('2');
+    const oldest = sortSalesBreakdown(items, 'TERLAMA', 'asc', 'PROPERTY');
+    expect(oldest[0].id).toBe('1');
+  });
+
   it('builds calendar days array for given year and month', () => {
     const days = buildDaysArray(2026, 2);
     expect(days).toHaveLength(28);

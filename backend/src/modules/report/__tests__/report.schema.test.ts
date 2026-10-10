@@ -17,6 +17,33 @@ describe('Report Validation Schemas', () => {
       }
     });
 
+    it('accepts month, year, and allData flags', () => {
+      const res = salesReportQuerySchema.safeParse({
+        month: 10, year: 2026, allData: true, sortBy: 'TERTINGGI',
+      });
+      expect(res.success).toBe(true);
+      if (res.success) {
+        expect(res.data.month).toBe(10);
+        expect(res.data.allData).toBe(true);
+        expect(res.data.sortBy).toBe('TERTINGGI');
+      }
+    });
+
+    it('correctly handles allData string values and empty strings', () => {
+      const parsedFalse = salesReportQuerySchema.safeParse({ allData: 'false', startDate: '', endDate: '' });
+      expect(parsedFalse.success).toBe(true);
+      if (parsedFalse.success) {
+        expect(parsedFalse.data.allData).toBe(false);
+        expect(parsedFalse.data.startDate).toBeUndefined();
+        expect(parsedFalse.data.endDate).toBeUndefined();
+      }
+      const parsedTrue = salesReportQuerySchema.safeParse({ allData: 'true' });
+      expect(parsedTrue.success).toBe(true);
+      if (parsedTrue.success) {
+        expect(parsedTrue.data.allData).toBe(true);
+      }
+    });
+
     it('defaults groupBy to PROPERTY and sortOrder to desc', () => {
       const res = salesReportQuerySchema.safeParse({});
       expect(res.success).toBe(true);

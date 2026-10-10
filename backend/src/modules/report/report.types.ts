@@ -1,11 +1,14 @@
 export type SalesGroupBy = 'PROPERTY' | 'TRANSACTION' | 'USER';
 export type SortOrder = 'asc' | 'desc';
+export type SalesSortOption = 'TERENDAH' | 'TERTINGGI' | 'TERBARU' | 'TERLAMA';
 
 export interface PropertySalesBreakdown {
   id: string;
   name: string;
   totalTransactions: number;
   revenue: number;
+  latestTransactionDate?: string;
+  earliestTransactionDate?: string;
 }
 
 export interface TransactionSalesBreakdown {
@@ -29,6 +32,8 @@ export interface UserSalesBreakdown {
   email: string;
   totalBookings: number;
   totalSpent: number;
+  latestTransactionDate?: string;
+  earliestTransactionDate?: string;
 }
 
 export type SalesBreakdownItem = PropertySalesBreakdown | TransactionSalesBreakdown | UserSalesBreakdown;

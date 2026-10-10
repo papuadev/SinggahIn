@@ -3,7 +3,6 @@ import {
   TransactionSalesBreakdown,
   UserSalesBreakdown,
   DayOccupancyDto,
-  DayOccupancyStatus,
   RoomOccupancyDto,
   SortOrder,
 } from './report.types';
@@ -11,14 +10,15 @@ import {
 export function groupBookingsByProperty(bookings: any[]): PropertySalesBreakdown[] {
   const map = new Map<string, PropertySalesBreakdown>();
   for (const b of bookings) {
+    const dStr = b.createdAt ? new Date(b.createdAt).toISOString() : '';
     const existing = map.get(b.propertyId) || {
-      id: b.propertyId,
-      name: b.property?.title || 'Properti',
-      totalTransactions: 0,
-      revenue: 0,
+      id: b.propertyId, name: b.property?.title || 'Properti', totalTransactions: 0,
+      revenue: 0, latestTransactionDate: dStr, earliestTransactionDate: dStr,
     };
     existing.totalTransactions += 1;
     existing.revenue += b.totalPrice;
+    if (dStr && (!existing.latestTransactionDate || dStr > existing.latestTransactionDate)) existing.latestTransactionDate = dStr;
+    if (dStr && (!existing.earliestTransactionDate || dStr < existing.earliestTransactionDate)) existing.earliestTransactionDate = dStr;
     map.set(b.propertyId, existing);
   }
   return Array.from(map.values());
@@ -27,15 +27,15 @@ export function groupBookingsByProperty(bookings: any[]): PropertySalesBreakdown
 export function groupBookingsByUser(bookings: any[]): UserSalesBreakdown[] {
   const map = new Map<string, UserSalesBreakdown>();
   for (const b of bookings) {
+    const dStr = b.createdAt ? new Date(b.createdAt).toISOString() : '';
     const existing = map.get(b.userId) || {
-      id: b.userId,
-      name: b.user?.name || 'Tamu',
-      email: b.user?.email || '-',
-      totalBookings: 0,
-      totalSpent: 0,
+      id: b.userId, name: b.user?.name || 'Tamu', email: b.user?.email || '-',
+      totalBookings: 0, totalSpent: 0, latestTransactionDate: dStr, earliestTransactionDate: dStr,
     };
     existing.totalBookings += 1;
     existing.totalSpent += b.totalPrice;
+    if (dStr && (!existing.latestTransactionDate || dStr > existing.latestTransactionDate)) existing.latestTransactionDate = dStr;
+    if (dStr && (!existing.earliestTransactionDate || dStr < existing.earliestTransactionDate)) existing.earliestTransactionDate = dStr;
     map.set(b.userId, existing);
   }
   return Array.from(map.values());
@@ -58,15 +58,27 @@ export function mapBookingsToTransactions(bookings: any[]): TransactionSalesBrea
   }));
 }
 
-export function sortSalesBreakdown<T extends Record<string, any>>(items: T[], sortBy?: string, order: SortOrder = 'desc'): T[] {
-  if (!sortBy) return items;
+function getFieldByGroup(groupBy: string) {
+  return groupBy === 'TRANSACTION' ? 'totalPrice' : groupBy === 'USER' ? 'totalSpent' : 'revenue';
+}
+
+function resolveSortFieldAndOrder(sortBy?: string, order: SortOrder = 'desc', groupBy = 'PROPERTY') {
+  if (sortBy === 'TERENDAH') return { field: getFieldByGroup(groupBy), ord: 'asc' as SortOrder };
+  if (sortBy === 'TERTINGGI') return { field: getFieldByGroup(groupBy), ord: 'desc' as SortOrder };
+  if (sortBy === 'TERBARU') return { field: groupBy === 'TRANSACTION' ? 'createdAt' : 'latestTransactionDate', ord: 'desc' as SortOrder };
+  if (sortBy === 'TERLAMA') return { field: groupBy === 'TRANSACTION' ? 'createdAt' : 'earliestTransactionDate', ord: 'asc' as SortOrder };
+  return { field: sortBy || getFieldByGroup(groupBy), ord: order };
+}
+
+export function sortSalesBreakdown<T extends Record<string, any>>(items: T[], sortBy?: string, order: SortOrder = 'desc', groupBy = 'PROPERTY'): T[] {
+  const { field, ord } = resolveSortFieldAndOrder(sortBy, order, groupBy);
   return [...items].sort((a, b) => {
-    const valA = a[sortBy] ?? 0;
-    const valB = b[sortBy] ?? 0;
+    const valA = a[field] ?? 0;
+    const valB = b[field] ?? 0;
     if (typeof valA === 'string') {
-      return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      return ord === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
     }
-    return order === 'asc' ? valA - valB : valB - valA;
+    return ord === 'asc' ? valA - valB : valB - valA;
   });
 }
 
