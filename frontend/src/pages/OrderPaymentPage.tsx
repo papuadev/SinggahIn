@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { useOrderPayment } from '../modules/booking/hooks/useOrderPayment';
 import { CountdownTimerBadge } from '../modules/booking/components/CountdownTimerBadge';
 import { OrderSummaryCard } from '../modules/booking/components/OrderSummaryCard';
@@ -96,12 +97,23 @@ function StatusDispatcher({ p, onCancel, onReview }: any) {
   return <PaymentActiveFlow p={p} onCancel={onCancel} />;
 }
 
+function calculateStayDuration(b: any): number {
+  if (b.totalNights && b.totalNights > 0) return b.totalNights;
+  try {
+    const diff = differenceInCalendarDays(parseISO(b.checkOutDate), parseISO(b.checkInDate));
+    return diff > 0 ? diff : 1;
+  } catch {
+    return 1;
+  }
+}
+
 function OrderPaymentGrid({ b, p, onCancel, onReview }: any) {
+  const nights = calculateStayDuration(b);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       <div className="lg:col-span-7"><StatusDispatcher p={p} onCancel={onCancel} onReview={onReview} /></div>
       <div className="lg:col-span-5">
-        <OrderSummaryCard propertyTitle={b.property.title} propertyCity={b.property.city} roomName={b.room.name} basePrice={b.room.basePrice} checkInDate={b.checkInDate} checkOutDate={b.checkOutDate} nights={1} guestCount={b.guestCount} totalPrice={b.totalPrice} />
+        <OrderSummaryCard propertyTitle={b.property.title} propertyCity={b.property.city} roomName={b.room.name} basePrice={b.room.basePrice} checkInDate={b.checkInDate} checkOutDate={b.checkOutDate} nights={nights} guestCount={b.guestCount} totalPrice={b.totalPrice} />
       </div>
     </div>
   );

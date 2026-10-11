@@ -173,6 +173,17 @@ describe('OrderPaymentPage', () => {
       expect(screen.queryByRole('button', { name: /Beri Ulasan Sekarang/i })).not.toBeInTheDocument();
     });
   });
+
+  it('renders correct stay duration nights from booking record in OrderSummaryCard', async () => {
+    const stayBooking = { ...mockBooking, totalNights: 4 };
+    vi.mocked(bookingApi.getBookingById).mockResolvedValueOnce({
+      success: true, message: 'OK', data: stayBooking as any,
+    });
+    renderOrderPayment();
+    await waitFor(() => {
+      expect(screen.getAllByText(/4 malam/i).length).toBeGreaterThan(0);
+    });
+  });
 });
 
 

@@ -151,7 +151,7 @@ function CalendarCardBody({ cal, rooms, activeRoomId, onRoomChange, selectedRang
 function useInteractiveCalendarState(props: InteractivePriceCalendarProps) {
   const { propertyId, selectedRoomId, onRoomChange, checkIn, checkOut, onSelectDates } = props;
   const init = resolveInitialMonthYear(checkIn, props.initialMonth, props.initialYear);
-  const cal = usePropertyCalendar({ propertyId, initialRoomId: selectedRoomId, ...init });
+  const cal = usePropertyCalendar({ propertyId, initialRoomId: selectedRoomId, checkIn, checkOut, ...init });
   const activeRoomId = selectedRoomId || cal.selectedRoomId;
   const dayRenderer = useMemo(() => createDayContentRenderer(cal.dateMap), [cal.dateMap]);
   const selectedRange: DateRange = { from: checkIn ? parseISO(checkIn) : undefined, to: checkOut ? parseISO(checkOut) : undefined };

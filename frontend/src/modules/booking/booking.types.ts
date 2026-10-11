@@ -60,6 +60,7 @@ export interface Booking {
   propertyId: string;
   checkInDate: string;
   checkOutDate: string;
+  totalNights?: number;
   guestCount: number;
   totalPrice: number;
   status: BookingStatus;

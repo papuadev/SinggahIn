@@ -139,4 +139,16 @@ describe('InteractivePriceCalendar Component', () => {
     fireEvent.click(day14Btn);
     expect(screen.getByText(/Rentang tanggal memuat tanggal yang tidak tersedia/i)).toBeInTheDocument();
   });
+
+  it('allows selecting Sold Out date as valid check-out when prior night is available', async () => {
+    const handleSelectDates = vi.fn();
+    renderCalendar({ checkIn: '2026-10-11', onSelectDates: handleSelectDates });
+    await waitFor(() => {
+      expect(screen.getByText('Penuh')).toBeInTheDocument();
+    });
+    const soldOutDayBtn = screen.getByText('Penuh').closest('button')!;
+    expect(soldOutDayBtn).not.toBeDisabled();
+    fireEvent.click(soldOutDayBtn);
+    expect(handleSelectDates).toHaveBeenCalledWith('2026-10-11', '2026-10-12');
+  });
 });
