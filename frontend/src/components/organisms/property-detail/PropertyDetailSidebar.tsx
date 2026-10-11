@@ -17,6 +17,8 @@ export interface PropertyDetailSidebarProps {
   lowestPrice?: number;
   onSelectDates?: (checkIn: string, checkOut: string) => void;
   onBookRoom?: (roomId: string) => void;
+  isCalendarOpen?: boolean;
+  onCalendarOpenChange?: (open: boolean) => void;
 }
 
 const PERKS = [
@@ -70,11 +72,7 @@ function SidebarPriceHeader({ price, roomName, nights = 0 }: PriceHeaderProps) {
 }
 
 function RoomOptions({ rooms }: { rooms: any[] }) {
-  return (
-    <>
-      {rooms.map((r) => <option key={r.id} value={r.id}>{r.name} ({formatRupiah(r.basePrice)}/malam)</option>)}
-    </>
-  );
+  return <>{rooms.map((r) => <option key={r.id} value={r.id}>{r.name} ({formatRupiah(r.basePrice)}/malam)</option>)}</>;
 }
 
 type RoomSelectProps = {
@@ -130,8 +128,10 @@ function SidebarStayBreakdown({ nights, total }: { nights: number; total: number
 }
 
 function useSidebarBooking(props: PropertyDetailSidebarProps) {
-  const { rooms = [], selectedRoomId, lowestPrice, checkIn, checkOut, onBookRoom } = props;
-  const [isCalOpen, setIsCalOpen] = useState(false);
+  const { rooms = [], selectedRoomId, lowestPrice, checkIn, checkOut, onBookRoom, isCalendarOpen, onCalendarOpenChange } = props;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isCalOpen = isCalendarOpen !== undefined ? isCalendarOpen : internalOpen;
+  const setIsCalOpen = onCalendarOpenChange || setInternalOpen;
   const activeRoom = useMemo(() => rooms.find((r) => r.id === selectedRoomId) || rooms[0], [rooms, selectedRoomId]);
   const nights = calculateStayNights(checkIn, checkOut);
   const { data: pricing } = useStayPricing(activeRoom?.id, checkIn, checkOut);
@@ -169,7 +169,7 @@ interface DateSectionProps {
 
 function SidebarDateSection(p: DateSectionProps) {
   return (
-    <div className="relative mt-3 z-30">
+    <div id="bagian-pemilihan-tanggal" className="relative mt-3 z-30">
       <DateTriggerBox checkIn={p.checkIn} checkOut={p.checkOut} onClick={p.onToggle} isOpen={p.isOpen} />
       <CalendarPopover isOpen={p.isOpen} onClose={p.onClose} propertyId={p.propertyId} rooms={p.rooms} activeRoomId={p.activeRoomId} onRoom={p.onRoomChange} inDate={p.checkIn} outDate={p.checkOut} onDates={p.onSelectDates} />
     </div>

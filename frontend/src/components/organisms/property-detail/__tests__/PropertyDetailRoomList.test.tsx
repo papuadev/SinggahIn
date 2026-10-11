@@ -98,10 +98,10 @@ it('paginates rooms when count exceeds page size', () => {
   expect(screen.queryByText('Room A')).not.toBeInTheDocument();
 });
 
-it('triggers onBookRoom when Pesan Kamar button is clicked', () => {
+it('triggers onBookRoom when Pesan Sekarang button is clicked', () => {
   const handleBook = vi.fn();
   renderList(createMockRooms(1), handleBook);
-  fireEvent.click(screen.getByRole('button', { name: /pesan kamar/i }));
+  fireEvent.click(screen.getByRole('button', { name: /pesan sekarang/i }));
   expect(handleBook).toHaveBeenCalledWith('rm-1');
 });
 

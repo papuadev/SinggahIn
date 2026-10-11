@@ -85,7 +85,7 @@ function RoomActions({ roomId, onBook, onOpenCalendar }: { roomId: string; onBoo
         </Button>
       )}
       <Button type="button" variant="primary" size="sm" onClick={() => onBook?.(roomId)} rightIcon={<ArrowRight className="w-3.5 h-3.5" />} className="text-xs font-semibold">
-        Pesan Kamar
+        Pesan Sekarang
       </Button>
     </div>
   );

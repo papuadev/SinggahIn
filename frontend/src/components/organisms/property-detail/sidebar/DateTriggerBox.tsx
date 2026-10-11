@@ -42,6 +42,7 @@ export function DateTriggerBox({ checkIn, checkOut, onClick, isOpen }: DateTrigg
   const borderCls = isOpen ? 'border-primary-500 ring-2 ring-primary-100' : 'border-gray-200 hover:border-gray-300';
   return (
     <button
+      id="sidebar-date-trigger"
       type="button"
       onClick={onClick}
       aria-label="Buka Kalender Pemilihan Tanggal"

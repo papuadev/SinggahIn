@@ -87,18 +87,19 @@ function PropertySidebarCol({ state }: { state: ReturnType<typeof usePropertyDet
         propertyId={state.id!} rooms={state.rooms} selectedRoomId={state.selectedRoomId}
         onRoomChange={state.setSelectedRoomId} checkIn={state.checkIn} checkOut={state.checkOut}
         lowestPrice={state.lowestPrice} onSelectDates={state.handleSelectDates}
-        onBookRoom={state.handleBookRoom}
+        onBookRoom={state.handleBookRoom} isCalendarOpen={state.isCalendarOpen}
+        onCalendarOpenChange={state.setIsCalendarOpen}
       />
     </div>
   );
 }
 
 function PropertyDetailGrid({ state }: { state: ReturnType<typeof usePropertyDetailPage> }) {
-  const { property, rooms, checkIn, checkOut, handleBookRoom } = state;
+  const { property, rooms, checkIn, checkOut, handleSelectRoomFromCard } = state;
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       <div className="w-full lg:col-span-8 order-2 lg:order-1">
-        <PropertyMainCol property={property!} rooms={rooms} checkIn={checkIn} checkOut={checkOut} onBook={handleBookRoom} />
+        <PropertyMainCol property={property!} rooms={rooms} checkIn={checkIn} checkOut={checkOut} onBook={handleSelectRoomFromCard} />
       </div>
       <PropertySidebarCol state={state} />
     </div>
