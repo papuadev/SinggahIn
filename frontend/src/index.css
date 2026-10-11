@@ -82,3 +82,49 @@
 .animate-fade-out {
   animation: fadeOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+.scrollbar-themed-dark {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+.scrollbar-themed-dark::-webkit-scrollbar {
+  height: 6px;
+}
+.scrollbar-themed-dark::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-themed-dark::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+}
+.scrollbar-themed-dark::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+.scrollbar-themed-dark::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.scrollbar-themed-light {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.scrollbar-themed-light::-webkit-scrollbar {
+  height: 6px;
+}
+.scrollbar-themed-light::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-themed-light::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.scrollbar-themed-light::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.scrollbar-themed-light::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}

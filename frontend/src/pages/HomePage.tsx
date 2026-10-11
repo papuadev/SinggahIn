@@ -75,7 +75,7 @@ function TopRatedSection({ category }: { category?: string }) {
       subtitle="Pilihan penginapan dengan ulasan bintang emas tertinggi dari tamu terverifikasi"
       badgeText="Paling Direkomendasikan" badgeIcon={Star}
       variant="highlighted"
-      queryParams={{ sortBy: 'rating', sortOrder: 'desc', limit: 4, category }}
+      queryParams={{ sortBy: 'rating', sortOrder: 'desc', limit: 10, category }}
       viewAllUrl={url}
     />
   );
@@ -88,7 +88,7 @@ function FreshPicksSection({ category, onReset }: { category?: string; onReset: 
       title="Jelajahi Penginapan Pilihan"
       subtitle="Koleksi villa, hotel, dan homestay terverifikasi untuk liburan tak terlupakan"
       badgeText="Pilihan Segar" badgeIcon={Sparkles}
-      queryParams={{ limit: 4, category }}
+      queryParams={{ limit: 10, category }}
       viewAllUrl={url} showEmptyIfFiltered onResetCategory={onReset}
     />
   );
