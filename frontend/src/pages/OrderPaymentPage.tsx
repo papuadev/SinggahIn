@@ -60,6 +60,7 @@ function PaymentMethodRenderer({ p }: { p: ReturnType<typeof useOrderPayment> })
       onPay={p.payWithSnap} isPaid={b.status === 'PROCESSED' || b.status === 'COMPLETED'}
       pendingPayment={(b as any).pendingPayment}
       isResetting={p.isResettingSnap} onReset={p.resetPaymentMethod}
+      isResolving={p.isResolvingSnap}
     />
   );
 }

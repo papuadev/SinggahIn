@@ -10,6 +10,7 @@ export interface MidtransPaymentSectionProps {
   pendingPayment?: any;
   isResetting?: boolean;
   onReset?: () => void;
+  isResolving?: boolean;
 }
 
 const CHANNELS = ['QRIS', 'GoPay', 'BCA / BNI / BRI VA', 'Kartu Kredit / Debit'];
@@ -107,26 +108,46 @@ function SnapErrorAlert({ error }: { error: string }) {
   );
 }
 
-function GatewayActionButtons({ pending, isPaying, isResetting, onPay, onReset }: any) {
-  if (!pending) {
+function ResolvingPaymentState(): React.JSX.Element {
+  return (
+    <div className="space-y-2 pt-1" aria-live="polite">
+      <Button
+        variant="primary"
+        className="w-full cursor-not-allowed opacity-85"
+        disabled={true}
+        isLoading={true}
+        leftIcon={<ShieldCheck className="w-4 h-4 shrink-0" />}
+      >
+        Memverifikasi Pembayaran...
+      </Button>
+      <div className="flex items-center justify-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 py-2 px-3 rounded-lg animate-pulse">
+        <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping shrink-0" />
+        <span>Pembayaran selesai. Menunggu konfirmasi transaksi...</span>
+      </div>
+    </div>
+  );
+}
+
+function GatewayActionButtons(p: any) {
+  if (p.isResolving) return <ResolvingPaymentState />;
+  if (!p.pending) {
     return (
-      <Button variant="primary" className="w-full" leftIcon={<ShieldCheck className="w-4 h-4 shrink-0" />} isLoading={isPaying} onClick={onPay}>
+      <Button variant="primary" className="w-full" leftIcon={<ShieldCheck className="w-4 h-4 shrink-0" />} isLoading={p.isPaying} onClick={p.onPay}>
         Bayar Sekarang
       </Button>
     );
   }
   return (
     <div className="space-y-2 pt-1">
-      <Button variant="primary" className="w-full" leftIcon={<ShieldCheck className="w-4 h-4 shrink-0" />} isLoading={isPaying} onClick={onPay}>
+      <Button variant="primary" className="w-full" leftIcon={<ShieldCheck className="w-4 h-4 shrink-0" />} isLoading={p.isPaying} onClick={p.onPay}>
         Buka Rincian Pembayaran
       </Button>
-      <Button variant="outline" size="sm" className="w-full text-xs" leftIcon={<RotateCcw className="w-3.5 h-3.5 shrink-0" />} isLoading={isResetting} onClick={onReset}>
+      <Button variant="outline" size="sm" className="w-full text-xs" leftIcon={<RotateCcw className="w-3.5 h-3.5 shrink-0" />} isLoading={p.isResetting} onClick={p.onReset}>
         Pilih Ulang Metode Pembayaran Otomatis
       </Button>
     </div>
   );
 }
-
 
 export function MidtransPaymentSection(props: MidtransPaymentSectionProps): React.JSX.Element {
   if (props.isPaid) return <PaidNotice />;
@@ -137,7 +158,8 @@ export function MidtransPaymentSection(props: MidtransPaymentSectionProps): Reac
       {props.snapError && <SnapErrorAlert error={props.snapError} />}
       <GatewayActionButtons
         pending={props.pendingPayment} isPaying={props.isPayingSnap}
-        isResetting={props.isResetting} onPay={props.onPay} onReset={props.onReset}
+        isResetting={props.isResetting} isResolving={props.isResolving}
+        onPay={props.onPay} onReset={props.onReset}
       />
     </div>
   );

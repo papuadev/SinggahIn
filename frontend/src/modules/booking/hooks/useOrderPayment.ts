@@ -50,51 +50,60 @@ export function useOrderUploadProof(bookingId: string, onDone: () => void) {
   return { isUploading: uploading, uploadError: error, uploadSuccess: success, uploadProof: upload };
 }
 
-async function syncAndFinish(bookingId: string, onDone: () => void) {
+async function syncAndFinish(bookingId: string, onDone: () => void, setRes: (v: boolean) => void) {
+  setRes(true);
   try { await paymentApi.syncMidtransStatus(bookingId); }
   catch { /* ignore network error */ }
-  onDone();
+  finally {
+    await onDone();
+    setRes(false);
+  }
 }
 
-async function executeSnapCharge(bookingId: string, onDone: () => void, setError: (e: string) => void) {
+async function executeSnapCharge(bookingId: string, onDone: () => void, setErr: (e: string) => void, setRes: (v: boolean) => void) {
   const { data } = await paymentApi.createSnapCharge(bookingId);
   if (!data?.snapToken) throw new Error('Data token pembayaran tidak tersedia.');
-  const handleDone = () => syncAndFinish(bookingId, onDone);
-  await openMidtransSnap(data.snapToken, {
-    onSuccess: handleDone,
-    onPending: handleDone,
-    onError: () => setError('Pembayaran gagal diproses.'),
-    onClose: handleDone,
-  }, data.redirectUrl);
-}
-
-async function executeResetSnap(bookingId: string, onDone: () => void, setError: (e: string) => void) {
-  const { data } = await paymentApi.resetSnapCharge(bookingId);
-  if (!data?.snapToken) throw new Error('Data token pembayaran tidak tersedia.');
-  const handleDone = () => syncAndFinish(bookingId, onDone);
+  const handleDone = () => syncAndFinish(bookingId, onDone, setRes);
   await openMidtransSnap(data.snapToken, {
     onSuccess: handleDone, onPending: handleDone,
-    onError: () => setError('Pembayaran gagal diproses.'), onClose: handleDone,
+    onError: () => setErr('Pembayaran gagal diproses.'), onClose: handleDone,
   }, data.redirectUrl);
 }
 
-export function useOrderMidtrans(bookingId: string, onDone: () => void) {
+async function executeResetSnap(bookingId: string, onDone: () => void, setErr: (e: string) => void, setRes: (v: boolean) => void) {
+  const { data } = await paymentApi.resetSnapCharge(bookingId);
+  if (!data?.snapToken) throw new Error('Data token pembayaran tidak tersedia.');
+  const handleDone = () => syncAndFinish(bookingId, onDone, setRes);
+  await openMidtransSnap(data.snapToken, {
+    onSuccess: handleDone, onPending: handleDone,
+    onError: () => setErr('Pembayaran gagal diproses.'), onClose: handleDone,
+  }, data.redirectUrl);
+}
+
+async function runSnapAction(act: () => Promise<void>, setL: (v: boolean) => void, setE: (e: string | null) => void, fallback: string) {
+  setL(true); setE(null);
+  try { await act(); }
+  catch (e: any) { setE(e.response?.data?.message || e.message || fallback); }
+  finally { setL(false); }
+}
+
+function useSnapActions(bookingId: string, onDone: () => void, setRes: (v: boolean) => void) {
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const payWithSnap = async () => {
-    setLoading(true); setError(null);
-    try { await executeSnapCharge(bookingId, onDone, setError); }
-    catch (e: any) { setError(e.response?.data?.message || e.message || 'Gagal memulai pembayaran otomatis'); }
-    finally { setLoading(false); }
+  const pay = () => runSnapAction(() => executeSnapCharge(bookingId, onDone, setError, setRes), setLoading, setError, 'Gagal memulai pembayaran otomatis');
+  const reset = () => runSnapAction(() => executeResetSnap(bookingId, onDone, setError, setRes), setResetting, setError, 'Gagal mengubah metode pembayaran otomatis');
+  return { loading, resetting, error, pay, reset };
+}
+
+export function useOrderMidtrans(bookingId: string, onDone: () => void) {
+  const [resolving, setResolving] = useState(false);
+  const act = useSnapActions(bookingId, onDone, setResolving);
+  return {
+    isPayingSnap: act.loading, isResettingSnap: act.resetting,
+    isResolvingSnap: resolving, snapError: act.error,
+    payWithSnap: act.pay, resetPaymentMethod: act.reset,
   };
-  const resetPaymentMethod = async () => {
-    setResetting(true); setError(null);
-    try { await executeResetSnap(bookingId, onDone, setError); }
-    catch (e: any) { setError(e.response?.data?.message || e.message || 'Gagal mengubah metode pembayaran otomatis'); }
-    finally { setResetting(false); }
-  };
-  return { isPayingSnap: loading, isResettingSnap: resetting, snapError: error, payWithSnap, resetPaymentMethod };
 }
 
 
