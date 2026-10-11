@@ -29,18 +29,25 @@ export function getPageTitle(status: BookingStatus): string {
   }
 }
 
-function PaymentHeader({ code, status }: { code: string; status: any }) {
+function PaymentHeaderTitle({ code, status }: { code: string; status: any }) {
   const badge = getStatusBadge(status);
   return (
-    <div className="space-y-2 pb-2">
-      <BackButton fallbackUrl="/orders" label="Kembali ke Riwayat Pesanan" />
-      <div className="flex flex-wrap justify-between items-center gap-2">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{getPageTitle(status)}</h1>
-          <p className="font-mono text-sm text-gray-500">Kode: {code}</p>
-        </div>
-        <span className={`text-sm px-3 py-1 rounded-full font-medium border ${badge.style}`}>{badge.label}</span>
+    <div className="flex flex-wrap justify-between items-center gap-2">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">{getPageTitle(status)}</h1>
+        <p className="font-mono text-sm text-gray-500">Kode: {code}</p>
       </div>
+      <span className={`text-sm px-3 py-1 rounded-full font-medium border ${badge.style}`}>{badge.label}</span>
+    </div>
+  );
+}
+
+function PaymentHeader({ code, status }: { code: string; status: any }) {
+  const isPaid = status === 'PROCESSED' || status === 'COMPLETED';
+  return (
+    <div className="space-y-2 pb-2">
+      <BackButton fallbackUrl="/orders" to={isPaid ? '/orders' : undefined} label={isPaid ? 'Ke Daftar Pesanan' : 'Kembali ke Riwayat Pesanan'} />
+      <PaymentHeaderTitle code={code} status={status} />
     </div>
   );
 }
@@ -145,7 +152,7 @@ function useAutoRedirectOnUpload(uploadSuccess: string | null): void {
   const navigate = useNavigate();
   useEffect(() => {
     if (!uploadSuccess) return;
-    const timer = setTimeout(() => navigate('/orders'), 3000);
+    const timer = setTimeout(() => navigate('/orders'), 5000);
     return () => clearTimeout(timer);
   }, [uploadSuccess, navigate]);
 }

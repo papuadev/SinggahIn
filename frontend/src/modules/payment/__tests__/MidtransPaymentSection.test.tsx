@@ -56,6 +56,7 @@ describe('MidtransPaymentSection', () => {
       </MemoryRouter>
     );
     expect(screen.getByText(/Pembayaran telah berhasil diverifikasi/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Lihat Daftar Pesanan/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Bayar Sekarang/i })).not.toBeInTheDocument();
   });
 

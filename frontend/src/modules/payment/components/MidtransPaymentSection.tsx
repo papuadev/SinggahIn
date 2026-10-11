@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { CreditCard, ShieldCheck, AlertCircle, CheckCircle2, RotateCcw } from 'lucide-react';
 import { Button } from '../../../components/atoms/Button';
 
@@ -70,16 +71,25 @@ function PendingPaymentCard({ pending }: { pending: any }) {
   return null;
 }
 
+function PaidSuccessMessage(): React.JSX.Element {
+  return (
+    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-800 text-sm">
+      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+      <div>
+        <p className="font-bold">Pembayaran Berhasil Diverifikasi!</p>
+        <p className="text-xs text-emerald-700 mt-0.5">Pembayaran telah berhasil diverifikasi secara otomatis.</p>
+      </div>
+    </div>
+  );
+}
+
 function PaidNotice(): React.JSX.Element {
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
-      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-800 text-sm">
-        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-        <div>
-          <p className="font-bold">Pembayaran Berhasil Diverifikasi!</p>
-          <p className="text-xs text-emerald-700 mt-0.5">Pembayaran telah berhasil diverifikasi secara otomatis.</p>
-        </div>
-      </div>
+    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+      <PaidSuccessMessage />
+      <Link to="/orders">
+        <Button variant="primary" size="md" className="w-full">Lihat Daftar Pesanan</Button>
+      </Link>
     </div>
   );
 }

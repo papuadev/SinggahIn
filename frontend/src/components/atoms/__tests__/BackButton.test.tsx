@@ -58,4 +58,18 @@ describe('BackButton Component', () => {
     fireEvent.click(screen.getByRole('button'));
     expect(mockNavigate).toHaveBeenCalledWith('/properties/prop-1');
   });
+
+  it('calls navigate with custom to path when provided regardless of history length', () => {
+    Object.defineProperty(window, 'history', {
+      value: { length: 5 },
+      writable: true,
+    });
+    render(
+      <MemoryRouter>
+        <BackButton to="/orders" />
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByRole('button'));
+    expect(mockNavigate).toHaveBeenCalledWith('/orders');
+  });
 });
