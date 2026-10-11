@@ -8,6 +8,7 @@ import { ReviewFormModal } from '../modules/review/components/ReviewFormModal';
 import { bookingApi } from '../modules/booking/services/booking.api';
 import { BookingStatus, Booking } from '../modules/booking/booking.types';
 import { Button } from '../components/atoms/Button';
+import { BackButton } from '../components/atoms/BackButton';
 
 const STATUS_TABS: Array<{ label: string; value?: BookingStatus }> = [
   { label: 'Semua', value: undefined },
@@ -81,20 +82,41 @@ function useOrderCancellationState(refetch: () => void) {
   return { cancelId, setCancelId, cancelling, handleCancel };
 }
 
+function OrderHistoryHeader({ status, setStatus }: { status?: BookingStatus; setStatus: (s?: BookingStatus) => void }) {
+  return (
+    <>
+      <BackButton fallbackUrl="/" />
+      <h1 className="text-2xl font-bold text-gray-900">Riwayat Pesanan Saya</h1>
+      <StatusFilterTabs current={status} onSelect={setStatus} />
+    </>
+  );
+}
+
+function OrderHistoryBody({ isLoading, bookings, ...rest }: any) {
+  if (isLoading) return <div className="py-12 text-center text-sm text-gray-500">Memuat pesanan...</div>;
+  if (bookings.length === 0) return <HistoryEmpty />;
+  return <OrderListContent bookings={bookings} {...rest} />;
+}
+
+function OrderHistoryModals({ cancelState, reviewBooking, setReviewBooking, refetch }: any) {
+  return (
+    <>
+      <CancelOrderModal isOpen={Boolean(cancelState.cancelId)} onClose={() => cancelState.setCancelId(null)} onConfirm={cancelState.handleCancel} isCancelling={cancelState.cancelling} />
+      <ReviewFormModal isOpen={Boolean(reviewBooking)} onClose={() => { setReviewBooking(null); refetch(); }} bookingId={reviewBooking?.id || ''} propertyTitle={reviewBooking?.property?.title} />
+    </>
+  );
+}
+
 export function OrderHistoryPage(): React.JSX.Element {
   const navigate = useNavigate();
   const [reviewBooking, setReviewBooking] = useState<Booking | null>(null);
   const { bookings, meta, isLoading, status, setStatus, page, setPage, refetch } = useOrderHistory();
-  const { cancelId, setCancelId, cancelling, handleCancel } = useOrderCancellationState(refetch);
+  const cancelState = useOrderCancellationState(refetch);
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Riwayat Pesanan Saya</h1>
-      <StatusFilterTabs current={status} onSelect={setStatus} />
-      {isLoading ? <div className="py-12 text-center text-sm text-gray-500">Memuat pesanan...</div> : bookings.length === 0 ? <HistoryEmpty /> : (
-        <OrderListContent bookings={bookings} meta={meta} page={page} setPage={setPage} navigate={navigate} setCancelId={setCancelId} onReview={setReviewBooking} />
-      )}
-      <CancelOrderModal isOpen={Boolean(cancelId)} onClose={() => setCancelId(null)} onConfirm={handleCancel} isCancelling={cancelling} />
-      <ReviewFormModal isOpen={Boolean(reviewBooking)} onClose={() => { setReviewBooking(null); refetch(); }} bookingId={reviewBooking?.id || ''} propertyTitle={reviewBooking?.property?.title} />
+      <OrderHistoryHeader status={status} setStatus={setStatus} />
+      <OrderHistoryBody isLoading={isLoading} bookings={bookings} meta={meta} page={page} setPage={setPage} navigate={navigate} setCancelId={cancelState.setCancelId} onReview={setReviewBooking} />
+      <OrderHistoryModals cancelState={cancelState} reviewBooking={reviewBooking} setReviewBooking={setReviewBooking} refetch={refetch} />
     </div>
   );
 }

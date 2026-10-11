@@ -146,4 +146,12 @@ describe('OrderHistoryPage', () => {
       expect(screen.getAllByText('Ditolak').length).toBeGreaterThanOrEqual(1);
     });
   });
+
+  it('renders BackButton to navigate back to previous or fallback page', async () => {
+    vi.mocked(bookingApi.getUserBookings).mockResolvedValue({
+      success: true, message: 'OK', data: [],
+    });
+    renderHistory();
+    expect(screen.getByRole('button', { name: 'Kembali' })).toBeInTheDocument();
+  });
 });
