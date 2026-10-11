@@ -125,20 +125,23 @@ async function syncBookingIfGateway(b: any) {
   return updated ? { ...b, ...updated } : b;
 }
 
+function assertBookingAccess(b: any, userId: string, role?: Role) {
+  if (!b) throw AppError.notFound('Pesanan tidak ditemukan.');
+  const isOwner = b.userId === userId;
+  const isTenant = role === Role.TENANT && b.property.tenantId === userId;
+  if (!isOwner && !isTenant) throw AppError.forbidden('Akses ke data pesanan ini ditolak.');
+}
+
 export async function getBookingById(userId: string, bookingId: string, role?: Role) {
   const b = await prisma.booking.findUnique({
     where: { id: bookingId },
     include: {
       property: { select: { id: true, title: true, city: true, address: true, tenantId: true } },
       room: { select: { id: true, name: true, basePrice: true } },
-      payment: true,
-      review: { select: { id: true, rating: true, comment: true } },
+      payment: true, review: { select: { id: true, rating: true, comment: true } },
     },
   });
-  if (!b) throw AppError.notFound('Pesanan tidak ditemukan.');
-  const isOwner = b.userId === userId;
-  const isTenant = role === Role.TENANT && b.property.tenantId === userId;
-  if (!isOwner && !isTenant) throw AppError.forbidden('Akses ke data pesanan ini ditolak.');
+  assertBookingAccess(b, userId, role);
   return syncBookingIfGateway(b);
 }
 

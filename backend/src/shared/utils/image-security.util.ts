@@ -134,6 +134,16 @@ export function detectScriptInjection(buffer: Buffer): string | null {
   return null;
 }
 
+function validateFileBufferSecurity(buffer: Buffer): void {
+  if (!hasValidImageMagicBytes(buffer)) {
+    throw AppError.badRequest(
+      'File gambar tidak valid atau header file tidak sesuai (magic bytes mismatch).'
+    );
+  }
+  const scriptErr = detectScriptInjection(buffer);
+  if (scriptErr) throw AppError.badRequest(scriptErr);
+}
+
 export function validateFileSecurity(file: Express.Multer.File): void {
   const filenameErr = validateFilename(file.originalname);
   if (filenameErr) throw AppError.badRequest(filenameErr);
@@ -144,12 +154,5 @@ export function validateFileSecurity(file: Express.Multer.File): void {
     );
   }
 
-  if (!hasValidImageMagicBytes(file.buffer)) {
-    throw AppError.badRequest(
-      'File gambar tidak valid atau header file tidak sesuai (magic bytes mismatch).'
-    );
-  }
-
-  const scriptErr = detectScriptInjection(file.buffer);
-  if (scriptErr) throw AppError.badRequest(scriptErr);
+  validateFileBufferSecurity(file.buffer);
 }

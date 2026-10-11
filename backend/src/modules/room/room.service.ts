@@ -64,18 +64,15 @@ export async function updateRoom(
   });
 }
 
+const ACTIVE_BOOKING_STATUSES = [
+  BookingStatus.WAITING_PAYMENT,
+  BookingStatus.WAITING_CONFIRMATION,
+  BookingStatus.PROCESSED,
+];
+
 async function checkActiveBookings(roomId: string): Promise<void> {
   const activeCount = await prisma.booking.count({
-    where: {
-      roomId,
-      status: {
-        in: [
-          BookingStatus.WAITING_PAYMENT,
-          BookingStatus.WAITING_CONFIRMATION,
-          BookingStatus.PROCESSED,
-        ],
-      },
-    },
+    where: { roomId, status: { in: ACTIVE_BOOKING_STATUSES } },
   });
   if (activeCount > 0) {
     throw AppError.badRequest('Tidak dapat menghapus kamar dengan pesanan aktif.');

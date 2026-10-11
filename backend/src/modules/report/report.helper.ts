@@ -7,6 +7,12 @@ import {
   SortOrder,
 } from './report.types';
 
+function updateBreakdownDates(existing: any, dStr: string) {
+  if (!dStr) return;
+  if (!existing.latestTransactionDate || dStr > existing.latestTransactionDate) existing.latestTransactionDate = dStr;
+  if (!existing.earliestTransactionDate || dStr < existing.earliestTransactionDate) existing.earliestTransactionDate = dStr;
+}
+
 export function groupBookingsByProperty(bookings: any[]): PropertySalesBreakdown[] {
   const map = new Map<string, PropertySalesBreakdown>();
   for (const b of bookings) {
@@ -17,8 +23,7 @@ export function groupBookingsByProperty(bookings: any[]): PropertySalesBreakdown
     };
     existing.totalTransactions += 1;
     existing.revenue += b.totalPrice;
-    if (dStr && (!existing.latestTransactionDate || dStr > existing.latestTransactionDate)) existing.latestTransactionDate = dStr;
-    if (dStr && (!existing.earliestTransactionDate || dStr < existing.earliestTransactionDate)) existing.earliestTransactionDate = dStr;
+    updateBreakdownDates(existing, dStr);
     map.set(b.propertyId, existing);
   }
   return Array.from(map.values());
@@ -34,28 +39,24 @@ export function groupBookingsByUser(bookings: any[]): UserSalesBreakdown[] {
     };
     existing.totalBookings += 1;
     existing.totalSpent += b.totalPrice;
-    if (dStr && (!existing.latestTransactionDate || dStr > existing.latestTransactionDate)) existing.latestTransactionDate = dStr;
-    if (dStr && (!existing.earliestTransactionDate || dStr < existing.earliestTransactionDate)) existing.earliestTransactionDate = dStr;
+    updateBreakdownDates(existing, dStr);
     map.set(b.userId, existing);
   }
   return Array.from(map.values());
 }
 
+function toTransactionBreakdown(b: any): TransactionSalesBreakdown {
+  return {
+    id: b.id, bookingCode: b.bookingCode, propertyName: b.property?.title || '-',
+    roomName: b.room?.name || '-', userName: b.user?.name || 'Tamu', userEmail: b.user?.email || '-',
+    checkInDate: b.checkInDate.toISOString().split('T')[0], checkOutDate: b.checkOutDate.toISOString().split('T')[0],
+    totalPrice: b.totalPrice, paymentMethod: b.payment?.paymentMethod || 'MANUAL_TRANSFER',
+    status: b.status, createdAt: b.createdAt.toISOString(),
+  };
+}
+
 export function mapBookingsToTransactions(bookings: any[]): TransactionSalesBreakdown[] {
-  return bookings.map((b) => ({
-    id: b.id,
-    bookingCode: b.bookingCode,
-    propertyName: b.property?.title || '-',
-    roomName: b.room?.name || '-',
-    userName: b.user?.name || 'Tamu',
-    userEmail: b.user?.email || '-',
-    checkInDate: b.checkInDate.toISOString().split('T')[0],
-    checkOutDate: b.checkOutDate.toISOString().split('T')[0],
-    totalPrice: b.totalPrice,
-    paymentMethod: b.payment?.paymentMethod || 'MANUAL_TRANSFER',
-    status: b.status,
-    createdAt: b.createdAt.toISOString(),
-  }));
+  return bookings.map(toTransactionBreakdown);
 }
 
 function getFieldByGroup(groupBy: string) {

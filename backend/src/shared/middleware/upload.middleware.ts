@@ -55,20 +55,18 @@ function handleMulterError(
   next(err);
 }
 
+function checkSingleFile(file: Express.Multer.File | undefined, fieldName: string) {
+  if (!file) throw AppError.badRequest(`File '${fieldName}' wajib diunggah.`);
+  validateFileSecurity(file);
+}
+
 export function uploadSingleImage(fieldName: string) {
   const upload = uploader.single(fieldName);
   return (req: Request, res: Response, next: NextFunction): void => {
     upload(req, res, (err) => {
       if (err) return handleMulterError(err, next);
-      if (!req.file) {
-        return next(AppError.badRequest(`File '${fieldName}' wajib diunggah.`));
-      }
-      try {
-        validateFileSecurity(req.file);
-      } catch (secErr) {
-        return next(secErr);
-      }
-      next();
+      try { checkSingleFile(req.file, fieldName); next(); }
+      catch (secErr) { next(secErr); }
     });
   };
 }
@@ -86,21 +84,18 @@ function validateFilesList(
   return true;
 }
 
+function checkMultipleFiles(files: Express.Multer.File[]) {
+  for (const file of files) validateFileSecurity(file);
+}
+
 export function uploadMultipleImages(fieldName: string, maxCount = 6) {
   const upload = uploader.array(fieldName, maxCount);
   return (req: Request, res: Response, next: NextFunction): void => {
     upload(req, res, (err) => {
       if (err) return handleMulterError(err, next, maxCount);
       if (!validateFilesList(req.files, fieldName, next)) return;
-      const files = req.files as Express.Multer.File[];
-      for (const file of files) {
-        try {
-          validateFileSecurity(file);
-        } catch (secErr) {
-          return next(secErr);
-        }
-      }
-      next();
+      try { checkMultipleFiles(req.files as Express.Multer.File[]); next(); }
+      catch (secErr) { next(secErr); }
     });
   };
 }

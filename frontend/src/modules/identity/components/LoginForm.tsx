@@ -17,99 +17,68 @@ export interface LoginFormProps {
   serverError?: string | null;
 }
 
-export function LoginForm({
-  initialRole = 'USER',
-  onSubmit,
-  isLoading = false,
-  serverError,
-}: LoginFormProps): React.JSX.Element {
+function EmailField({ register, errors, isLoading }: any) {
+  return (
+    <FormField label="Alamat Email" required error={errors.email?.message} htmlFor="login-email">
+      <Input
+        id="login-email" type="email" autoComplete="email" placeholder="nama@email.com"
+        leftIcon={<Mail className="w-4 h-4" />} hasError={!!errors.email} disabled={isLoading}
+        {...register('email')}
+      />
+    </FormField>
+  );
+}
+
+function PasswordToggle({ showPassword, togglePassword }: any) {
+  return (
+    <button type="button" onClick={togglePassword} className="hover:text-gray-600 focus:outline-none" aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}>
+      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+    </button>
+  );
+}
+
+function PasswordField({ register, errors, isLoading, showPassword, togglePassword }: any) {
+  return (
+    <FormField label="Password" required error={errors.password?.message} htmlFor="login-password">
+      <Input
+        id="login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password"
+        placeholder="Masukkan password Anda" leftIcon={<Lock className="w-4 h-4" />}
+        rightIcon={<PasswordToggle showPassword={showPassword} togglePassword={togglePassword} />}
+        hasError={!!errors.password} disabled={isLoading}
+        {...register('password')}
+      />
+    </FormField>
+  );
+}
+
+function useLoginFormState(initialRole: Role, onSubmit: (data: LoginFormData) => Promise<void>) {
   const [showPassword, setShowPassword] = useState(false);
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<LoginFormData>({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '', role: initialRole },
   });
-
   const selectedRole = watch('role');
-
   const togglePassword = () => setShowPassword((prev) => !prev);
   const handleRoleChange = (role: Role) => setValue('role', role);
-
-  const handleFormSubmit = async (data: LoginFormData) => {
-    await onSubmit(data);
+  return {
+    register, errors, selectedRole, showPassword, togglePassword, handleRoleChange,
+    handleSubmit: handleSubmit((data) => onSubmit(data)),
   };
+}
 
+export function LoginForm(props: LoginFormProps): React.JSX.Element {
+  const { initialRole = 'USER', onSubmit, isLoading = false, serverError } = props;
+  const s = useLoginFormState(initialRole, onSubmit);
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+    <form onSubmit={s.handleSubmit} className="space-y-4">
       {serverError && <Alert variant="error">{serverError}</Alert>}
-
       <FormField label="Pilih Peran Akun">
-        <RoleSelector
-          value={selectedRole}
-          onChange={handleRoleChange}
-          disabled={isLoading}
-        />
+        <RoleSelector value={s.selectedRole} onChange={s.handleRoleChange} disabled={isLoading} />
       </FormField>
-
-      <FormField
-        label="Alamat Email"
-        required
-        error={errors.email?.message}
-        htmlFor="login-email"
-      >
-        <Input
-          id="login-email"
-          type="email"
-          autoComplete="email"
-          placeholder="nama@email.com"
-          leftIcon={<Mail className="w-4 h-4" />}
-          hasError={!!errors.email}
-          disabled={isLoading}
-          {...register('email')}
-        />
-      </FormField>
-
-      <FormField
-        label="Password"
-        required
-        error={errors.password?.message}
-        htmlFor="login-password"
-      >
-        <Input
-          id="login-password"
-          type={showPassword ? 'text' : 'password'}
-          autoComplete="current-password"
-          placeholder="Masukkan password Anda"
-          leftIcon={<Lock className="w-4 h-4" />}
-          rightIcon={
-            <button
-              type="button"
-              onClick={togglePassword}
-              className="hover:text-gray-600 focus:outline-none"
-              aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          }
-          hasError={!!errors.password}
-          disabled={isLoading}
-          {...register('password')}
-        />
-      </FormField>
-
-      <Button
-        type="submit"
-        variant="primary"
-        size="lg"
-        isLoading={isLoading}
-        className="w-full mt-2"
-      >
-        Masuk sebagai {selectedRole === 'TENANT' ? 'Pemilik' : 'Penyewa'}
+      <EmailField register={s.register} errors={s.errors} isLoading={isLoading} />
+      <PasswordField register={s.register} errors={s.errors} isLoading={isLoading} showPassword={s.showPassword} togglePassword={s.togglePassword} />
+      <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full mt-2">
+        Masuk sebagai {s.selectedRole === 'TENANT' ? 'Pemilik' : 'Penyewa'}
       </Button>
     </form>
   );
