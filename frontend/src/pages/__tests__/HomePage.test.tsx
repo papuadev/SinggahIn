@@ -53,6 +53,8 @@ describe('HomePage Landing Page', () => {
     expect(screen.getByPlaceholderText(/Mau menginap di mana/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Cari Penginapan/i })).toBeInTheDocument();
     expect(screen.getByText('Favorit Tamu & Rating Tertinggi')).toBeInTheDocument();
+    const topRatedSection = screen.getByRole('region', { name: 'Favorit Tamu & Rating Tertinggi' });
+    expect(topRatedSection.className).toContain('bg-gradient-to-br');
     expect(screen.getByText('Jelajahi Penginapan Pilihan')).toBeInTheDocument();
     expect(screen.getByText('Mengapa Memilih SinggahIn?')).toBeInTheDocument();
   });
