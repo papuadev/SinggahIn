@@ -12,14 +12,17 @@ import {
   syncMidtransTransactionStatus,
   snapCache,
 } from '../midtrans.service';
-
-
 vi.mock('../../../shared/services/prisma.service', () => ({
   prisma: {
     $transaction: vi.fn(),
-    booking: { findUnique: vi.fn(), update: vi.fn() },
-    payment: { update: vi.fn() },
+    booking: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+    payment: { update: vi.fn(), updateMany: vi.fn() },
   },
+}));
+
+const mockTx = (count = 1) => vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb({
+  booking: { updateMany: vi.fn().mockResolvedValue({ count }) },
+  payment: { updateMany: vi.fn().mockResolvedValue({ count }) },
 }));
 
 vi.mock('../../../shared/services/mail.service', () => ({
@@ -125,23 +128,24 @@ describe('Midtrans Service', () => {
         property: { title: 'Villa' }, room: { name: 'Deluxe' }, user: { email: 'guest@test.com' },
       };
       vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
-      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb({
-        booking: { update: vi.fn().mockResolvedValue(b) },
-        payment: { update: vi.fn().mockResolvedValue({}) },
-      }));
+      mockTx(1);
       const res = await handleMidtransWebhook(makePayload('settlement'));
       expect(res.status).toBe('settlement');
       expect(mailService.sendBookingVoucherEmail).toHaveBeenCalled();
     });
 
+    it('ignores duplicate concurrent webhook when booking is already processed', async () => {
+      const b = { id: bookingId, bookingCode, status: BookingStatus.WAITING_PAYMENT, user: { email: 'guest@test.com' } };
+      vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
+      mockTx(0);
+      await handleMidtransWebhook(makePayload('settlement'));
+      expect(mailService.sendBookingVoucherEmail).not.toHaveBeenCalled();
+    });
+
     it('marks booking CANCELLED and payment EXPIRED on expire notification', async () => {
       const b = { id: bookingId, bookingCode, status: BookingStatus.WAITING_PAYMENT };
       vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
-      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb({
-        booking: { update: vi.fn().mockResolvedValue({}) },
-        payment: { update: vi.fn().mockResolvedValue({}) },
-      }));
-
+      mockTx(1);
       const res = await handleMidtransWebhook(makePayload('expire'));
       expect(res.status).toBe('expire');
     });
@@ -158,10 +162,7 @@ describe('Midtrans Service', () => {
       vi.spyOn(snapClient.transaction, 'status').mockResolvedValueOnce({
         transaction_status: 'settlement', transaction_id: 'tx-123',
       } as any);
-      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb({
-        booking: { update: vi.fn().mockResolvedValue(b) },
-        payment: { update: vi.fn().mockResolvedValue({}) },
-      }));
+      mockTx(1);
       const res = await syncMidtransTransactionStatus(bookingId);
       expect(res?.status).toBe(BookingStatus.PROCESSED);
     });

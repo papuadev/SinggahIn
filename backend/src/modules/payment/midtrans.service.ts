@@ -92,28 +92,38 @@ export async function resetSnapTransaction(userId: string, bookingId: string) {
   return result;
 }
 
-async function executePaidTx(tx: Prisma.TransactionClient, bookingId: string, txId?: string) {
+async function executePaidTx(tx: Prisma.TransactionClient, bookingId: string, txId?: string): Promise<boolean> {
+  const updated = await tx.booking.updateMany({
+    where: { id: bookingId, status: BookingStatus.WAITING_PAYMENT },
+    data: { status: BookingStatus.PROCESSED },
+  });
+  if (updated.count === 0) return false;
   const now = new Date();
-  return tx.booking.update({
-    where: { id: bookingId }, data: { status: BookingStatus.PROCESSED },
-    include: { payment: true },
-  }).then(() => tx.payment.update({
-    where: { bookingId }, data: { status: PaymentStatus.SETTLEMENT, paidAt: now, confirmedAt: now, gatewayTransactionId: txId },
-  }));
+  await tx.payment.updateMany({
+    where: { bookingId },
+    data: { status: PaymentStatus.SETTLEMENT, paidAt: now, confirmedAt: now, gatewayTransactionId: txId },
+  });
+  return true;
 }
 
-async function executeCancelTx(tx: Prisma.TransactionClient, bookingId: string, txId: string | undefined, status: string) {
+async function executeCancelTx(tx: Prisma.TransactionClient, bookingId: string, txId: string | undefined, status: string): Promise<boolean> {
+  const updated = await tx.booking.updateMany({
+    where: { id: bookingId, status: BookingStatus.WAITING_PAYMENT },
+    data: { status: BookingStatus.CANCELLED, cancellationReason: `Pembayaran ${status}` },
+  });
+  if (updated.count === 0) return false;
   const payStatus = status === 'expire' ? PaymentStatus.EXPIRED : PaymentStatus.CANCELLED;
-  return tx.booking.update({
-    where: { id: bookingId }, data: { status: BookingStatus.CANCELLED, cancellationReason: `Pembayaran ${status}` },
-  }).then(() => tx.payment.update({
-    where: { bookingId }, data: { status: payStatus, gatewayTransactionId: txId },
-  }));
+  await tx.payment.updateMany({
+    where: { bookingId },
+    data: { status: payStatus, gatewayTransactionId: txId },
+  });
+  return true;
 }
 
 async function processPaidNotification(b: any, p: MidtransWebhookPayload) {
   if (b.status === BookingStatus.PROCESSED) return;
-  await prisma.$transaction((tx) => executePaidTx(tx, b.id, p.transaction_id));
+  const transitioned = await prisma.$transaction((tx) => executePaidTx(tx, b.id, p.transaction_id));
+  if (!transitioned) return;
   await sendBookingVoucherEmail(b.user.email, {
     bookingCode: b.bookingCode, propertyName: b.property.title, roomName: b.room.name,
     checkInDate: b.checkInDate.toISOString().split('T')[0], checkOutDate: b.checkOutDate.toISOString().split('T')[0],

@@ -10,8 +10,8 @@ import { signToken } from '../shared/services/token.service';
 vi.mock('../shared/services/prisma.service', () => ({
   prisma: {
     $transaction: vi.fn(),
-    booking: { findUnique: vi.fn(), update: vi.fn() },
-    payment: { update: vi.fn() },
+    booking: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+    payment: { update: vi.fn(), updateMany: vi.fn() },
   },
 }));
 
@@ -55,8 +55,8 @@ describe('Midtrans HTTP Integration Tests', () => {
     };
     vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce(b as any);
     vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb({
-      booking: { update: vi.fn().mockResolvedValue(b) },
-      payment: { update: vi.fn().mockResolvedValue({}) },
+      booking: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      payment: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     }));
   }
 
