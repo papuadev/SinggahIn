@@ -64,7 +64,7 @@ function CardImageContainer({ coverImage, title, categoryName }: ImgContainerPro
 
 function NewRatingBadge(): React.JSX.Element {
   return (
-    <span className="text-[11px] font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md border border-primary-200">
+    <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md border border-primary-200">
       Baru
     </span>
   );
@@ -93,7 +93,7 @@ type PricingProps = { rate: number; total: number; nights: number };
 function PricingDetails({ rate, total, nights }: PricingProps): React.JSX.Element {
   return (
     <div className="mt-3 pt-3 border-t border-gray-100 flex flex-col">
-      <span className="text-[11px] font-medium text-gray-500 mb-0.5">Mulai dari</span>
+      <span className="text-xs font-medium text-gray-500 mb-0.5">Mulai dari</span>
       <div className="flex items-baseline gap-1">
         <span className="text-lg font-black text-gray-900">{formatRupiah(rate)}</span>
         <span className="text-xs text-gray-500 font-medium">/ malam</span>

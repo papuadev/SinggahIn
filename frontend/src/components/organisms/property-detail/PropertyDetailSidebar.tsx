@@ -99,7 +99,7 @@ function SidebarRoomSelector(p: RoomSelectProps) {
   if (p.rooms.length <= 1) return null;
   return (
     <div className="mt-2.5">
-      <label htmlFor="sidebar-room-select" className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+      <label htmlFor="sidebar-room-select" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
         Tipe Kamar
       </label>
       <RoomSelectField {...p} />

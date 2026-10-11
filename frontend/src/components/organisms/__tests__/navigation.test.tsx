@@ -110,4 +110,13 @@ describe('Navigation Components', () => {
     expect(screen.getByText('Jelajah')).toBeInTheDocument();
     expect(screen.queryByText('Properti')).not.toBeInTheDocument();
   });
+
+  it('does not render MobileBottomNav on property detail pages', () => {
+    render(
+      <MemoryRouter initialEntries={['/properties/cmunwqz9p000zffhbd0esq9he']}>
+        <MobileBottomNav />
+      </MemoryRouter>
+    );
+    expect(screen.queryByLabelText('Mobile Navigation')).not.toBeInTheDocument();
+  });
 });

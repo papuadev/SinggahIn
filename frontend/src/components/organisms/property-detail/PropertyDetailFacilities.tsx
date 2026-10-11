@@ -39,8 +39,8 @@ function FacilityCard({ facility }: { facility: FacilityItem }) {
         <Icon className="w-4 h-4" />
       </div>
       <div>
-        <p className="text-xs sm:text-sm font-semibold text-gray-800 leading-tight">{facility.name}</p>
-        <span className="text-[11px] text-gray-500">{facility.category}</span>
+        <p className="text-sm font-semibold text-gray-800 leading-tight">{facility.name}</p>
+        <span className="text-xs text-gray-500">{facility.category}</span>
       </div>
     </div>
   );

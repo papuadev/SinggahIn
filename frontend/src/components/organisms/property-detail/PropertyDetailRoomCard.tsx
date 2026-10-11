@@ -58,7 +58,7 @@ function RoomPricing({ basePrice, pricing }: { basePrice: number; pricing?: Stay
         <span className="text-xs font-normal text-gray-500 ml-1">/ malam</span>
       </div>
       {pricing && pricing.totalNights > 1 && (
-        <span className="text-[11px] text-gray-600 font-semibold mt-0.5">
+        <span className="text-xs text-gray-600 font-semibold mt-0.5">
           Total {formatRupiah(pricing.totalStayPrice)} ({pricing.totalNights} malam)
         </span>
       )}

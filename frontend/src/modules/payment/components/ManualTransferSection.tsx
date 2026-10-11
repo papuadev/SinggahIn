@@ -67,7 +67,7 @@ function ProofSuccessToast({ message }: { message: string }) {
         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
         <span className="font-semibold">{message}</span>
       </div>
-      <span className="text-[11px] text-emerald-700 font-medium">Mengarahkan ke pesanan dalam 5 detik...</span>
+      <span className="text-xs text-emerald-700 font-medium">Mengarahkan ke pesanan dalam 5 detik...</span>
     </div>
   );
 }
