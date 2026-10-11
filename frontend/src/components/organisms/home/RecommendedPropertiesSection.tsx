@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, LucideIcon } from 'lucide-react';
+import { ArrowRight, Star, LucideIcon } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { propertyApi } from '../../../modules/property/services/property.api';
 import { CatalogQueryParams, CatalogPropertyItem } from '../../../modules/property/property.types';
@@ -11,6 +11,7 @@ export interface RecommendedSectionProps {
   subtitle: string;
   badgeText?: string;
   badgeIcon?: LucideIcon;
+  variant?: 'default' | 'highlighted';
   queryParams: CatalogQueryParams;
   viewAllUrl?: string;
   showEmptyIfFiltered?: boolean;
@@ -41,31 +42,41 @@ function SectionLoadingGrid() {
   );
 }
 
-function SectionBadge({ text, icon: Icon }: { text?: string; icon?: LucideIcon }) {
+function SectionBadge({ text, icon: Icon, isHighlighted }: { text?: string; icon?: LucideIcon; isHighlighted?: boolean }) {
   if (!text) return null;
+  if (!isHighlighted) {
+    return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200 mb-2">{Icon && <Icon className="w-3.5 h-3.5 text-primary-600" />}{text}</span>;
+  }
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200 mb-2">
-      {Icon && <Icon className="w-3.5 h-3.5 text-primary-600" />}
-      {text}
-    </span>
+    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-800/80 backdrop-blur-md text-slate-100 border border-slate-700/80 shadow-xs mb-3">
+      <span className="flex items-center justify-center w-4 h-4 rounded-full bg-amber-400/20 text-amber-300 shrink-0"><Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" /></span>
+      <span>{text}</span><span className="inline-block w-1 h-1 rounded-full bg-slate-500" /><span className="text-amber-300 font-semibold text-[11px]">Rating 4.8+</span>
+    </div>
   );
 }
 
+function SectionHeaderTitle({ title, isHighlighted }: { title: string; isHighlighted?: boolean }) {
+  const cls = isHighlighted
+    ? 'text-2xl sm:text-3xl font-black tracking-tight text-white'
+    : 'text-xl sm:text-2xl font-black text-gray-900';
+  return <h2 className={cls}>{title}</h2>;
+}
+
 type HeaderProps = {
-  title: string; subtitle: string; badgeText?: string; badgeIcon?: LucideIcon; viewAllUrl: string;
+  title: string; subtitle: string; badgeText?: string; badgeIcon?: LucideIcon; viewAllUrl: string; isHighlighted?: boolean;
 };
 
 function SectionHeader(p: HeaderProps) {
+  const btnCls = p.isHighlighted ? 'px-4 py-2 bg-slate-800/90 hover:bg-slate-700 text-white border border-slate-700 shadow-xs' : 'text-primary-600 hover:text-primary-700';
   return (
-    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 relative z-10">
       <div>
-        <SectionBadge text={p.badgeText} icon={p.badgeIcon} />
-        <h2 className="text-xl sm:text-2xl font-black text-gray-900">{p.title}</h2>
-        <p className="text-xs sm:text-sm text-gray-500 mt-1">{p.subtitle}</p>
+        <SectionBadge text={p.badgeText} icon={p.badgeIcon} isHighlighted={p.isHighlighted} />
+        <SectionHeaderTitle title={p.title} isHighlighted={p.isHighlighted} />
+        <p className={`text-xs sm:text-sm mt-1 ${p.isHighlighted ? 'text-slate-300' : 'text-gray-600'}`}>{p.subtitle}</p>
       </div>
-      <Link to={p.viewAllUrl} className="inline-flex items-center gap-1 text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors shrink-0 group">
-        <span>Lihat Semua</span>
-        <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+      <Link to={p.viewAllUrl} className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold rounded-full transition-all shrink-0 group ${btnCls}`}>
+        <span>Lihat Semua</span><ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
       </Link>
     </div>
   );
@@ -118,18 +129,30 @@ function useSectionData(params: CatalogQueryParams) {
   return { properties: data?.data || [], isLoading };
 }
 
+function AmbientGlowOrbs() {
+  return (
+    <>
+      <div className="absolute -top-20 -left-20 w-80 h-80 bg-sky-500/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-indigo-500/25 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/2 left-1/3 w-72 h-72 bg-amber-400/15 rounded-full blur-3xl pointer-events-none" />
+    </>
+  );
+}
+
 export function RecommendedPropertiesSection(props: RecommendedSectionProps): React.JSX.Element | null {
   const { properties, isLoading } = useSectionData(props.queryParams);
-  const cat = props.queryParams.category;
-  if (!isLoading && properties.length === 0 && (!props.showEmptyIfFiltered || !cat)) return null;
-
+  if (!isLoading && properties.length === 0 && (!props.showEmptyIfFiltered || !props.queryParams.category)) return null;
+  const isHigh = props.variant === 'highlighted';
+  const secCls = isHigh
+    ? 'relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen my-10 sm:my-14 py-12 sm:py-16 bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950/90 border-y border-slate-800 shadow-2xl overflow-hidden'
+    : 'my-10 sm:my-14';
   return (
-    <section aria-label={props.title} className="my-10 sm:my-14">
-      <SectionHeader {...props} viewAllUrl={props.viewAllUrl || '/search'} />
-      <SectionContent
-        isLoading={isLoading} properties={properties}
-        showEmpty={props.showEmptyIfFiltered} category={cat} onReset={props.onResetCategory}
-      />
+    <section aria-label={props.title} className={secCls}>
+      {isHigh && <AmbientGlowOrbs />}
+      <div className={isHigh ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10' : ''}>
+        <SectionHeader {...props} viewAllUrl={props.viewAllUrl || '/search'} isHighlighted={isHigh} />
+        <SectionContent isLoading={isLoading} properties={properties} showEmpty={props.showEmptyIfFiltered} category={props.queryParams.category} onReset={props.onResetCategory} />
+      </div>
     </section>
   );
 }

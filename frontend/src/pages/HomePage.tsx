@@ -74,6 +74,7 @@ function TopRatedSection({ category }: { category?: string }) {
       title="Favorit Tamu & Rating Tertinggi"
       subtitle="Pilihan penginapan dengan ulasan bintang emas tertinggi dari tamu terverifikasi"
       badgeText="Paling Direkomendasikan" badgeIcon={Star}
+      variant="highlighted"
       queryParams={{ sortBy: 'rating', sortOrder: 'desc', limit: 4, category }}
       viewAllUrl={url}
     />
