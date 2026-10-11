@@ -74,6 +74,19 @@ function useMissingDatesModal() {
   return { isDateModalOpen: isOpen, openDateModal: openModal, closeDateModal: closeModal, handlePickDates: onPickDates };
 }
 
+function useSelectRoomFromCard(
+  setSelectedRoomId: (id: string) => void,
+  setIsCalendarOpen: (open: boolean) => void,
+  hasDates: boolean,
+) {
+  return useCallback((roomId: string) => {
+    setSelectedRoomId(roomId);
+    if (!hasDates) setIsCalendarOpen(true);
+    const target = document.getElementById('sidebar-date-trigger') || document.getElementById('bagian-pemilihan-tanggal');
+    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [setSelectedRoomId, setIsCalendarOpen, hasDates]);
+}
+
 export function usePropertyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const dates = useDateRangeParams();
@@ -81,9 +94,14 @@ export function usePropertyDetailPage() {
   const { data: property, isLoading, isError } = usePropertyQuery(id);
   const { rooms, lowestPrice } = useRoomSelection(property?.rooms, id);
   const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(undefined);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const handleBookRoom = usePropertyBooking(id, dates.checkIn, dates.checkOut, dateModal.openDateModal);
+  const hasDates = Boolean(dates.checkIn && dates.checkOut);
+  const handleSelectRoomFromCard = useSelectRoomFromCard(setSelectedRoomId, setIsCalendarOpen, hasDates);
   return {
     id, property, rooms, lowestPrice, selectedRoomId, setSelectedRoomId,
-    isLoading, isError, scrollToRooms: useScrollToRooms(), handleBookRoom, ...dateModal, ...dates,
+    isCalendarOpen, setIsCalendarOpen,
+    isLoading, isError, scrollToRooms: useScrollToRooms(), handleBookRoom,
+    handleSelectRoomFromCard, ...dateModal, ...dates,
   };
 }

@@ -128,7 +128,31 @@ describe('PropertyDetailPage Integration', () => {
     expect(screen.getByTestId('map-container')).toBeInTheDocument();
   });
 
-  it('triggers booking action navigating to checkout when Pesan Kamar is clicked', async () => {
+  it('updates selected room and scrolls to date section when Pesan Sekarang is clicked on room card', async () => {
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
+    vi.mocked(propertyApi.getPropertyById).mockResolvedValueOnce({
+      success: true,
+      message: 'Detail properti berhasil diambil.',
+      data: mockProperty as any,
+    });
+
+    renderComponent('/properties/clprop123');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: 'Villa Nuansa Asri Dago' })).toBeInTheDocument();
+    });
+
+    const select = screen.getByLabelText('Pilih Tipe Kamar') as HTMLSelectElement;
+    expect(select.value).toBe('rm1');
+
+    const roomCardButtons = screen.getAllByRole('button', { name: /pesan sekarang/i });
+    fireEvent.click(roomCardButtons[1]);
+
+    expect(select.value).toBe('rm2');
+    expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
+  });
+
+  it('triggers booking action navigating to checkout from sidebar when dates are selected', async () => {
     vi.mocked(propertyApi.getPropertyById).mockResolvedValueOnce({
       success: true,
       message: 'Detail properti berhasil diambil.',
@@ -141,8 +165,10 @@ describe('PropertyDetailPage Integration', () => {
       expect(screen.getByRole('heading', { level: 1, name: 'Villa Nuansa Asri Dago' })).toBeInTheDocument();
     });
 
-    const bookButtons = screen.getAllByRole('button', { name: /pesan kamar/i });
-    fireEvent.click(bookButtons[0]);
+    const allButtons = screen.getAllByRole('button', { name: /pesan sekarang/i });
+    const sidebarCta = allButtons.find((btn) => btn.closest('aside'));
+    expect(sidebarCta).toBeDefined();
+    fireEvent.click(sidebarCta!);
 
     await waitFor(() => {
       expect(screen.getByText('Halaman Checkout')).toBeInTheDocument();
@@ -167,13 +193,13 @@ describe('PropertyDetailPage Integration', () => {
     });
   });
 
-  it('shows popup alert modal when booking without selecting dates', async () => {
+  it('shows popup alert modal when booking from sidebar without selecting dates', async () => {
     vi.mocked(propertyApi.getPropertyById).mockResolvedValueOnce({
       success: true, message: 'OK', data: mockProperty as any,
     });
     renderComponent('/properties/clprop123');
     await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: 'Villa Nuansa Asri Dago' })).toBeInTheDocument());
-    fireEvent.click(screen.getAllByRole('button', { name: /pesan kamar/i })[0]);
+    fireEvent.click(screen.getByRole('button', { name: /Pilih Tanggal Menginap/i }));
     await waitFor(() => {
       expect(screen.getByText('Tanggal Belum Dipilih')).toBeInTheDocument();
       expect(screen.getByText(/Tentukan Tanggal Menginap Anda/i)).toBeInTheDocument();
