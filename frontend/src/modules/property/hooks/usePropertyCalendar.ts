@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { format, startOfToday, addDays, isBefore, isSameDay } from 'date-fns';
+import { format, startOfToday, addDays, isBefore, isSameDay, parseISO } from 'date-fns';
 import { propertyApi } from '../services/property.api';
 import { CalendarDayItem } from '../property.types';
 
@@ -58,13 +58,24 @@ function buildDateMap(calendar?: CalendarDayItem[]) {
   return map;
 }
 
-function useCalendarDisabledCheck(dateMap: Map<string, CalendarDayItem>) {
+function isSoldOutCheckoutValid(date: Date, inDateStr: string, map: Map<string, CalendarDayItem>): boolean {
+  try {
+    const inDate = parseISO(inDateStr);
+    return isBefore(inDate, date) && checkRangeAvailable(inDate, date, map);
+  } catch {
+    return false;
+  }
+}
+
+function useCalendarDisabledCheck(dateMap: Map<string, CalendarDayItem>, checkIn?: string, checkOut?: string) {
   const today = startOfToday();
   return useCallback((date: Date): boolean => {
     if (isBefore(date, today)) return true;
     const item = dateMap.get(format(date, 'yyyy-MM-dd'));
-    return Boolean(item && !item.isAvailable);
-  }, [dateMap, today]);
+    if (!item || item.isAvailable) return false;
+    if (checkIn && !checkOut) return !isSoldOutCheckoutValid(date, checkIn, dateMap);
+    return true;
+  }, [dateMap, today, checkIn, checkOut]);
 }
 
 export interface UsePropertyCalendarProps {
@@ -72,17 +83,19 @@ export interface UsePropertyCalendarProps {
   initialRoomId?: string;
   initialMonth?: number;
   initialYear?: number;
+  checkIn?: string;
+  checkOut?: string;
 }
 
 export function usePropertyCalendar(
-  { propertyId, initialRoomId, initialMonth, initialYear }: UsePropertyCalendarProps
+  { propertyId, initialRoomId, initialMonth, initialYear, checkIn, checkOut }: UsePropertyCalendarProps
 ) {
   const nav = useCalendarMonthNavigation(initialMonth, initialYear);
   const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(initialRoomId);
   const [validationError, setValidationError] = useState<string | null>(null);
   const { data, isLoading, isError } = useCalendarFetch(propertyId, nav.month, nav.year, selectedRoomId);
   const dateMap = useMemo(() => buildDateMap(data?.calendar), [data]);
-  const isDateDisabled = useCalendarDisabledCheck(dateMap);
+  const isDateDisabled = useCalendarDisabledCheck(dateMap, checkIn, checkOut);
 
   return {
     ...nav, selectedRoomId, setSelectedRoomId, validationError, setValidationError,
