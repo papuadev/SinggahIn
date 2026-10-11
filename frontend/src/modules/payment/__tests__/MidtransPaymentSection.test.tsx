@@ -94,4 +94,20 @@ describe('MidtransPaymentSection', () => {
     expect(screen.getByText('QRIS Pembayaran')).toBeInTheDocument();
     expect(screen.getByAltText('QR Code Pembayaran')).toHaveAttribute('src', pending.qrUrl);
   });
+
+  it('renders disabled resolving button and progress text when isResolving is true', () => {
+    const handlePay = vi.fn();
+    render(
+      <MemoryRouter>
+        <MidtransPaymentSection isPayingSnap={false} snapError={null} onPay={handlePay} isResolving={true} />
+      </MemoryRouter>
+    );
+    expect(screen.queryByRole('button', { name: /Bayar Sekarang/i })).not.toBeInTheDocument();
+    const resolvingBtn = screen.getByRole('button', { name: /Memverifikasi Pembayaran/i });
+    expect(resolvingBtn).toBeInTheDocument();
+    expect(resolvingBtn).toBeDisabled();
+    expect(screen.getByText(/Menunggu konfirmasi transaksi/i)).toBeInTheDocument();
+    fireEvent.click(resolvingBtn);
+    expect(handlePay).not.toHaveBeenCalled();
+  });
 });
