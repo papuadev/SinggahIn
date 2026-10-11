@@ -21,24 +21,26 @@ export interface ProfileFormProps {
 function useAutoDismissMessage(
   successMsg: string | null, serverError: string | null,
   setSuccess: (v: string | null) => void, setError: (v: string | null) => void
-) {
+): boolean {
+  const [isExiting, setIsExiting] = useState(false);
   useEffect(() => {
     if (!successMsg && !serverError) return;
-    const timer = setTimeout(() => {
-      setSuccess(null);
-      setError(null);
-    }, 5000);
-    return () => clearTimeout(timer);
+    setIsExiting(false);
+    const t1 = setTimeout(() => setIsExiting(true), 4700);
+    const t2 = setTimeout(() => { setSuccess(null); setError(null); setIsExiting(false); }, 5000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [successMsg, serverError, setSuccess, setError]);
+  return isExiting;
 }
 
-function FormAlerts({ successMsg, serverError }: { successMsg: string | null; serverError: string | null }) {
+function FormAlerts({ successMsg, serverError, isExiting }: { successMsg: string | null; serverError: string | null; isExiting: boolean }) {
   if (!successMsg && !serverError) return null;
+  const animCls = isExiting ? 'animate-fade-out opacity-0' : 'animate-fade-in opacity-100';
   return (
-    <>
+    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${animCls}`}>
       {successMsg && <Alert variant="success">{successMsg}</Alert>}
       {serverError && <Alert variant="error">{serverError}</Alert>}
-    </>
+    </div>
   );
 }
 
@@ -106,7 +108,7 @@ function ProfileFields({ email, register, errors, isLoading, isDirty }: any) {
 function useProfileFormSubmit(onUpdateProfile: (data: ProfileFormData) => Promise<void>) {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
-  useAutoDismissMessage(successMsg, serverError, setSuccessMsg, setServerError);
+  const isExiting = useAutoDismissMessage(successMsg, serverError, setSuccessMsg, setServerError);
 
   const onSubmit = (data: ProfileFormData) => {
     setServerError(null);
@@ -115,7 +117,7 @@ function useProfileFormSubmit(onUpdateProfile: (data: ProfileFormData) => Promis
       .then(() => setSuccessMsg('Profil Anda berhasil diperbarui.'))
       .catch((err) => setServerError(err.message || 'Gagal memperbarui profil.'));
   };
-  return { successMsg, serverError, onSubmit };
+  return { successMsg, serverError, isExiting, onSubmit };
 }
 
 function useProfileFormInstance(user: User) {
@@ -126,16 +128,17 @@ function useProfileFormInstance(user: User) {
 }
 
 export function ProfileForm({ user, onUpdateProfile, onUploadAvatar, isLoading = false }: ProfileFormProps): React.JSX.Element {
-  const { successMsg, serverError, onSubmit } = useProfileFormSubmit(onUpdateProfile);
+  const { successMsg, serverError, isExiting, onSubmit } = useProfileFormSubmit(onUpdateProfile);
   const { register, handleSubmit, formState: { errors, isDirty } } = useProfileFormInstance(user);
-
   return (
-    <div className="space-y-6">
-      <FormAlerts successMsg={successMsg} serverError={serverError} />
-      <ProfileHeader user={user} onUploadAvatar={onUploadAvatar} isLoading={isLoading} />
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <ProfileFields email={user.email} register={register} errors={errors} isLoading={isLoading} isDirty={isDirty} />
-      </form>
+    <div>
+      <FormAlerts successMsg={successMsg} serverError={serverError} isExiting={isExiting} />
+      <div className="space-y-6">
+        <ProfileHeader user={user} onUploadAvatar={onUploadAvatar} isLoading={isLoading} />
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <ProfileFields email={user.email} register={register} errors={errors} isLoading={isLoading} isDirty={isDirty} />
+        </form>
+      </div>
     </div>
   );
 }
