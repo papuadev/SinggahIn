@@ -119,6 +119,7 @@ describe('OrderPaymentPage', () => {
     });
     const buttons = screen.getAllByRole('button', { name: /Lihat Pesanan/i });
     expect(buttons).toHaveLength(1);
+    expect(screen.getByRole('button', { name: /Ke Daftar Pesanan/i })).toBeInTheDocument();
   });
 
   it('allows user to switch payment method from MANUAL_TRANSFER to PAYMENT_GATEWAY', async () => {

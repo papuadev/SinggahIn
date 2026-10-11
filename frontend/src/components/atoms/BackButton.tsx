@@ -6,23 +6,25 @@ export interface BackButtonProps {
   label?: string;
   fallbackUrl?: string;
   className?: string;
+  to?: string;
+}
+
+function useBackHandler(to?: string, fallbackUrl = '/'): () => void {
+  const navigate = useNavigate();
+  return () => {
+    if (to) navigate(to);
+    else if (window.history.length > 1) navigate(-1);
+    else navigate(fallbackUrl);
+  };
 }
 
 export function BackButton({
   label = 'Kembali',
   fallbackUrl = '/',
   className = '',
+  to,
 }: BackButtonProps): React.JSX.Element {
-  const navigate = useNavigate();
-
-  const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate(fallbackUrl);
-    }
-  };
-
+  const handleBack = useBackHandler(to, fallbackUrl);
   return (
     <button
       type="button"

@@ -13,6 +13,7 @@ describe('ManualTransferSection', () => {
   it('renders uploadSuccess toast when provided', () => {
     render(<ManualTransferSection isUploading={false} uploadError={null} uploadSuccess="Bukti pembayaran berhasil diunggah!" onUpload={vi.fn()} />);
     expect(screen.getByRole('status')).toHaveTextContent('Bukti pembayaran berhasil diunggah!');
+    expect(screen.getByText(/Mengarahkan ke pesanan dalam 5 detik.../i)).toBeInTheDocument();
   });
 
   it('renders existing proof image preview and opens modal on click', () => {
