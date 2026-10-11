@@ -83,4 +83,20 @@ describe('Pricing API Service', () => {
     await pricingApi.deleteRoomUnavailability('room-1', 'u-1');
     expect(apiClient.delete).toHaveBeenCalledWith('/rooms/room-1/unavailability/u-1');
   });
+
+  it('calls calculateStayPricing with roomId, checkInDate, and checkOutDate', async () => {
+    const mockPricing = {
+      roomId: 'room-1', checkInDate: '2026-12-24', checkOutDate: '2026-12-26',
+      totalNights: 2, basePrice: 500000, averageNightRate: 650000, totalStayPrice: 1300000,
+      dailyBreakdown: [],
+    };
+    vi.mocked(apiClient.get).mockResolvedValueOnce({
+      data: { success: true, message: 'OK', data: mockPricing },
+    });
+    const res = await pricingApi.calculateStayPricing('room-1', '2026-12-24', '2026-12-26');
+    expect(apiClient.get).toHaveBeenCalledWith('/rooms/room-1/pricing', {
+      params: { checkInDate: '2026-12-24', checkOutDate: '2026-12-26' },
+    });
+    expect(res.data.totalStayPrice).toBe(1300000);
+  });
 });

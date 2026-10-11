@@ -86,3 +86,12 @@ export function useDeleteRoomUnavailability(roomId: string) {
     },
   });
 }
+
+export function useStayPricing(roomId?: string, checkInDate?: string, checkOutDate?: string) {
+  const hasDates = Boolean(roomId && checkInDate && checkOutDate);
+  return useQuery({
+    queryKey: ['stay-pricing', roomId, checkInDate, checkOutDate],
+    queryFn: async () => (await pricingApi.calculateStayPricing(roomId!, checkInDate!, checkOutDate!)).data,
+    enabled: hasDates,
+  });
+}

@@ -4,6 +4,7 @@ import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { Button } from '../../atoms/Button';
 import { Select } from '../../atoms/Select';
 import { formatRupiah } from '../../../libs/formatters';
+import { useStayPricing } from '../../../modules/room/hooks/useRoomPricing';
 import { DateTriggerBox, CalendarPopover } from './sidebar/CalendarPopover';
 
 export interface PropertyDetailSidebarProps {
@@ -49,12 +50,15 @@ function RoomBadge({ roomName }: { roomName?: string }) {
   );
 }
 
-function SidebarPriceHeader({ price, roomName }: { price?: number; roomName?: string }) {
+type PriceHeaderProps = { price?: number; roomName?: string; nights?: number };
+
+function SidebarPriceHeader({ price, roomName, nights = 0 }: PriceHeaderProps) {
   const priceText = price ? formatRupiah(price) : 'Hubungi Kami';
+  const label = nights > 1 ? 'Tarif rata-rata' : nights === 1 ? 'Tarif per malam' : 'Mulai dari';
   return (
     <div className="flex items-baseline justify-between pb-3 border-b border-gray-100">
       <div>
-        <span className="text-xs text-gray-500 font-medium block">Mulai dari</span>
+        <span className="text-xs text-gray-500 font-medium block">{label}</span>
         <div className="text-xl sm:text-2xl font-black text-primary-600">
           {priceText}
           {price && <span className="text-xs font-normal text-gray-500 ml-1">/ malam</span>}
@@ -115,9 +119,8 @@ function calculateStayNights(inDate?: string, outDate?: string): number {
   }
 }
 
-function SidebarStayBreakdown({ nights, price }: { nights: number; price: number }) {
-  if (nights <= 0 || !price) return null;
-  const total = nights * price;
+function SidebarStayBreakdown({ nights, total }: { nights: number; total: number }) {
+  if (nights <= 0 || !total) return null;
   return (
     <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between text-xs sm:text-sm">
       <span className="text-gray-600 font-medium">Total ({nights} Malam)</span>
@@ -130,13 +133,15 @@ function useSidebarBooking(props: PropertyDetailSidebarProps) {
   const { rooms = [], selectedRoomId, lowestPrice, checkIn, checkOut, onBookRoom } = props;
   const [isCalOpen, setIsCalOpen] = useState(false);
   const activeRoom = useMemo(() => rooms.find((r) => r.id === selectedRoomId) || rooms[0], [rooms, selectedRoomId]);
-  const activePrice = activeRoom?.basePrice || lowestPrice || 0;
   const nights = calculateStayNights(checkIn, checkOut);
+  const { data: pricing } = useStayPricing(activeRoom?.id, checkIn, checkOut);
+  const activePrice = pricing?.averageNightRate || activeRoom?.basePrice || lowestPrice || 0;
+  const totalPrice = pricing?.totalStayPrice || (nights * (activeRoom?.basePrice || 0));
   const handleCta = () => {
     if (nights <= 0) { setIsCalOpen(true); onBookRoom?.(activeRoom?.id || ''); return; }
     onBookRoom?.(activeRoom?.id || '');
   };
-  return { isCalOpen, setIsCalOpen, activeRoom, activePrice, nights, handleCta };
+  return { isCalOpen, setIsCalOpen, activeRoom, activePrice, totalPrice, nights, handleCta };
 }
 
 function SidebarBookingCta({ onClick, hasDates }: { onClick: () => void; hasDates: boolean }) {
@@ -176,10 +181,10 @@ export function PropertyDetailSidebar(props: PropertyDetailSidebarProps): React.
   const s = useSidebarBooking(props);
   return (
     <aside aria-label="Widget Pemesanan Properti" className="relative w-full bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-sm static lg:sticky lg:top-24 h-fit">
-      <SidebarPriceHeader price={s.activePrice} roomName={s.activeRoom?.name} />
+      <SidebarPriceHeader price={s.activePrice} roomName={s.activeRoom?.name} nights={s.nights} />
       <SidebarDateSection propertyId={propertyId} rooms={rooms} activeRoomId={s.activeRoom?.id} onRoomChange={onRoomChange} checkIn={checkIn} checkOut={checkOut} onSelectDates={onSelectDates} isOpen={s.isCalOpen} onToggle={() => s.setIsCalOpen(!s.isCalOpen)} onClose={() => s.setIsCalOpen(false)} />
       <SidebarRoomSelector rooms={rooms} activeId={s.activeRoom?.id} onChange={onRoomChange} />
-      <SidebarStayBreakdown nights={s.nights} price={s.activePrice} />
+      <SidebarStayBreakdown nights={s.nights} total={s.totalPrice} />
       <SidebarBookingCta onClick={s.handleCta} hasDates={s.nights > 0} />
       <PerksList />
     </aside>

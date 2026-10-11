@@ -1,7 +1,9 @@
-import { it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PropertyDetailRoomList } from '../PropertyDetailRoomList';
 import { PropertyRoomSummary } from '../../../../modules/property/property.types';
+import { pricingApi } from '../../../../modules/room/services/pricing.api';
 
 function createMockRooms(count = 3): PropertyRoomSummary[] {
   return Array.from({ length: count }, (_, i) => ({
@@ -15,16 +17,30 @@ function createMockRooms(count = 3): PropertyRoomSummary[] {
 }
 
 function renderList(rooms: PropertyRoomSummary[] = [], onBook = vi.fn()) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <PropertyDetailRoomList
-      propertyId="prop-123"
-      rooms={rooms}
-      checkIn="2026-10-10"
-      checkOut="2026-10-12"
-      onBookRoom={onBook}
-    />
+    <QueryClientProvider client={qc}>
+      <PropertyDetailRoomList
+        propertyId="prop-123"
+        rooms={rooms}
+        checkIn="2026-10-10"
+        checkOut="2026-10-12"
+        onBookRoom={onBook}
+      />
+    </QueryClientProvider>
   );
 }
+
+beforeEach(() => {
+  vi.spyOn(pricingApi, 'calculateStayPricing').mockResolvedValue({
+    success: true, message: 'OK',
+    data: {
+      roomId: 'rm-1', checkInDate: '2026-10-10', checkOutDate: '2026-10-12',
+      totalNights: 2, basePrice: 200000, averageNightRate: 200000, totalStayPrice: 400000,
+      dailyBreakdown: [],
+    },
+  });
+});
 
 it('renders empty state when rooms array is empty', () => {
   renderList([]);
@@ -87,4 +103,20 @@ it('triggers onBookRoom when Pesan Kamar button is clicked', () => {
   renderList(createMockRooms(1), handleBook);
   fireEvent.click(screen.getByRole('button', { name: /pesan kamar/i }));
   expect(handleBook).toHaveBeenCalledWith('rm-1');
+});
+
+it('renders dynamic pricing when dates are selected', async () => {
+  vi.spyOn(pricingApi, 'calculateStayPricing').mockResolvedValueOnce({
+    success: true, message: 'OK',
+    data: {
+      roomId: 'rm-1', checkInDate: '2026-10-10', checkOutDate: '2026-10-12',
+      totalNights: 2, basePrice: 200000, averageNightRate: 250000, totalStayPrice: 500000,
+      dailyBreakdown: [],
+    },
+  });
+  renderList(createMockRooms(1));
+  await waitFor(() => {
+    expect(screen.getByText(/Tarif rata-rata/i)).toBeInTheDocument();
+    expect(screen.getByText(/500\.000/i)).toBeInTheDocument();
+  });
 });
