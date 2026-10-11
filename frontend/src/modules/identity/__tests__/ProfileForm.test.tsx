@@ -98,9 +98,16 @@ describe('ProfileForm Organism', () => {
     });
 
     expect(screen.getByText('Profil Anda berhasil diperbarui.')).toBeInTheDocument();
+    const alertWrapper = screen.getByRole('alert').parentElement;
+    expect(alertWrapper?.className).toContain('animate-fade-in');
 
     act(() => {
-      vi.advanceTimersByTime(5000);
+      vi.advanceTimersByTime(4700);
+    });
+    expect(alertWrapper?.className).toContain('animate-fade-out');
+
+    act(() => {
+      vi.advanceTimersByTime(300);
     });
 
     expect(screen.queryByText('Profil Anda berhasil diperbarui.')).not.toBeInTheDocument();
