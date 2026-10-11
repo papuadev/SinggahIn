@@ -26,16 +26,17 @@ describe('Booking Service', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
   function buildTxMock(opts: any) {
-    const { isVerified = true, roomCapacity = 2, totalUnits = 1, unavailableCount = 0, overlapCount = 0 } = opts;
-    const createFn = ({ data }: any) => Promise.resolve({
-      id: bookingId, bookingCode: data.bookingCode, status: data.status, totalPrice: data.totalPrice, expiresAt: data.expiresAt,
-    });
+    const { isVerified = true, roomCapacity = 2, totalUnits = 1, unavailableCount = 0, overlapCount = 0, countFn, createFn } = opts;
+    const defCreate = ({ data }: any) => Promise.resolve({ id: bookingId, bookingCode: data.bookingCode, status: data.status, totalPrice: data.totalPrice, expiresAt: data.expiresAt });
     return {
-      $queryRaw: vi.fn().mockResolvedValueOnce([]),
+      $queryRaw: vi.fn().mockResolvedValue([]),
       user: { findUnique: vi.fn().mockResolvedValue({ id: userId, isVerified }) },
       room: { findUnique: vi.fn().mockResolvedValue({ id: roomId, propertyId: 'prop-1', capacity: roomCapacity, totalUnits }) },
       roomUnavailability: { count: vi.fn().mockResolvedValue(unavailableCount) },
-      booking: { count: vi.fn().mockResolvedValue(overlapCount), create: vi.fn().mockImplementation(createFn) },
+      booking: {
+        count: countFn ? vi.fn().mockImplementation(countFn) : vi.fn().mockResolvedValue(overlapCount),
+        create: vi.fn().mockImplementation(createFn || defCreate),
+      },
     };
   }
 
@@ -78,6 +79,38 @@ describe('Booking Service', () => {
     it('should prevent double-booking (AC-001) when overlapping bookings equal totalUnits', async () => {
       setupTxMock({ totalUnits: 1, overlapCount: 1 });
       await expect(createBooking(userId, input)).rejects.toThrow('Kamar tidak lagi tersedia');
+    });
+
+    it('should simulate 10 parallel concurrent requests and allow only available units to be booked', async () => {
+      let activeBookings = 0;
+      let lockQueue: Promise<any> = Promise.resolve();
+      vi.mocked(pricingService.calculateStayPricing).mockResolvedValue({
+        basePrice: 500000, totalStayPrice: 1000000, totalNights: 2, dailyBreakdown: [],
+      });
+      const txMock = buildTxMock({
+        countFn: async () => activeBookings,
+        createFn: async ({ data }: any) => {
+          activeBookings++;
+          return { id: `bk-${activeBookings}`, bookingCode: data.bookingCode, status: data.status, totalPrice: data.totalPrice, expiresAt: data.expiresAt };
+        },
+      });
+      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => {
+        return new Promise((resolve, reject) => {
+          lockQueue = lockQueue.then(async () => {
+            try { resolve(await cb(txMock)); } catch (err) { reject(err); }
+          });
+        });
+      });
+
+      const requests = Array.from({ length: 10 }, (_, i) => createBooking(`user-${i}`, input));
+      const outcomes = await Promise.allSettled(requests);
+      const successful = outcomes.filter((o) => o.status === 'fulfilled');
+      const rejected = outcomes.filter((o) => o.status === 'rejected');
+
+      expect(successful).toHaveLength(1);
+      expect(rejected).toHaveLength(9);
+      rejected.forEach((r) => expect((r as PromiseRejectedResult).reason.message).toContain('Kamar tidak lagi tersedia'));
+      expect(activeBookings).toBe(1);
     });
   });
 
