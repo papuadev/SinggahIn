@@ -117,4 +117,33 @@ describe('OrderHistoryPage', () => {
       expect(screen.queryByRole('button', { name: /Beri Ulasan/i })).not.toBeInTheDocument();
     });
   });
+
+  it('renders Ditolak tab and filters orders by REJECTED status', async () => {
+    const mockBookings = [
+      {
+        id: 'bk-rej',
+        bookingCode: 'SGH-20261010-REJ',
+        status: 'REJECTED',
+        checkInDate: '2026-10-01',
+        checkOutDate: '2026-10-03',
+        guestCount: 2,
+        totalPrice: 1500000,
+        property: { title: 'Hotel Grand Bandung' },
+        room: { name: 'Executive Suite' },
+      },
+    ];
+    vi.mocked(bookingApi.getUserBookings).mockResolvedValue({
+      success: true, message: 'OK', data: mockBookings as any,
+    });
+    renderHistory();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Ditolak' })).toBeInTheDocument();
+    });
+    const rejectedTab = screen.getByRole('button', { name: 'Ditolak' });
+    fireEvent.click(rejectedTab);
+    await waitFor(() => {
+      expect(bookingApi.getUserBookings).toHaveBeenCalledWith(expect.objectContaining({ status: 'REJECTED' }));
+      expect(screen.getAllByText('Ditolak').length).toBeGreaterThanOrEqual(1);
+    });
+  });
 });

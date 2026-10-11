@@ -16,6 +16,7 @@ const STATUS_TABS: Array<{ label: string; value?: BookingStatus }> = [
   { label: 'Dikonfirmasi', value: 'PROCESSED' },
   { label: 'Selesai', value: 'COMPLETED' },
   { label: 'Dibatalkan', value: 'CANCELLED' },
+  { label: 'Ditolak', value: 'REJECTED' },
 ];
 
 function StatusFilterTabs({ current, onSelect }: { current?: BookingStatus; onSelect: (s?: BookingStatus) => void }) {
