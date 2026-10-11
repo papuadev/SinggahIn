@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Compass, Building2, User } from 'lucide-react';
+import { Compass, Building2, User, LayoutDashboard } from 'lucide-react';
 import { useAuthStore } from '../../stores/auth.store';
 
 interface NavItemProps {
@@ -20,9 +20,15 @@ function NavItem({ to, icon, label, isActive }: NavItemProps): React.JSX.Element
   );
 }
 
-function TenantNavItem({ pathname }: { pathname: string }): React.JSX.Element {
-  const isActive = pathname.startsWith('/tenant/properties');
-  return <NavItem to="/tenant/properties" icon={<Building2 className="w-5 h-5" />} label="Properti" isActive={isActive} />;
+function TenantNavItems({ pathname }: { pathname: string }): React.JSX.Element {
+  const isDash = pathname === '/tenant/dashboard';
+  const isProp = pathname.startsWith('/tenant/properties');
+  return (
+    <>
+      <NavItem to="/tenant/dashboard" icon={<LayoutDashboard className="w-5 h-5" />} label="Dasbor" isActive={isDash} />
+      <NavItem to="/tenant/properties" icon={<Building2 className="w-5 h-5" />} label="Properti" isActive={isProp} />
+    </>
+  );
 }
 
 function AccountNavItem({ isAuthenticated, pathname }: { isAuthenticated: boolean; pathname: string }): React.JSX.Element {
@@ -35,12 +41,13 @@ function AccountNavItem({ isAuthenticated, pathname }: { isAuthenticated: boolea
 export function MobileBottomNav(): React.JSX.Element {
   const { pathname } = useLocation();
   const { user, isAuthenticated } = useAuthStore();
+  const isTenant = user?.role === 'TENANT';
   const isExploreActive = pathname === '/';
 
   return (
     <nav aria-label="Mobile Navigation" className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xs border-t border-gray-200 md:hidden px-2 py-1 flex items-center justify-around shadow-lg">
-      <NavItem to="/" icon={<Compass className="w-5 h-5" />} label="Jelajah" isActive={isExploreActive} />
-      {user?.role === 'TENANT' && <TenantNavItem pathname={pathname} />}
+      {!isTenant && <NavItem to="/" icon={<Compass className="w-5 h-5" />} label="Jelajah" isActive={isExploreActive} />}
+      {isTenant && <TenantNavItems pathname={pathname} />}
       <AccountNavItem isAuthenticated={isAuthenticated} pathname={pathname} />
     </nav>
   );

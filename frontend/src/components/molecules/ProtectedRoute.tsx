@@ -1,46 +1,43 @@
-import React, { useEffect } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/auth.store';
 import { Role } from '../../types/auth.types';
 import { Spinner } from '../atoms/Spinner';
+import { ForbiddenPage } from '../../pages/ForbiddenPage';
 
 export interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: Role;
+  disallowedRole?: Role;
+}
+
+function RouteSpinner(): React.JSX.Element {
+  return (
+    <div className="flex justify-center items-center py-20">
+      <Spinner size="lg" />
+    </div>
+  );
 }
 
 export function ProtectedRoute({
   children,
   requiredRole,
+  disallowedRole,
 }: ProtectedRouteProps): React.JSX.Element {
-  const { user, isAuthenticated, isInitialized, setConflict } = useAuthStore();
-  const navigate = useNavigate();
+  const { user, isAuthenticated, isInitialized } = useAuthStore();
 
-  useEffect(() => {
-    if (isAuthenticated && user && requiredRole && user.role !== requiredRole) {
-      setConflict({
-        currentRole: user.role,
-        targetRole: requiredRole,
-        onConfirm: () => navigate(`/login?role=${requiredRole}`),
-      });
-    }
-  }, [isAuthenticated, user, requiredRole, setConflict, navigate]);
-
-  if (!isInitialized) {
-    return (
-      <div className="flex justify-center items-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (!isInitialized) return <RouteSpinner />;
+  if (disallowedRole && isAuthenticated && user?.role === disallowedRole) {
+    return <ForbiddenPage />;
   }
-
-  if (!isAuthenticated || !user) {
-    return <Navigate to={`/login${requiredRole ? `?role=${requiredRole}` : ''}`} replace />;
+  if (requiredRole && (!isAuthenticated || !user)) {
+    return <Navigate to={`/login?role=${requiredRole}`} replace />;
   }
-
-  if (requiredRole && user.role !== requiredRole) {
-    return <div className="py-20 text-center text-gray-500">Memerlukan akses peran {requiredRole}...</div>;
+  if (requiredRole && user?.role !== requiredRole) {
+    return <ForbiddenPage />;
   }
-
+  if (!requiredRole && !disallowedRole && (!isAuthenticated || !user)) {
+    return <Navigate to="/login" replace />;
+  }
   return <>{children}</>;
 }

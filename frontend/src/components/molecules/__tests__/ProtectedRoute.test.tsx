@@ -13,6 +13,14 @@ const mockUser: User = {
   avatarUrl: null,
 };
 
+const mockTenant: User = {
+  id: 'tnt-1',
+  email: 'tenant@example.com',
+  name: 'Tenant Test',
+  role: 'TENANT',
+  avatarUrl: null,
+};
+
 describe('ProtectedRoute Molecule', () => {
   beforeEach(() => {
     useAuthStore.setState({
@@ -61,7 +69,7 @@ describe('ProtectedRoute Molecule', () => {
       user: mockUser,
       isAuthenticated: true,
       isInitialized: true,
-      isLoading: true, // simulates ongoing action like upload
+      isLoading: true,
     });
 
     render(
@@ -72,7 +80,65 @@ describe('ProtectedRoute Molecule', () => {
       </MemoryRouter>
     );
 
-    // The page must stay visible and NOT be replaced by full-page spinner!
     expect(screen.getByText('Halaman Terproteksi')).toBeInTheDocument();
+  });
+
+  it('renders ForbiddenPage when user role does not match requiredRole', () => {
+    useAuthStore.setState({
+      user: mockUser,
+      isAuthenticated: true,
+      isInitialized: true,
+      isLoading: false,
+    });
+
+    render(
+      <MemoryRouter>
+        <ProtectedRoute requiredRole="TENANT">
+          <div>Dasbor Khusus Tenant</div>
+        </ProtectedRoute>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByText('Dasbor Khusus Tenant')).not.toBeInTheDocument();
+    expect(screen.getByText('Akses Tidak Diizinkan')).toBeInTheDocument();
+  });
+
+  it('renders ForbiddenPage when user role matches disallowedRole', () => {
+    useAuthStore.setState({
+      user: mockTenant,
+      isAuthenticated: true,
+      isInitialized: true,
+      isLoading: false,
+    });
+
+    render(
+      <MemoryRouter>
+        <ProtectedRoute disallowedRole="TENANT">
+          <div>Halaman Tamu Publik</div>
+        </ProtectedRoute>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByText('Halaman Tamu Publik')).not.toBeInTheDocument();
+    expect(screen.getByText('Akses Tidak Diizinkan')).toBeInTheDocument();
+  });
+
+  it('renders children for unauthenticated guest on route with disallowedRole', () => {
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      isInitialized: true,
+      isLoading: false,
+    });
+
+    render(
+      <MemoryRouter>
+        <ProtectedRoute disallowedRole="TENANT">
+          <div>Halaman Tamu Publik</div>
+        </ProtectedRoute>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Halaman Tamu Publik')).toBeInTheDocument();
   });
 });

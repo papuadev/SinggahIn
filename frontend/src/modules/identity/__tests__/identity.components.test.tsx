@@ -3,8 +3,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { LoginForm } from '../components/LoginForm';
 import { RegisterForm } from '../components/RegisterForm';
 import { VerifyForm } from '../components/VerifyForm';
-import { AccountSwitchModal } from '../../../components/organisms/AccountSwitchModal';
-import { useAuthStore } from '../../../stores/auth.store';
 
 vi.mock('../services/identity.api', () => ({
   identityApi: {
@@ -78,28 +76,6 @@ describe('Identity Form Organisms', () => {
         password: 'password123',
         confirmPassword: 'password123',
       });
-    });
-  });
-
-  it('triggers logout and callback in AccountSwitchModal', async () => {
-    const onConfirmMock = vi.fn();
-    useAuthStore.setState({
-      conflict: {
-        currentRole: 'USER',
-        targetRole: 'TENANT',
-        onConfirm: onConfirmMock,
-      },
-    });
-
-    render(<AccountSwitchModal />);
-    expect(screen.getByText('Konfirmasi Beralih Akun')).toBeInTheDocument();
-
-    const switchBtn = screen.getByRole('button', { name: /Keluar & Beralih Peran/i });
-    fireEvent.click(switchBtn);
-
-    await waitFor(() => {
-      expect(onConfirmMock).toHaveBeenCalled();
-      expect(useAuthStore.getState().conflict).toBeNull();
     });
   });
 });

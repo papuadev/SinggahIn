@@ -58,7 +58,7 @@ describe('Navigation Components', () => {
     expect(screen.getByText('tenant@singgahin.com')).toBeInTheDocument();
     expect(screen.getByText('Pemilik (Tenant)')).toBeInTheDocument();
     expect(screen.getByText('Dasbor Properti')).toBeInTheDocument();
-    expect(screen.getByText('Cari Penginapan')).toBeInTheDocument();
+    expect(screen.queryByText('Cari Penginapan')).not.toBeInTheDocument();
     expect(screen.getByText('Profil Saya')).toBeInTheDocument();
 
     const logoutBtn = screen.getByRole('button', { name: /Keluar/i });
@@ -74,7 +74,8 @@ describe('Navigation Components', () => {
     );
     expect(screen.getByText('Daftar Properti')).toBeInTheDocument();
     expect(screen.getByText('Tambah Properti')).toBeInTheDocument();
-    expect(screen.getByText('Mode Tamu (Eksplor)')).toBeInTheDocument();
+    expect(screen.getByText('Profil Saya')).toBeInTheDocument();
+    expect(screen.queryByText('Mode Tamu (Eksplor)')).not.toBeInTheDocument();
   });
 
   it('renders MobileBottomNav for guest with Jelajah and Masuk', () => {
@@ -87,14 +88,16 @@ describe('Navigation Components', () => {
     expect(screen.getByText('Masuk')).toBeInTheDocument();
   });
 
-  it('renders MobileBottomNav for tenant with Properti tab', () => {
+  it('renders MobileBottomNav for tenant with Dasbor and Properti tab without Jelajah', () => {
     useAuthStore.setState({ user: mockTenant, isAuthenticated: true });
     render(
       <MemoryRouter initialEntries={['/tenant/properties']}>
         <MobileBottomNav />
       </MemoryRouter>
     );
+    expect(screen.getByText('Dasbor')).toBeInTheDocument();
     expect(screen.getByText('Properti')).toBeInTheDocument();
+    expect(screen.queryByText('Jelajah')).not.toBeInTheDocument();
   });
 
   it('renders MobileBottomNav for normal user without Properti tab', () => {
@@ -104,6 +107,7 @@ describe('Navigation Components', () => {
         <MobileBottomNav />
       </MemoryRouter>
     );
+    expect(screen.getByText('Jelajah')).toBeInTheDocument();
     expect(screen.queryByText('Properti')).not.toBeInTheDocument();
   });
 });
