@@ -26,14 +26,41 @@ describe('Booking Cron Service', () => {
   describe('cancelExpiredBookings', () => {
     it('cancels bookings that have passed expiresAt and marks payment EXPIRED', async () => {
       vi.mocked(prisma.booking.findMany).mockResolvedValueOnce([{ id: 'bk-expired' }] as any);
-      const txMock = { booking: { update: vi.fn().mockResolvedValue({}) } };
+      const txMock = {
+        booking: {
+          findUnique: vi.fn().mockResolvedValue({ status: BookingStatus.WAITING_PAYMENT }),
+          update: vi.fn().mockResolvedValue({}),
+        },
+      };
       vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb(txMock));
       const res = await cancelExpiredBookings(new Date());
       expect(res.cancelledCount).toBe(1);
+      expect(txMock.booking.findUnique).toHaveBeenCalledWith({
+        where: { id: 'bk-expired' },
+        select: { status: true },
+      });
       expect(txMock.booking.update).toHaveBeenCalledWith(expect.objectContaining({
         where: { id: 'bk-expired' },
         data: expect.objectContaining({ status: BookingStatus.CANCELLED, payment: { update: { status: PaymentStatus.EXPIRED } } }),
       }));
+    });
+
+    it('skips cancellation if booking status changed (e.g. PROCESSED via webhook)', async () => {
+      vi.mocked(prisma.booking.findMany).mockResolvedValueOnce([{ id: 'bk-paid' }] as any);
+      const txMock = {
+        booking: {
+          findUnique: vi.fn().mockResolvedValue({ status: BookingStatus.PROCESSED }),
+          update: vi.fn(),
+        },
+      };
+      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb(txMock));
+      const res = await cancelExpiredBookings(new Date());
+      expect(res.cancelledCount).toBe(0);
+      expect(txMock.booking.findUnique).toHaveBeenCalledWith({
+        where: { id: 'bk-paid' },
+        select: { status: true },
+      });
+      expect(txMock.booking.update).not.toHaveBeenCalled();
     });
 
     it('returns cancelledCount 0 when no bookings are expired', async () => {

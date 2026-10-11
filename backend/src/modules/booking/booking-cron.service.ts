@@ -3,6 +3,8 @@ import { BookingStatus, PaymentStatus, Prisma } from '@prisma/client';
 import { prisma } from '../../shared/services/prisma.service';
 
 async function expireSingleBooking(tx: Prisma.TransactionClient, bookingId: string) {
+  const current = await tx.booking.findUnique({ where: { id: bookingId }, select: { status: true } });
+  if (current?.status !== BookingStatus.WAITING_PAYMENT) return null;
   return tx.booking.update({
     where: { id: bookingId },
     data: {
@@ -18,10 +20,12 @@ export async function cancelExpiredBookings(now = new Date()) {
     where: { status: BookingStatus.WAITING_PAYMENT, expiresAt: { lt: now } },
     select: { id: true },
   });
+  let count = 0;
   for (const b of expired) {
-    await prisma.$transaction((tx) => expireSingleBooking(tx, b.id));
+    const res = await prisma.$transaction((tx) => expireSingleBooking(tx, b.id));
+    if (res) count++;
   }
-  return { cancelledCount: expired.length };
+  return { cancelledCount: count };
 }
 
 export async function autoCompleteFinishedBookings(now = new Date()) {
