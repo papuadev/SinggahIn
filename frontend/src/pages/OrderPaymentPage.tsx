@@ -15,6 +15,7 @@ import { ReviewFormModal } from '../modules/review/components/ReviewFormModal';
 import { getStatusBadge } from '../modules/booking/components/OrderHistoryCard';
 import { BookingStatus } from '../modules/booking/booking.types';
 import { Button } from '../components/atoms/Button';
+import { BackButton } from '../components/atoms/BackButton';
 
 export function getPageTitle(status: BookingStatus): string {
   switch (status) {
@@ -31,12 +32,15 @@ export function getPageTitle(status: BookingStatus): string {
 function PaymentHeader({ code, status }: { code: string; status: any }) {
   const badge = getStatusBadge(status);
   return (
-    <div className="flex flex-wrap justify-between items-center gap-2 pb-2">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">{getPageTitle(status)}</h1>
-        <p className="font-mono text-sm text-gray-500">Kode: {code}</p>
+    <div className="space-y-2 pb-2">
+      <BackButton fallbackUrl="/orders" label="Kembali ke Riwayat Pesanan" />
+      <div className="flex flex-wrap justify-between items-center gap-2">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{getPageTitle(status)}</h1>
+          <p className="font-mono text-sm text-gray-500">Kode: {code}</p>
+        </div>
+        <span className={`text-sm px-3 py-1 rounded-full font-medium border ${badge.style}`}>{badge.label}</span>
       </div>
-      <span className={`text-sm px-3 py-1 rounded-full font-medium border ${badge.style}`}>{badge.label}</span>
     </div>
   );
 }

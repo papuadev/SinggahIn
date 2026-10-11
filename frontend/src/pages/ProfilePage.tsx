@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/auth.store';
 import { ProfileForm } from '../modules/identity/components/ProfileForm';
 import { ProfileFormData } from '../modules/identity/schemas/identity.schema';
 import { Spinner } from '../components/atoms/Spinner';
+import { BackButton } from '../components/atoms/BackButton';
 
 export function ProfilePage(): React.JSX.Element {
   const { user, isLoading, updateProfile, uploadAvatar } = useAuthStore();
@@ -25,6 +26,7 @@ export function ProfilePage(): React.JSX.Element {
 
   return (
     <div className="max-w-xl mx-auto py-8">
+      <BackButton fallbackUrl="/" className="mb-3" />
       <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-200">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Pengaturan Profil</h2>

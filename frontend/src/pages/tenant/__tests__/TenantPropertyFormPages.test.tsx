@@ -92,6 +92,7 @@ describe('Tenant Property Create & Edit Pages', () => {
 
     renderWithProviders(<TenantPropertyCreatePage />);
     expect(screen.getByText('Tambah Properti Baru')).toBeInTheDocument();
+    expect(screen.queryByText('Kembali ke Kelola Properti')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Submit Form' }));
     await waitFor(() => {
