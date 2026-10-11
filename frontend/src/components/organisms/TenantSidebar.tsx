@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Building2, PlusCircle, Compass, Calendar, ClipboardList, BarChart3, CalendarRange } from 'lucide-react';
+import { Building2, PlusCircle, User, Calendar, ClipboardList, BarChart3, CalendarRange } from 'lucide-react';
 
 interface SidebarLinkProps {
   to: string;
@@ -44,11 +44,11 @@ function SidebarReportGroup({ p }: { p: string }) {
   );
 }
 
-function SidebarFooter() {
+function SidebarFooter({ p }: { p: string }) {
   return (
     <div className="pt-6 border-t border-gray-100">
-      <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Akses Cepat</p>
-      <SidebarLink to="/" icon={<Compass className="w-4 h-4" />} label="Mode Tamu (Eksplor)" isActive={false} />
+      <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pengaturan Akun</p>
+      <SidebarLink to="/profile" icon={<User className="w-4 h-4" />} label="Profil Saya" isActive={p === '/profile'} />
     </div>
   );
 }
@@ -59,7 +59,7 @@ export function TenantSidebar(): React.JSX.Element {
     <aside className="hidden lg:block w-64 shrink-0 bg-white border-r border-gray-200 min-h-[calc(100vh-4rem)] p-4 space-y-6">
       <SidebarNavGroup p={pathname} />
       <SidebarReportGroup p={pathname} />
-      <SidebarFooter />
+      <SidebarFooter p={pathname} />
     </aside>
   );
 }
