@@ -58,16 +58,26 @@ function PropertyDetailsHeader({ title, city, roomName }: { title: string; city:
   );
 }
 
+function PriceSummaryRows({ basePrice, nights, totalPrice }: { basePrice: number; nights: number; totalPrice: number }) {
+  const baseTotal = basePrice * nights;
+  const adj = totalPrice - baseTotal;
+  const adjLabel = adj > 0 ? 'Penyesuaian Tarif (Musim Ramai / Akhir Pekan)' : 'Diskon Tarif';
+  return (
+    <div className="space-y-2 pt-1">
+      <PriceRow label={`${formatRupiah(basePrice)} × ${nights} malam`} amount={baseTotal} />
+      {adj !== 0 && <PriceRow label={adjLabel} amount={adj} />}
+      <PriceRow label="Total Pembayaran" amount={totalPrice} isTotal />
+    </div>
+  );
+}
+
 export function OrderSummaryCard(props: OrderSummaryProps): React.JSX.Element {
   return (
     <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-xs space-y-4">
       <h3 className="font-bold text-gray-900 text-lg">Ringkasan Pesanan</h3>
       <PropertyDetailsHeader title={props.propertyTitle} city={props.propertyCity} roomName={props.roomName} />
       <StayScheduleInfo inDate={props.checkInDate} outDate={props.checkOutDate} nights={props.nights} guests={props.guestCount} />
-      <div className="space-y-2 pt-1">
-        <PriceRow label={`${formatRupiah(props.basePrice)} × ${props.nights} malam`} amount={props.basePrice * props.nights} />
-        <PriceRow label="Total Pembayaran" amount={props.totalPrice} isTotal />
-      </div>
+      <PriceSummaryRows basePrice={props.basePrice} nights={props.nights} totalPrice={props.totalPrice} />
     </div>
   );
 }

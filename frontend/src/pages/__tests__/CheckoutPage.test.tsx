@@ -5,10 +5,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CheckoutPage } from '../CheckoutPage';
 import { propertyApi } from '../../modules/property/services/property.api';
 import { roomApi } from '../../modules/room/services/room.api';
+import { pricingApi } from '../../modules/room/services/pricing.api';
 import { bookingApi } from '../../modules/booking/services/booking.api';
 
 vi.mock('../../modules/property/services/property.api', () => ({
   propertyApi: { getPropertyById: vi.fn() },
+}));
+
+vi.mock('../../modules/room/services/pricing.api', () => ({
+  pricingApi: { calculateStayPricing: vi.fn() },
 }));
 
 vi.mock('../../modules/room/services/room.api', () => ({
@@ -47,6 +52,14 @@ describe('CheckoutPage', () => {
       success: true, message: 'OK',
       data: { id: 'r1', name: 'Deluxe Suite', basePrice: 500000 } as any,
     });
+    vi.mocked(pricingApi.calculateStayPricing).mockResolvedValue({
+      success: true, message: 'OK',
+      data: {
+        roomId: 'r1', checkInDate: '2026-10-15', checkOutDate: '2026-10-17',
+        totalNights: 2, basePrice: 500000, averageNightRate: 500000, totalStayPrice: 1000000,
+        dailyBreakdown: [],
+      } as any,
+    });
   });
 
   it('renders property, room details, and guest info correctly', async () => {
@@ -81,6 +94,23 @@ describe('CheckoutPage', () => {
         guestCount: 2,
         paymentMethod: 'MANUAL_TRANSFER',
       });
+    });
+  });
+
+  it('renders dynamic pricing surcharge when calculated by backend', async () => {
+    vi.mocked(pricingApi.calculateStayPricing).mockResolvedValueOnce({
+      success: true, message: 'OK',
+      data: {
+        roomId: 'r1', checkInDate: '2026-10-15', checkOutDate: '2026-10-17',
+        totalNights: 2, basePrice: 500000, averageNightRate: 650000, totalStayPrice: 1300000,
+        dailyBreakdown: [],
+      } as any,
+    });
+    renderCheckout();
+    await waitFor(() => {
+      expect(screen.getByText(/Penyesuaian Tarif/i)).toBeInTheDocument();
+      const submitBtn = screen.getByRole('button', { name: /Konfirmasi Pesanan/i });
+      expect(submitBtn).toHaveTextContent('1.300.000');
     });
   });
 });

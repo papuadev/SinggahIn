@@ -33,3 +33,24 @@ export interface CreateRoomUnavailabilityPayload {
   endDate: string;
   reason?: string;
 }
+
+export interface DailyPrice {
+  date: string;
+  basePrice: number;
+  effectivePrice: number;
+  modifierId?: string | null;
+  adjustmentType?: AdjustmentType | null;
+  adjustmentValue?: number | null;
+  reason?: string | null;
+}
+
+export interface StayPricingCalculation {
+  roomId: string;
+  checkInDate: string;
+  checkOutDate: string;
+  totalNights: number;
+  basePrice: number;
+  averageNightRate: number;
+  totalStayPrice: number;
+  dailyBreakdown: DailyPrice[];
+}

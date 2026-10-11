@@ -15,6 +15,10 @@ vi.mock('../../modules/room/services/room.api', () => ({
   roomApi: { getRoomsByProperty: vi.fn() },
 }));
 
+vi.mock('../../modules/room/services/pricing.api', () => ({
+  pricingApi: { calculateStayPricing: vi.fn().mockResolvedValue({ success: true, data: null }) },
+}));
+
 vi.mock('../../modules/review/services/review.api', () => ({
   reviewApi: {
     getPropertyReviews: vi.fn().mockResolvedValue({

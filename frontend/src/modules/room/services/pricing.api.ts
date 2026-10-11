@@ -5,6 +5,7 @@ import {
   CreatePeakRatePayload,
   RoomUnavailability,
   CreateRoomUnavailabilityPayload,
+  StayPricingCalculation,
 } from '../pricing.types';
 
 export const pricingApi = {
@@ -56,6 +57,18 @@ export const pricingApi = {
   ): Promise<ApiResponse<null>> {
     const res = await apiClient.delete<ApiResponse<null>>(
       `/rooms/${roomId}/unavailability/${unavailabilityId}`
+    );
+    return res.data;
+  },
+
+  async calculateStayPricing(
+    roomId: string,
+    checkInDate: string,
+    checkOutDate: string
+  ): Promise<ApiResponse<StayPricingCalculation>> {
+    const res = await apiClient.get<ApiResponse<StayPricingCalculation>>(
+      `/rooms/${roomId}/pricing`,
+      { params: { checkInDate, checkOutDate } }
     );
     return res.data;
   },

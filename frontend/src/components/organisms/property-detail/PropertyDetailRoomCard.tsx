@@ -3,6 +3,8 @@ import { Users, BedDouble, Calendar, ArrowRight } from 'lucide-react';
 import { Button } from '../../atoms/Button';
 import { formatRupiah } from '../../../libs/formatters';
 import { PropertyRoomSummary } from '../../../modules/property/property.types';
+import { useStayPricing } from '../../../modules/room/hooks/useRoomPricing';
+import { StayPricingCalculation } from '../../../modules/room/pricing.types';
 
 export interface PropertyDetailRoomCardProps {
   room: PropertyRoomSummary;
@@ -35,14 +37,31 @@ function RoomBadges({ capacity, totalUnits }: { capacity: number; totalUnits: nu
   );
 }
 
-function RoomPricing({ basePrice }: { basePrice: number }) {
+function DynamicRateLabel({ nights = 0, isCustom = false }: { nights?: number; isCustom?: boolean }) {
+  if (nights > 1) {
+    return <span className="text-xs text-gray-500 font-medium">Tarif rata-rata</span>;
+  }
+  if (nights === 1) {
+    return <span className="text-xs text-gray-500 font-medium">{isCustom ? 'Tarif tanggal dipilih' : 'Tarif per malam'}</span>;
+  }
+  return <span className="text-xs text-gray-500 font-medium">Mulai dari</span>;
+}
+
+function RoomPricing({ basePrice, pricing }: { basePrice: number; pricing?: StayPricingCalculation }) {
+  const rate = pricing?.averageNightRate || basePrice;
+  const isCustom = Boolean(pricing && pricing.averageNightRate !== basePrice);
   return (
     <div className="flex flex-col text-right">
-      <span className="text-xs text-gray-500">Mulai dari</span>
+      <DynamicRateLabel nights={pricing?.totalNights} isCustom={isCustom} />
       <div className="text-lg sm:text-xl font-extrabold text-primary-600">
-        {formatRupiah(basePrice)}
+        {formatRupiah(rate)}
         <span className="text-xs font-normal text-gray-500 ml-1">/ malam</span>
       </div>
+      {pricing && pricing.totalNights > 1 && (
+        <span className="text-[11px] text-gray-600 font-semibold mt-0.5">
+          Total {formatRupiah(pricing.totalStayPrice)} ({pricing.totalNights} malam)
+        </span>
+      )}
     </div>
   );
 }
@@ -72,20 +91,25 @@ function RoomActions({ roomId, onBook, onOpenCalendar }: { roomId: string; onBoo
   );
 }
 
-function RoomSideCol({ price, id, onBook, onCalendar }: { price: number; id: string; onBook?: (id: string) => void; onCalendar?: (id: string) => void }) {
+function RoomSideCol({ price, pricing, id, onBook, onCalendar }: {
+  price: number; pricing?: StayPricingCalculation; id: string; onBook?: (id: string) => void; onCalendar?: (id: string) => void;
+}) {
   return (
     <div className="flex md:flex-col items-center md:items-end justify-between gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-gray-100">
-      <RoomPricing basePrice={price} />
+      <RoomPricing basePrice={price} pricing={pricing} />
       <RoomActions roomId={id} onBook={onBook} onOpenCalendar={onCalendar} />
     </div>
   );
 }
 
-export function PropertyDetailRoomCard({ room, onBook, onOpenCalendar }: PropertyDetailRoomCardProps): React.JSX.Element {
+export function PropertyDetailRoomCard({
+  room, checkIn, checkOut, onBook, onOpenCalendar,
+}: PropertyDetailRoomCardProps): React.JSX.Element {
+  const { data: pricing } = useStayPricing(room.id, checkIn, checkOut);
   return (
     <div className="p-4 sm:p-5 rounded-2xl bg-white border border-gray-200 shadow-sm hover:border-primary-200 hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
       <RoomInfo name={room.name} description={room.description} capacity={room.capacity} totalUnits={room.totalUnits} />
-      <RoomSideCol price={room.basePrice} id={room.id} onBook={onBook} onCalendar={onOpenCalendar} />
+      <RoomSideCol price={room.basePrice} pricing={pricing} id={room.id} onBook={onBook} onCalendar={onOpenCalendar} />
     </div>
   );
 }
