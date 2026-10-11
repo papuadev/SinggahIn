@@ -32,7 +32,7 @@ function calculateNightCount(checkIn: string, checkOut: string): number {
 function DateHeaderBadge({ nights }: { nights: number }) {
   if (nights <= 0) return null;
   return (
-    <span className="text-[11px] font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-full flex items-center gap-1 border border-primary-200">
+    <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-full flex items-center gap-1 border border-primary-200">
       <Moon className="w-3 h-3" />
       {nights} Malam
     </span>

@@ -11,7 +11,7 @@ function ReviewSummaryCard({ avg, total }: { avg: number; total: number }) {
     <div className="flex items-center gap-4 p-4 bg-amber-50/60 border border-amber-100 rounded-xl mb-6">
       <div className="flex flex-col items-center justify-center min-w-[70px] border-r border-amber-200/60 pr-4">
         <span className="text-3xl font-bold text-gray-900">{avg > 0 ? avg.toFixed(1) : '0.0'}</span>
-        <span className="text-[10px] text-gray-500 font-medium">dari 5.0</span>
+        <span className="text-xs text-gray-500 font-medium">dari 5.0</span>
       </div>
       <div className="space-y-1">
         <StarRatingDisplay rating={avg} size="md" />
@@ -41,12 +41,12 @@ function ReviewItemCard({ review }: { review: Review }) {
           <ReviewAvatar name={authorName} avatarUrl={review.user?.avatarUrl} />
           <div>
             <h5 className="font-semibold text-gray-900 text-sm">{authorName}</h5>
-            <span className="text-[11px] text-gray-400">{formatDateID(review.createdAt, 'dd MMMM yyyy')}</span>
+            <span className="text-xs text-gray-400">{formatDateID(review.createdAt, 'dd MMMM yyyy')}</span>
           </div>
         </div>
         <StarRatingDisplay rating={review.rating} size="sm" />
       </div>
-      <p className="text-xs sm:text-sm text-gray-700 leading-relaxed pl-13">{review.comment}</p>
+      <p className="text-sm text-gray-700 leading-relaxed pl-13">{review.comment}</p>
     </div>
   );
 }

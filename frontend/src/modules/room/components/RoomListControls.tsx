@@ -13,7 +13,7 @@ export interface RoomListControlsProps {
 type SearchInputProps = { value: string; onChange: (v: string) => void };
 type SortSelectProps = { value: RoomSortOption; onChange: (v: RoomSortOption) => void };
 
-const SEARCH_CLS = 'w-full pl-9 pr-9 py-2 text-xs sm:text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all';
+const SEARCH_CLS = 'w-full pl-9 pr-9 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all';
 
 function ClearButton({ onClear }: { onClear: () => void }): React.JSX.Element {
   return (
@@ -57,7 +57,7 @@ function SortSelectField({ value, onChange }: SortSelectProps): React.JSX.Elemen
       aria-label="Urutkan kamar"
       leftIcon={<ArrowUpDown className="w-4 h-4 text-gray-400" />}
       wrapperClassName="min-w-[200px]"
-      className="rounded-xl border-gray-200 text-xs sm:text-sm font-medium text-gray-700"
+      className="rounded-xl border-gray-200 text-sm font-medium text-gray-700"
     >
       <SortOptions />
     </Select>

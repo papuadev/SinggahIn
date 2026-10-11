@@ -25,7 +25,7 @@ function PolicyItem({ icon: Icon, title, desc }: PolicyItemProps) {
         <Icon className="w-4 h-4" />
       </div>
       <div>
-        <h4 className="text-xs sm:text-sm font-semibold text-gray-900">{title}</h4>
+        <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
         <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{desc}</p>
       </div>
     </div>
@@ -48,7 +48,7 @@ function AboutSection({ description }: { description: string }) {
 function PoliciesSection() {
   return (
     <div>
-      <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3">
+      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">
         Kebijakan & Peraturan Menginap
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

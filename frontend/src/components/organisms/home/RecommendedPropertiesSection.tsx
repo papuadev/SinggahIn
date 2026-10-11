@@ -50,7 +50,7 @@ function SectionBadge({ text, icon: Icon, isHighlighted }: { text?: string; icon
   return (
     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-800/80 backdrop-blur-md text-slate-100 border border-slate-700/80 shadow-xs mb-3">
       <span className="flex items-center justify-center w-4 h-4 rounded-full bg-amber-400/20 text-amber-300 shrink-0"><Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" /></span>
-      <span>{text}</span><span className="inline-block w-1 h-1 rounded-full bg-slate-500" /><span className="text-amber-300 font-semibold text-[11px]">Rating 4.8+</span>
+      <span>{text}</span><span className="inline-block w-1 h-1 rounded-full bg-slate-500" /><span className="text-amber-300 font-semibold text-xs">Rating 4.8+</span>
     </div>
   );
 }

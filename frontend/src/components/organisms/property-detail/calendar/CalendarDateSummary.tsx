@@ -31,7 +31,7 @@ function NightsBadge({ nights }: { nights: number }) {
 
 function EmptySummaryHint() {
   return (
-    <p className="text-[11px] text-gray-500 italic">
+    <p className="text-xs text-gray-500 italic">
       Klik tanggal untuk memilih Check-in dan Check-out
     </p>
   );

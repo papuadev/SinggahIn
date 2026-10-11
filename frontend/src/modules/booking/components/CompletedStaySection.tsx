@@ -64,7 +64,7 @@ function ReviewedCard({ review }: { review: NonNullable<Booking['review']> }) {
       <p className="text-xs sm:text-sm text-gray-700 italic bg-amber-50/50 p-3 rounded-xl border border-amber-100">
         "{review.comment}"
       </p>
-      <span className="text-[11px] text-emerald-700 font-medium block">✓ Ulasan Anda telah dipublikasikan di halaman properti.</span>
+      <span className="text-xs text-emerald-700 font-medium block">✓ Ulasan Anda telah dipublikasikan di halaman properti.</span>
     </div>
   );
 }
