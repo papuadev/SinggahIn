@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { MapPin, Star, Share2, Check } from 'lucide-react';
+import { MapPin, Star, Share2 } from 'lucide-react';
+import { ShareModal } from './ShareModal';
 
 export interface PropertyDetailHeaderProps {
   title: string;
@@ -17,27 +18,21 @@ interface HeaderMetaProps {
   reviews?: number;
 }
 
-function useShareUrl() {
-  const [copied, setCopied] = useState(false);
-  const handleShare = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // fallback
-    }
-  };
-  return { copied, handleShare };
-}
-
-function ShareButton(): React.JSX.Element {
-  const { copied, handleShare } = useShareUrl();
+function ShareButton({ title }: { title: string }): React.JSX.Element {
+  const [isOpen, setIsOpen] = useState(false);
   return (
-    <button type="button" onClick={handleShare} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:scale-95 transition-all shadow-sm" aria-label="Bagikan properti">
-      {copied ? <Check className="w-3.5 h-3.5 text-primary-600" /> : <Share2 className="w-3.5 h-3.5 text-gray-500" />}
-      <span className={copied ? 'text-primary-700' : ''}>{copied ? 'Tautan Disalin' : 'Bagikan'}</span>
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+        aria-label="Bagikan properti"
+      >
+        <Share2 className="w-3.5 h-3.5 text-gray-500" />
+        <span>Bagikan</span>
+      </button>
+      <ShareModal isOpen={isOpen} onClose={() => setIsOpen(false)} title={title} />
+    </>
   );
 }
 
@@ -69,7 +64,7 @@ function HeaderMetaRow({ address, city, rating, reviews }: HeaderMetaProps) {
   );
 }
 
-function HeaderTopRow({ categoryName }: { categoryName?: string }) {
+function HeaderTopRow({ categoryName, title }: { categoryName?: string; title: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
       {categoryName && (
@@ -77,7 +72,7 @@ function HeaderTopRow({ categoryName }: { categoryName?: string }) {
           {categoryName}
         </span>
       )}
-      <ShareButton />
+      <ShareButton title={title} />
     </div>
   );
 }
@@ -86,7 +81,7 @@ export function PropertyDetailHeader(props: PropertyDetailHeaderProps): React.JS
   const { title, categoryName, address, city, averageRating, totalReviews } = props;
   return (
     <header className="flex flex-col gap-2 pb-4 border-b border-gray-100">
-      <HeaderTopRow categoryName={categoryName} />
+      <HeaderTopRow categoryName={categoryName} title={title} />
       <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">{title}</h1>
       <HeaderMetaRow address={address} city={city} rating={averageRating} reviews={totalReviews} />
     </header>
