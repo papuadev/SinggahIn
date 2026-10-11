@@ -131,7 +131,7 @@ export function CatalogSearchPage(): React.JSX.Element {
   const { city, category, sortBy = 'price', sortOrder = 'asc' } = s.queryParams;
   return (
     <div className="w-full flex flex-col py-4">
-      <SEOHead title={getCatalogSEOTitle(city, category)} />
+      <SEOHead title={getCatalogSEOTitle(city, category)} canonicalUrl="https://singgahin.biz.id/search" />
       <CatalogWidget q={s.queryParams} onSearch={s.onSearch} onCat={s.onCategoryChange} />
       <SearchHeader city={city} category={category} total={m.totalItems} sortBy={sortBy} sortOrder={sortOrder} onSortChange={s.onSort} />
       <CatalogPropertyGrid properties={s.properties} isLoading={s.isLoading} isError={s.isError} checkIn={s.queryParams.checkIn} checkOut={s.queryParams.checkOut} onResetFilters={s.reset} />

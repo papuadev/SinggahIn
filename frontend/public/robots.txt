@@ -11,6 +11,8 @@ Disallow: /tenant/
 Disallow: /orders/
 Disallow: /profile/
 Disallow: /verify/
-Disallow: /api/
 
-Sitemap: https://singgahin.com/sitemap.xml
+# Allow crawler API access for SPA client-side rendering
+Allow: /api/
+
+Sitemap: https://singgahin.biz.id/sitemap.xml

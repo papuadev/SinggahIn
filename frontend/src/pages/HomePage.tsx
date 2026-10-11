@@ -98,7 +98,7 @@ export function HomePage(): React.JSX.Element {
   const { selectedCategory: cat, onCategoryChange } = useCategoryFilter();
   return (
     <div className="w-full flex flex-col">
-      <SEOHead />
+      <SEOHead canonicalUrl="https://singgahin.biz.id/" />
       <HeroCarousel />
       <div className="-mt-6 sm:-mt-10 md:-mt-14 relative z-30 px-3 sm:px-6">
         <FloatingSearchWidget initialValues={{ category: cat }} onCategoryChange={onCategoryChange} />
