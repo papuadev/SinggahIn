@@ -12,6 +12,7 @@ export const midtransWebhookSchema = z.object({
   transaction_status: z.string({ required_error: 'transaction_status wajib disertakan.' }),
   fraud_status: z.string().optional(),
   transaction_id: z.string().optional(),
+  payment_type: z.string().optional(),
 });
 
 export type MidtransChargeInput = z.infer<typeof midtransChargeSchema>;

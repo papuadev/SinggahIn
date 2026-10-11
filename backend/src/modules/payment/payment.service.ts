@@ -75,6 +75,8 @@ export async function approvePaymentProof(tenantId: string, bookingId: string): 
     bookingCode: b!.bookingCode, propertyName: b!.property.title, roomName: b!.room.name,
     checkInDate: b!.checkInDate.toISOString().split('T')[0], checkOutDate: b!.checkOutDate.toISOString().split('T')[0],
     totalGuests: b!.guestCount, totalPrice: b!.totalPrice,
+    guestName: b!.user.name || undefined, guestEmail: b!.user.email,
+    bookingId: b!.id, paymentMethod: 'Transfer Bank Manual',
   });
   return mapActionResponse(updated);
 }

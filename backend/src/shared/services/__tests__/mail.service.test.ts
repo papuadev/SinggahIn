@@ -52,7 +52,10 @@ describe('Mail Service', () => {
       checkInDate: '2026-10-10', checkOutDate: '2026-10-12', totalGuests: 2, totalPrice: 1000000,
     };
     await sendBookingVoucherEmail('user@test.com', d);
-    expect(sendMailMock).toHaveBeenCalledWith(expect.objectContaining({ to: 'user@test.com' }));
+    expect(sendMailMock).toHaveBeenCalledWith(expect.objectContaining({
+      to: 'user@test.com',
+      attachments: expect.arrayContaining([expect.objectContaining({ filename: expect.stringMatching(/Invoice-SinggahIn/) })]),
+    }));
   });
 
   it('should send emergency cancellation email with contact info', async () => {
