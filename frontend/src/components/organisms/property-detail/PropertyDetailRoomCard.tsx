@@ -51,7 +51,7 @@ function RoomPricing({ basePrice, pricing }: { basePrice: number; pricing?: Stay
   const rate = pricing?.averageNightRate || basePrice;
   const isCustom = Boolean(pricing && pricing.averageNightRate !== basePrice);
   return (
-    <div className="flex flex-col text-right">
+    <div className="flex flex-col text-left md:text-right">
       <DynamicRateLabel nights={pricing?.totalNights} isCustom={isCustom} />
       <div className="text-lg sm:text-xl font-extrabold text-primary-600">
         {formatRupiah(rate)}
