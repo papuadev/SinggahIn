@@ -50,6 +50,14 @@ function buildVoucherTable(d: BookingVoucherEmailData): string {
   </table>`;
 }
 
+function buildVoucherFooter(orderUrl: string): string {
+  return `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin:18px 0;font-size:12px;color:#92400e;line-height:1.5;">
+    <strong>Panduan Check-in:</strong> Waktu check-in standar mulai pukul 14:00 WIB dan check-out pukul 12:00 WIB. Tunjukkan identitas resmi (KTP/Paspor) serta invoice PDF terlampir saat tiba.
+  </div>
+  <div style="text-align:center;margin:24px 0;"><a href="${orderUrl}" style="background:#0284c7;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:bold;font-size:14px;display:inline-block;">Lihat Pesanan Saya</a></div>
+  <p style="color:#94a3b8;font-size:11px;text-align:center;margin-top:24px;border-top:1px solid #f1f5f9;padding-top:14px;">Email ini dikirim otomatis oleh SinggahIn. Hak cipta dilindungi.</p>`;
+}
+
 function buildVoucherHtml(d: BookingVoucherEmailData): string {
   const name = d.guestName || 'Pelanggan Setia SinggahIn';
   const orderUrl = `${CLIENT_URL}/orders`;
@@ -61,11 +69,7 @@ function buildVoucherHtml(d: BookingVoucherEmailData): string {
     <p style="color:#0f172a;font-size:15px;margin:0 0 12px;">Halo <strong>${name}</strong>,</p>
     <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Pembayaran reservasi Anda telah berhasil diverifikasi. Terlampir invoice resmi dalam format PDF pada email ini untuk kemudahan proses check-in Anda.</p>
     ${buildVoucherTable(d)}
-    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin:18px 0;font-size:12px;color:#92400e;line-height:1.5;">
-      <strong>Panduan Check-in:</strong> Waktu check-in standar mulai pukul 14:00 WIB dan check-out pukul 12:00 WIB. Tunjukkan identitas resmi (KTP/Paspor) serta invoice PDF terlampir saat tiba.
-    </div>
-    <div style="text-align:center;margin:24px 0;"><a href="${orderUrl}" style="background:#0284c7;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:bold;font-size:14px;display:inline-block;">Lihat Pesanan Saya</a></div>
-    <p style="color:#94a3b8;font-size:11px;text-align:center;margin-top:24px;border-top:1px solid #f1f5f9;padding-top:14px;">Email ini dikirim otomatis oleh SinggahIn. Hak cipta dilindungi.</p>
+    ${buildVoucherFooter(orderUrl)}
   </div>`;
 }
 

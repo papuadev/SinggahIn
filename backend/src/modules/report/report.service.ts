@@ -86,21 +86,16 @@ function buildRoomDays(room: any, days: { date: string; day: number }[], booking
   });
 }
 
+function toRoomOccupancy(p: any, r: any, days: any, bookings: any): RoomOccupancyDto {
+  return {
+    propertyId: p.id, propertyName: p.title, roomId: r.id,
+    roomName: r.name, totalUnits: r.totalUnits,
+    days: buildRoomDays(r, days, bookings),
+  };
+}
+
 function mapPropertiesToMatrix(props: any[], days: { date: string; day: number }[], bookings: any[]): RoomOccupancyDto[] {
-  const matrix: RoomOccupancyDto[] = [];
-  for (const p of props) {
-    for (const r of p.rooms) {
-      matrix.push({
-        propertyId: p.id,
-        propertyName: p.title,
-        roomId: r.id,
-        roomName: r.name,
-        totalUnits: r.totalUnits,
-        days: buildRoomDays(r, days, bookings),
-      });
-    }
-  }
-  return matrix;
+  return props.flatMap((p) => p.rooms.map((r: any) => toRoomOccupancy(p, r, days, bookings)));
 }
 
 async function fetchOccupancyBookings(roomIds: string[], start: Date, end: Date) {

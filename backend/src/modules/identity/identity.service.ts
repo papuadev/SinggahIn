@@ -23,22 +23,15 @@ function toUserDto(user: User): UserResponseDto {
   };
 }
 
+async function upsertUnverifiedUser(existingId: string, role: any) {
+  return prisma.user.update({ where: { id: existingId }, data: { role } });
+}
+
 async function findOrCreateUser(input: RegisterInput): Promise<User> {
-  const existing = await prisma.user.findUnique({
-    where: { email: input.email },
-  });
-  if (existing?.isVerified) {
-    throw AppError.conflict("Email sudah terdaftar. Silakan login.");
-  }
-  if (existing) {
-    return prisma.user.update({
-      where: { id: existing.id },
-      data: { role: input.role },
-    });
-  }
-  return prisma.user.create({
-    data: { email: input.email, role: input.role, isVerified: false },
-  });
+  const existing = await prisma.user.findUnique({ where: { email: input.email } });
+  if (existing?.isVerified) throw AppError.conflict("Email sudah terdaftar. Silakan login.");
+  if (existing) return upsertUnverifiedUser(existing.id, input.role);
+  return prisma.user.create({ data: { email: input.email, role: input.role, isVerified: false } });
 }
 
 async function createToken(userId: string, email: string): Promise<string> {

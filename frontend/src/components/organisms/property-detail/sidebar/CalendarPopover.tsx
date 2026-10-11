@@ -1,60 +1,11 @@
 import { useRef, useEffect } from 'react';
-import { Calendar, ChevronDown, X, Check } from 'lucide-react';
-import { formatDateID } from '../../../../libs/formatters';
+import { Calendar, X, Check } from 'lucide-react';
 import { InteractivePriceCalendar } from '../InteractivePriceCalendar';
 import { Button } from '../../../atoms/Button';
+import { DateTriggerBox, DateTriggerProps } from './DateTriggerBox';
 
-function formatTriggerDate(dateStr?: string) {
-  if (!dateStr) return 'Pilih tanggal';
-  try {
-    return formatDateID(dateStr, 'dd MMM yyyy');
-  } catch {
-    return dateStr;
-  }
-}
-
-function DateTriggerHeader({ isOpen }: { isOpen: boolean }) {
-  return (
-    <div className="flex items-center justify-between text-xs text-gray-500 font-semibold mb-1">
-      <span className="flex items-center gap-1.5">
-        <Calendar className="w-3.5 h-3.5 text-primary-600" /> TANGGAL MENGINAP
-      </span>
-      <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-    </div>
-  );
-}
-
-function DateTriggerDates({ checkIn, checkOut }: { checkIn?: string; checkOut?: string }) {
-  return (
-    <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-gray-900">
-      <span>{formatTriggerDate(checkIn)}</span>
-      <span className="text-gray-300 font-normal">→</span>
-      <span>{formatTriggerDate(checkOut)}</span>
-    </div>
-  );
-}
-
-export interface DateTriggerProps {
-  checkIn?: string;
-  checkOut?: string;
-  onClick: () => void;
-  isOpen: boolean;
-}
-
-export function DateTriggerBox({ checkIn, checkOut, onClick, isOpen }: DateTriggerProps) {
-  const borderCls = isOpen ? 'border-primary-500 ring-2 ring-primary-100' : 'border-gray-200 hover:border-gray-300';
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Buka Kalender Pemilihan Tanggal"
-      className={`w-full p-3 rounded-xl border bg-gray-50/70 text-left transition-all ${borderCls}`}
-    >
-      <DateTriggerHeader isOpen={isOpen} />
-      <DateTriggerDates checkIn={checkIn} checkOut={checkOut} />
-    </button>
-  );
-}
+export { DateTriggerBox };
+export type { DateTriggerProps };
 
 function PopoverHeader({ onClose }: { onClose: () => void }) {
   return (
@@ -75,48 +26,56 @@ function PopoverHeader({ onClose }: { onClose: () => void }) {
   );
 }
 
-function ModalFooter({
-  hasDates,
-  onReset,
-  onClose,
-}: {
-  hasDates: boolean;
-  onReset: () => void;
-  onClose: () => void;
-}) {
+function ModalFooterActions({ hasDates, onClose }: { hasDates: boolean; onClose: () => void }) {
   return (
-    <div className="flex items-center justify-between pt-2 mt-1.5 border-t border-gray-100">
-      <button
+    <div className="flex items-center gap-1.5">
+      <Button type="button" variant="outline" size="sm" onClick={onClose} className="h-7 px-2.5 text-xs">
+        Tutup
+      </Button>
+      <Button
         type="button"
-        onClick={onReset}
-        className="text-xs font-semibold text-gray-500 hover:text-red-600 transition-colors"
+        variant="primary"
+        size="sm"
+        onClick={onClose}
+        disabled={!hasDates}
+        leftIcon={<Check className="w-3 h-3" />}
+        className="h-7 px-2.5 text-xs font-bold"
       >
-        Reset Pilihan
-      </button>
-      <div className="flex items-center gap-1.5">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onClose}
-          className="h-7 px-2.5 text-xs"
-        >
-          Tutup
-        </Button>
-        <Button
-          type="button"
-          variant="primary"
-          size="sm"
-          onClick={onClose}
-          disabled={!hasDates}
-          leftIcon={<Check className="w-3 h-3" />}
-          className="h-7 px-2.5 text-xs font-bold"
-        >
-          Terapkan Tanggal
-        </Button>
-      </div>
+        Terapkan Tanggal
+      </Button>
     </div>
   );
+}
+
+function ModalFooter({ hasDates, onReset, onClose }: { hasDates: boolean; onReset: () => void; onClose: () => void }) {
+  return (
+    <div className="flex items-center justify-between pt-2 mt-1.5 border-t border-gray-100">
+      <button type="button" onClick={onReset} className="text-xs font-semibold text-gray-500 hover:text-red-600 transition-colors">
+        Reset Pilihan
+      </button>
+      <ModalFooterActions hasDates={hasDates} onClose={onClose} />
+    </div>
+  );
+}
+
+function usePopoverDismiss(isOpen: boolean, onClose: () => void, ref: React.RefObject<HTMLDivElement>) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handlePointer = (e: MouseEvent | TouchEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        if (!(e.target as HTMLElement).closest('[aria-label="Buka Kalender Pemilihan Tanggal"]')) onClose();
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('mousedown', handlePointer);
+    document.addEventListener('touchstart', handlePointer);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handlePointer);
+      document.removeEventListener('touchstart', handlePointer);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [isOpen, onClose, ref]);
 }
 
 export interface PopoverProps {
@@ -131,63 +90,16 @@ export interface PopoverProps {
   onDates?: (checkIn: string, checkOut: string) => void;
 }
 
-export function CalendarPopover({
-  isOpen,
-  onClose,
-  propertyId,
-  rooms = [],
-  activeRoomId,
-  onRoom,
-  inDate,
-  outDate,
-  onDates,
-}: PopoverProps) {
+export function CalendarPopover(props: PopoverProps) {
+  const { isOpen, onClose, propertyId, rooms = [], activeRoomId, onRoom, inDate, outDate, onDates } = props;
   const popoverRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
-        const target = event.target as HTMLElement;
-        if (target.closest('[aria-label="Buka Kalender Pemilihan Tanggal"]')) {
-          return;
-        }
-        onClose();
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('touchstart', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('touchstart', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, onClose]);
-
+  usePopoverDismiss(isOpen, onClose, popoverRef);
   if (!isOpen) return null;
 
   const onSelect = (cin: string, cout: string) => {
     onDates?.(cin, cout);
-    if (cin && cout) {
-      onClose();
-    }
+    if (cin && cout) onClose();
   };
-
-  const handleReset = () => {
-    onDates?.('', '');
-  };
-
-  const hasDates = Boolean(inDate && outDate);
 
   return (
     <div
@@ -198,16 +110,10 @@ export function CalendarPopover({
     >
       <PopoverHeader onClose={onClose} />
       <InteractivePriceCalendar
-        propertyId={propertyId}
-        rooms={rooms}
-        selectedRoomId={activeRoomId}
-        onRoomChange={onRoom}
-        checkIn={inDate}
-        checkOut={outDate}
-        onSelectDates={onSelect}
-        variant="sidebar"
+        propertyId={propertyId} rooms={rooms} selectedRoomId={activeRoomId}
+        onRoomChange={onRoom} checkIn={inDate} checkOut={outDate} onSelectDates={onSelect} variant="sidebar"
       />
-      <ModalFooter hasDates={hasDates} onReset={handleReset} onClose={onClose} />
+      <ModalFooter hasDates={Boolean(inDate && outDate)} onReset={() => onDates?.('', '')} onClose={onClose} />
     </div>
   );
 }

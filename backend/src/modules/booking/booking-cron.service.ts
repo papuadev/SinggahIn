@@ -28,20 +28,20 @@ export async function cancelExpiredBookings(now = new Date()) {
   return { cancelledCount: count };
 }
 
-export async function autoCompleteFinishedBookings(now = new Date()) {
-  const finished = await prisma.booking.findMany({
-    where: {
-      status: BookingStatus.PROCESSED,
-      checkOutDate: { lte: now },
-    },
-    select: { id: true },
-  });
-  if (finished.length === 0) return { completedCount: 0 };
-  const ids = finished.map((b) => b.id);
-  await prisma.booking.updateMany({
+async function markBookingsCompleted(ids: string[]) {
+  return prisma.booking.updateMany({
     where: { id: { in: ids } },
     data: { status: BookingStatus.COMPLETED },
   });
+}
+
+export async function autoCompleteFinishedBookings(now = new Date()) {
+  const finished = await prisma.booking.findMany({
+    where: { status: BookingStatus.PROCESSED, checkOutDate: { lte: now } },
+    select: { id: true },
+  });
+  if (finished.length === 0) return { completedCount: 0 };
+  await markBookingsCompleted(finished.map((b) => b.id));
   return { completedCount: finished.length };
 }
 

@@ -75,12 +75,15 @@ export async function createSnapTransaction(userId: string, bookingId: string) {
   return result;
 }
 
+async function cancelPriorGatewayOrder(orderId?: string | null) {
+  if (!orderId) return;
+  try { await (snapClient as any).transaction.cancel(orderId); } catch {}
+}
+
 export async function resetSnapTransaction(userId: string, bookingId: string) {
   const b = await prisma.booking.findUnique({ where: { id: bookingId }, include: { payment: true, user: true } });
   validateChargeEligibility(b, userId);
-  if (b!.payment?.gatewayOrderId) {
-    try { await (snapClient as any).transaction.cancel(b!.payment.gatewayOrderId); } catch {}
-  }
+  await cancelPriorGatewayOrder(b!.payment?.gatewayOrderId);
   snapCache.delete(bookingId);
   const nextOrderId = `${b!.bookingCode}_${Date.now().toString().slice(-4)}`;
   const result = await requestSnapCharge(b, nextOrderId);
@@ -138,6 +141,15 @@ async function processCancelledNotification(b: any, p: MidtransWebhookPayload) {
   await prisma.$transaction((tx) => executeCancelTx(tx, b.id, p.transaction_id, p.transaction_status));
 }
 
+async function applyMidtransNotification(b: any, p: any) {
+  const isPaid = p.transaction_status === 'settlement' ||
+    (p.transaction_status === 'capture' && p.fraud_status === 'accept');
+  if (isPaid) await processPaidNotification(b, p);
+  else if (['deny', 'cancel', 'expire'].includes(p.transaction_status)) {
+    await processCancelledNotification(b, p);
+  }
+}
+
 export async function handleMidtransWebhook(payload: MidtransWebhookPayload) {
   if (!verifyMidtransSignature(payload, serverKey)) throw AppError.unauthorized('Signature key tidak valid.');
   const baseCode = extractBaseBookingCode(payload.order_id);
@@ -146,22 +158,8 @@ export async function handleMidtransWebhook(payload: MidtransWebhookPayload) {
     include: { payment: true, user: true, property: true, room: true },
   });
   if (!b) throw AppError.notFound('Pesanan tidak ditemukan.');
-  const isPaid = payload.transaction_status === 'settlement' ||
-    (payload.transaction_status === 'capture' && payload.fraud_status === 'accept');
-  if (isPaid) await processPaidNotification(b, payload);
-  else if (['deny', 'cancel', 'expire'].includes(payload.transaction_status)) {
-    await processCancelledNotification(b, payload);
-  }
+  await applyMidtransNotification(b, payload);
   return { orderId: payload.order_id, status: payload.transaction_status };
-}
-
-async function checkAndApplyMidtransStatus(b: any, statusRes: any) {
-  const isPaid = statusRes.transaction_status === 'settlement' ||
-    (statusRes.transaction_status === 'capture' && statusRes.fraud_status === 'accept');
-  if (isPaid) await processPaidNotification(b, statusRes);
-  else if (['deny', 'cancel', 'expire'].includes(statusRes.transaction_status)) {
-    await processCancelledNotification(b, statusRes);
-  }
 }
 
 async function fetchMidtransStatusSafe(orderCode: string) {
@@ -172,6 +170,15 @@ async function fetchMidtransStatusSafe(orderCode: string) {
   }
 }
 
+async function fetchSyncedBooking(bookingId: string, statusRes: any) {
+  const updated = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { payment: true, property: true, room: true },
+  });
+  const pending = parsePendingInfo(statusRes);
+  return updated ? { ...updated, pendingPayment: pending } : null;
+}
+
 export async function syncMidtransTransactionStatus(bookingId: string) {
   const b = await prisma.booking.findUnique({
     where: { id: bookingId },
@@ -180,11 +187,6 @@ export async function syncMidtransTransactionStatus(bookingId: string) {
   if (!b || b.status === BookingStatus.PROCESSED) return b;
   const targetOrderId = b.payment?.gatewayOrderId || b.bookingCode;
   const statusRes = await fetchMidtransStatusSafe(targetOrderId);
-  if (statusRes) await checkAndApplyMidtransStatus(b, statusRes);
-  const updated = await prisma.booking.findUnique({
-    where: { id: bookingId },
-    include: { payment: true, property: true, room: true },
-  });
-  const pending = parsePendingInfo(statusRes);
-  return updated ? { ...updated, pendingPayment: pending } : null;
+  if (statusRes) await applyMidtransNotification(b, statusRes);
+  return fetchSyncedBooking(bookingId, statusRes);
 }
