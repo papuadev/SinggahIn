@@ -126,10 +126,10 @@ async function syncBookingIfGateway(b: any) {
   return updated ? { ...b, ...updated } : b;
 }
 
-function assertBookingAccess(b: any, userId: string, role?: Role) {
+function assertBookingAccess(b: any, userId: string, role?: Role): asserts b {
   if (!b) throw AppError.notFound('Pesanan tidak ditemukan.');
   const isOwner = b.userId === userId;
-  const isTenant = role === Role.TENANT && b.property.tenantId === userId;
+  const isTenant = role === Role.TENANT && b.property?.tenantId === userId;
   if (!isOwner && !isTenant) throw AppError.forbidden('Akses ke data pesanan ini ditolak.');
 }
 

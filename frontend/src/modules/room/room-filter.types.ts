@@ -28,8 +28,10 @@ export interface BaseRoomFilterItem {
   description?: string | null;
 }
 
-export interface UseRoomListFilterOptions {
+export interface UseRoomListFilterOptions<T = Room> {
   pageSize?: number;
+  propertyId?: string;
+  initialRooms?: T[];
 }
 
 export interface UseRoomListFilterReturn<T = Room> {
@@ -44,4 +46,5 @@ export interface UseRoomListFilterReturn<T = Room> {
   totalPages: number;
   paginatedRooms: T[];
   resetFilters: () => void;
+  isLoading?: boolean;
 }

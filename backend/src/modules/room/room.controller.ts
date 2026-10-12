@@ -26,8 +26,17 @@ export async function getByProperty(
   next: NextFunction
 ): Promise<void> {
   try {
-    const rooms = await roomService.getRoomsByProperty(req.params.propertyId);
-    sendSuccess(res, rooms, 'Daftar tipe kamar berhasil diambil.');
+    const result = await roomService.getRoomsByProperty(
+      req.params.propertyId,
+      req.query as any
+    );
+    sendSuccess(
+      res,
+      result.data,
+      'Daftar tipe kamar berhasil diambil.',
+      200,
+      result.meta
+    );
   } catch (error) {
     next(error);
   }

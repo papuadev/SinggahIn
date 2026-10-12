@@ -1,8 +1,9 @@
-import { BookingStatus } from '@prisma/client';
+import { BookingStatus, Prisma } from '@prisma/client';
 import { prisma } from '../../shared/services/prisma.service';
 import { AppError } from '../../shared/utils/app-error';
+import { PaginationMeta } from '../../shared/types/api.types';
 import { verifyPropertyOwnership } from '../property/property.service';
-import { CreateRoomInput, UpdateRoomInput } from './room.schema';
+import { CreateRoomInput, UpdateRoomInput, GetRoomsQueryInput } from './room.schema';
 import { RoomResponseDto } from './room.types';
 
 export async function verifyRoomOwnership(roomId: string, tenantId: string) {
@@ -34,12 +35,71 @@ export async function createRoom(
 }
 
 export async function getRoomsByProperty(
-  propertyId: string
-): Promise<RoomResponseDto[]> {
-  return prisma.room.findMany({
-    where: { propertyId },
-    orderBy: { basePrice: 'asc' },
+  propertyId: string,
+  query?: GetRoomsQueryInput
+): Promise<{ data: RoomResponseDto[]; meta?: PaginationMeta }> {
+  const where: Prisma.RoomWhereInput = { propertyId };
+
+  if (query?.search?.trim()) {
+    const s = query.search.trim();
+    where.OR = [
+      { name: { contains: s, mode: 'insensitive' } },
+      { description: { contains: s, mode: 'insensitive' } },
+    ];
+  }
+
+  let orderBy: Prisma.RoomOrderByWithRelationInput = { basePrice: 'asc' };
+  switch (query?.sortBy) {
+    case 'price_desc':
+      orderBy = { basePrice: 'desc' };
+      break;
+    case 'name_asc':
+      orderBy = { name: 'asc' };
+      break;
+    case 'name_desc':
+      orderBy = { name: 'desc' };
+      break;
+    case 'units_desc':
+      orderBy = { totalUnits: 'desc' };
+      break;
+    case 'price_asc':
+    default:
+      orderBy = { basePrice: 'asc' };
+      break;
+  }
+
+  if (query?.page || query?.limit) {
+    const page = query.page || 1;
+    const limit = query.limit || 5;
+    const skip = (page - 1) * limit;
+
+    const [totalItems, data] = await Promise.all([
+      prisma.room.count({ where }),
+      prisma.room.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        totalItems,
+        totalPages,
+      },
+    };
+  }
+
+  const data = await prisma.room.findMany({
+    where,
+    orderBy,
   });
+  return { data };
 }
 
 export async function getRoomById(roomId: string): Promise<RoomResponseDto> {

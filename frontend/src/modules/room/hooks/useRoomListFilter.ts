@@ -7,7 +7,7 @@ import {
   UseRoomListFilterReturn,
 } from '../room-filter.types';
 
-function matchesQuery(room: BaseRoomFilterItem, query: string): boolean {
+export function matchesQuery(room: BaseRoomFilterItem, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   const nameMatch = room.name.toLowerCase().includes(q);
@@ -15,7 +15,7 @@ function matchesQuery(room: BaseRoomFilterItem, query: string): boolean {
   return nameMatch || descMatch;
 }
 
-function compareBySort(a: BaseRoomFilterItem, b: BaseRoomFilterItem, sort: RoomSortOption): number {
+export function compareBySort(a: BaseRoomFilterItem, b: BaseRoomFilterItem, sort: RoomSortOption): number {
   switch (sort) {
     case 'price_asc': return a.basePrice - b.basePrice;
     case 'price_desc': return b.basePrice - a.basePrice;
@@ -26,12 +26,12 @@ function compareBySort(a: BaseRoomFilterItem, b: BaseRoomFilterItem, sort: RoomS
   }
 }
 
-function paginateList<T>(items: T[], page: number, pageSize: number): T[] {
+export function paginateList<T>(items: T[], page: number, pageSize: number): T[] {
   const startIndex = (page - 1) * pageSize;
   return items.slice(startIndex, startIndex + pageSize);
 }
 
-function useFilterState() {
+export function useFilterState() {
   const [searchQuery, setSearchQueryState] = useState('');
   const [sortBy, setSortByState] = useState<RoomSortOption>('price_asc');
   const [currentPage, setCurrentPage] = useState(1);

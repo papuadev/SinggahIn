@@ -18,6 +18,7 @@ import {
   CreatePeakRateSchema,
   RoomRateParamSchema,
   CalculateStayPricingQuerySchema,
+  GetRoomsQuerySchema,
 } from './room.schema';
 
 // Router for sub-resource under property: /api/v1/properties/:propertyId/rooms
@@ -36,7 +37,10 @@ propertyRoomRoutes.post(
 
 propertyRoomRoutes.get(
   '/',
-  validateRequest({ params: PropertyIdParamSchema }),
+  validateRequest({
+    params: PropertyIdParamSchema,
+    query: GetRoomsQuerySchema,
+  }),
   roomController.getByProperty
 );
 

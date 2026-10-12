@@ -2,11 +2,22 @@ import { apiClient } from '../../../libs/axios';
 import { ApiResponse } from '../../../types/api.types';
 import { Room, CreateRoomPayload, UpdateRoomPayload } from '../room.types';
 
+export interface GetRoomsParams {
+  search?: string;
+  sortBy?: string;
+  page?: number;
+  limit?: number;
+}
+
 export const roomApi = {
-  async getRoomsByProperty(propertyId: string): Promise<ApiResponse<Room[]>> {
-    const res = await apiClient.get<ApiResponse<Room[]>>(
-      `/properties/${propertyId}/rooms`
-    );
+  async getRoomsByProperty(
+    propertyId: string,
+    params?: GetRoomsParams
+  ): Promise<ApiResponse<Room[]>> {
+    const url = `/properties/${propertyId}/rooms`;
+    const res = await (params
+      ? apiClient.get<ApiResponse<Room[]>>(url, { params })
+      : apiClient.get<ApiResponse<Room[]>>(url));
     return res.data;
   },
 

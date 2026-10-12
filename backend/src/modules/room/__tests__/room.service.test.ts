@@ -13,6 +13,7 @@ import {
 vi.mock('../../../shared/services/prisma.service', () => ({
   prisma: {
     room: {
+      count: vi.fn(),
       create: vi.fn(),
       findMany: vi.fn(),
       findUnique: vi.fn(),
@@ -77,12 +78,47 @@ describe('Room Service', () => {
   });
 
   describe('getRoomsByProperty & getRoomById', () => {
-    it('should return rooms by propertyId', async () => {
+    it('should return rooms by propertyId without query', async () => {
       const mockRooms = [{ id: 'r1', name: 'Standard' }];
       vi.mocked(prisma.room.findMany).mockResolvedValueOnce(mockRooms as any);
 
       const result = await getRoomsByProperty('p1');
-      expect(result).toEqual(mockRooms);
+      expect(result).toEqual({ data: mockRooms });
+    });
+
+    it('should return paginated and filtered rooms when query params are provided', async () => {
+      const mockRooms = [{ id: 'r1', name: 'Deluxe' }];
+      vi.mocked(prisma.room.count).mockResolvedValueOnce(1);
+      vi.mocked(prisma.room.findMany).mockResolvedValueOnce(mockRooms as any);
+
+      const result = await getRoomsByProperty('p1', {
+        search: 'Deluxe',
+        sortBy: 'price_desc',
+        page: 1,
+        limit: 5,
+      });
+
+      expect(prisma.room.findMany).toHaveBeenCalledWith({
+        where: {
+          propertyId: 'p1',
+          OR: [
+            { name: { contains: 'Deluxe', mode: 'insensitive' } },
+            { description: { contains: 'Deluxe', mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { basePrice: 'desc' },
+        skip: 0,
+        take: 5,
+      });
+      expect(result).toEqual({
+        data: mockRooms,
+        meta: {
+          page: 1,
+          limit: 5,
+          totalItems: 1,
+          totalPages: 1,
+        },
+      });
     });
 
     it('should return room by id', async () => {

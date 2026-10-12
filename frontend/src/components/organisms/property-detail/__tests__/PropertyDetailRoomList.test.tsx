@@ -3,11 +3,22 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PropertyDetailRoomList } from '../PropertyDetailRoomList';
 import { PropertyRoomSummary } from '../../../../modules/property/property.types';
+import { Room } from '../../../../modules/room/room.types';
 import { pricingApi } from '../../../../modules/room/services/pricing.api';
+import { roomApi } from '../../../../modules/room/services/room.api';
 
-function createMockRooms(count = 3): PropertyRoomSummary[] {
+vi.mock('../../../../modules/room/services/room.api', () => ({
+  roomApi: {
+    getRoomsByProperty: vi.fn(),
+  },
+}));
+
+let currentRooms: PropertyRoomSummary[] = [];
+
+function createMockRooms(count = 3): Room[] {
   return Array.from({ length: count }, (_, i) => ({
     id: `rm-${i + 1}`,
+    propertyId: 'prop-123',
     name: `Room ${String.fromCharCode(65 + i)}`,
     basePrice: (i + 1) * 200000,
     capacity: (i % 3) + 1,
@@ -16,7 +27,8 @@ function createMockRooms(count = 3): PropertyRoomSummary[] {
   }));
 }
 
-function renderList(rooms: PropertyRoomSummary[] = [], onBook = vi.fn()) {
+function renderList(rooms: Room[] = [], onBook = vi.fn()) {
+  currentRooms = rooms;
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
@@ -32,6 +44,43 @@ function renderList(rooms: PropertyRoomSummary[] = [], onBook = vi.fn()) {
 }
 
 beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(roomApi.getRoomsByProperty).mockImplementation(async (_propId, params) => {
+    let result = [...currentRooms];
+    if (params?.search) {
+      const q = params.search.toLowerCase();
+      result = result.filter(
+        (r) => r.name.toLowerCase().includes(q) || r.description?.toLowerCase().includes(q)
+      );
+    }
+    if (params?.sortBy === 'price_desc') {
+      result.sort((a, b) => b.basePrice - a.basePrice);
+    } else if (params?.sortBy === 'name_desc') {
+      result.sort((a, b) => b.name.localeCompare(a.name));
+    } else if (params?.sortBy === 'name_asc') {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (params?.sortBy === 'units_desc') {
+      result.sort((a, b) => b.totalUnits - a.totalUnits);
+    } else {
+      result.sort((a, b) => a.basePrice - b.basePrice);
+    }
+    const page = params?.page || 1;
+    const limit = params?.limit || 5;
+    const start = (page - 1) * limit;
+    const paginated = result.slice(start, start + limit) as Room[];
+    return {
+      success: true,
+      message: 'OK',
+      data: paginated,
+      meta: {
+        page,
+        limit,
+        totalItems: result.length,
+        totalPages: Math.max(1, Math.ceil(result.length / limit)),
+      },
+    };
+  });
+
   vi.spyOn(pricingApi, 'calculateStayPricing').mockResolvedValue({
     success: true, message: 'OK',
     data: {
@@ -118,5 +167,44 @@ it('renders dynamic pricing when dates are selected', async () => {
   await waitFor(() => {
     expect(screen.getByText(/Tarif rata-rata/i)).toBeInTheDocument();
     expect(screen.getByText(/500\.000/i)).toBeInTheDocument();
+  });
+});
+
+it('queries server-side API with search, sort, and pagination parameters', async () => {
+  renderList(createMockRooms(5));
+  await waitFor(() => {
+    expect(roomApi.getRoomsByProperty).toHaveBeenCalledWith(
+      'prop-123',
+      expect.objectContaining({
+        page: 1,
+        limit: 5,
+        sortBy: 'price_asc',
+      })
+    );
+  });
+
+  const searchInput = screen.getByPlaceholderText('Cari tipe kamar...');
+  fireEvent.change(searchInput, { target: { value: 'Room C' } });
+
+  await waitFor(() => {
+    expect(roomApi.getRoomsByProperty).toHaveBeenCalledWith(
+      'prop-123',
+      expect.objectContaining({
+        search: 'Room C',
+        page: 1,
+      })
+    );
+  });
+
+  const select = screen.getByLabelText('Urutkan kamar');
+  fireEvent.change(select, { target: { value: 'price_desc' } });
+
+  await waitFor(() => {
+    expect(roomApi.getRoomsByProperty).toHaveBeenCalledWith(
+      'prop-123',
+      expect.objectContaining({
+        sortBy: 'price_desc',
+      })
+    );
   });
 });

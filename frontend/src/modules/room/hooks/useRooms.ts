@@ -1,19 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { roomApi } from '../services/room.api';
+import { roomApi, GetRoomsParams } from '../services/room.api';
 import { CreateRoomPayload, UpdateRoomPayload } from '../room.types';
 import { PROPERTY_KEYS } from '../../property/hooks/useProperties';
 
 export const ROOM_KEYS = {
-  list: (propertyId?: string) => ['rooms', propertyId] as const,
+  list: (propertyId?: string, params?: GetRoomsParams) => ['rooms', propertyId, params] as const,
   detail: (id?: string) => ['room', id] as const,
 };
 
-export function usePropertyRooms(propertyId?: string) {
+export function usePropertyRooms(propertyId?: string, params?: GetRoomsParams) {
   return useQuery({
-    queryKey: ROOM_KEYS.list(propertyId),
+    queryKey: ROOM_KEYS.list(propertyId, params),
     queryFn: async () => {
       if (!propertyId) throw new Error('ID properti wajib diisi');
-      const res = await roomApi.getRoomsByProperty(propertyId);
+      const res = await roomApi.getRoomsByProperty(propertyId, params);
       return res.data;
     },
     enabled: Boolean(propertyId),

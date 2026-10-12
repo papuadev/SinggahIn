@@ -26,6 +26,17 @@ describe('Room API Service', () => {
     expect(res.success).toBe(true);
   });
 
+  it('calls getRoomsByProperty with propertyId and query params', async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({
+      data: { success: true, message: 'OK', data: [] },
+    });
+
+    const params = { search: 'Deluxe', sortBy: 'price_asc', page: 1, limit: 5 };
+    const res = await roomApi.getRoomsByProperty('prop-1', params);
+    expect(apiClient.get).toHaveBeenCalledWith('/properties/prop-1/rooms', { params });
+    expect(res.success).toBe(true);
+  });
+
   it('calls getRoomById with roomId', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
       data: { success: true, message: 'OK', data: { id: 'room-1' } },

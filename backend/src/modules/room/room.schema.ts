@@ -144,3 +144,14 @@ export type CheckRoomAvailabilityQuery = z.infer<typeof CheckRoomAvailabilityQue
 export type CreatePeakRateInput = z.infer<typeof CreatePeakRateSchema>;
 export type RoomRateParam = z.infer<typeof RoomRateParamSchema>;
 export type CalculateStayPricingQuery = z.infer<typeof CalculateStayPricingQuerySchema>;
+
+export const GetRoomsQuerySchema = z.object({
+  search: z.string().optional(),
+  sortBy: z
+    .enum(['price_asc', 'price_desc', 'name_asc', 'name_desc', 'units_desc'])
+    .optional(),
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().optional(),
+});
+
+export type GetRoomsQueryInput = z.infer<typeof GetRoomsQuerySchema>;

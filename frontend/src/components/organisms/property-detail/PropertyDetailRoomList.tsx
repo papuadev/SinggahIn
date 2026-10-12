@@ -1,7 +1,7 @@
 import React from 'react';
 import { BedDouble, Info } from 'lucide-react';
 import { PropertyRoomSummary } from '../../../modules/property/property.types';
-import { useRoomListFilter } from '../../../modules/room/hooks/useRoomListFilter';
+import { useServerRoomListFilter } from '../../../modules/room/hooks/useServerRoomListFilter';
 import { RoomListControls } from '../../../modules/room/components/RoomListControls';
 import { RoomListEmptySearch } from '../../../modules/room/components/RoomListEmptySearch';
 import { RoomPagination } from '../../../modules/room/components/RoomPagination';
@@ -107,12 +107,14 @@ function RoomListActiveView(props: RoomViewProps): React.JSX.Element {
 
 export function PropertyDetailRoomList(p: PropertyDetailRoomListProps): React.JSX.Element {
   const { propertyId, rooms = [], checkIn, checkOut, onBookRoom, onOpenCalendar } = p;
-  const filter = useRoomListFilter(rooms);
+  const filter = useServerRoomListFilter<PropertyRoomSummary>(propertyId, { pageSize: 5, initialRooms: rooms });
   const activeProps = { propId: propertyId, inDate: checkIn, outDate: checkOut, onBook: onBookRoom, onCalendar: onOpenCalendar };
+  const hasNoRooms = rooms.length === 0 && filter.paginatedRooms.length === 0;
+
   return (
     <section id="pilihan-kamar" aria-labelledby="daftar-kamar-properti" className="py-6 border-b border-gray-100">
       <RoomListHeader checkIn={checkIn} checkOut={checkOut} />
-      {rooms.length === 0 ? <RoomEmptyState /> : <RoomListActiveView filter={filter} {...activeProps} />}
+      {hasNoRooms ? <RoomEmptyState /> : <RoomListActiveView filter={filter} {...activeProps} />}
     </section>
   );
 }
