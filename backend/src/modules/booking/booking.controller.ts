@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { sendSuccess } from '../../shared/utils/response.util';
-import { createBooking, cancelBooking, getBookingById, getUserBookings, getTenantBookings } from './booking.service';
+import { createBooking, cancelBooking, getBookingById, getUserBookings, getTenantBookings, getBookingInvoicePdf } from './booking.service';
 
 export async function createBookingHandler(req: Request, res: Response, next: NextFunction) {
   try {
@@ -46,4 +46,16 @@ export async function getTenantBookingsHandler(req: Request, res: Response, next
     next(error);
   }
 }
+
+export async function downloadInvoiceHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { buffer, filename } = await getBookingInvoicePdf(req.user!.userId, req.params.id, req.user?.role);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
+  } catch (error) {
+    next(error);
+  }
+}
+
 

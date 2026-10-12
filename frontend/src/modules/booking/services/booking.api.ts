@@ -37,4 +37,20 @@ export const bookingApi = {
     });
     return res.data;
   },
+
+  async downloadInvoice(bookingId: string, bookingCode: string): Promise<void> {
+    const res = await apiClient.get(`/bookings/${bookingId}/invoice`, {
+      responseType: 'blob',
+    });
+    const blob = new Blob([res.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Invoice-${bookingCode}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
 };
+

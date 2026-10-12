@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Ticket, MapPin, Calendar } from 'lucide-react';
+import { CheckCircle2, Ticket, MapPin, Calendar, Download } from 'lucide-react';
 import { Booking } from '../booking.types';
 import { formatDateID, formatRupiah } from '../../../libs/formatters';
 import { Button } from '../../../components/atoms/Button';
+import { bookingApi } from '../services/booking.api';
 
 function ConfirmedBanner({ code }: { code: string }) {
   return (
@@ -65,15 +66,45 @@ function ConfirmedPaymentCard({ booking }: { booking: Booking }) {
 }
 
 export function ConfirmedStaySection({ booking }: { booking: Booking }): React.JSX.Element {
+  const [isDownloading, setIsDownloading] = React.useState(false);
+  const [downloadError, setDownloadError] = React.useState<string | null>(null);
+
+  const handleDownloadInvoice = async () => {
+    try {
+      setIsDownloading(true);
+      setDownloadError(null);
+      await bookingApi.downloadInvoice(booking.id, booking.bookingCode);
+    } catch (err: any) {
+      setDownloadError(err?.message || 'Gagal mengunduh invoice PDF.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <ConfirmedBanner code={booking.bookingCode} />
       <CheckInInstructionCard booking={booking} />
       <ConfirmedPaymentCard booking={booking} />
-      <div className="pt-2">
-        <Link to="/orders">
-          <Button variant="primary" size="md" className="w-full">
-            Lihat Pesanan
+      {downloadError && (
+        <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-2.5 text-center">
+          {downloadError}
+        </p>
+      )}
+      <div className="pt-2 space-y-2">
+        <Button
+          variant="primary"
+          size="md"
+          className="w-full"
+          onClick={handleDownloadInvoice}
+          isLoading={isDownloading}
+          leftIcon={<Download className="w-4 h-4 shrink-0" />}
+        >
+          Download Invoice
+        </Button>
+        <Link to="/orders" className="block">
+          <Button variant="ghost" size="sm" className="w-full text-gray-500 hover:text-gray-800">
+            Kembali ke Riwayat Pesanan
           </Button>
         </Link>
       </div>

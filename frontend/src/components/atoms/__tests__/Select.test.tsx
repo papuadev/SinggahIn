@@ -66,4 +66,31 @@ describe('Select Atom Component', () => {
     expect(ref.current).toBeInstanceOf(HTMLSelectElement);
     expect(ref.current?.value).toBe('test');
   });
+
+  it('opens custom dropdown menu list on click and selects option', () => {
+    const handleChange = vi.fn();
+    render(
+      <Select aria-label="Kategori" onChange={handleChange} defaultValue="">
+        <option value="">-- Pilih Kategori --</option>
+        <option value="cat-1">Apartemen</option>
+        <option value="cat-2">Villa</option>
+      </Select>
+    );
+
+    const select = screen.getByRole('combobox', { name: 'Kategori' });
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+
+    fireEvent.mouseDown(select);
+    const listbox = screen.getByRole('listbox');
+    expect(listbox).toBeInTheDocument();
+
+    const villaOption = listbox.querySelector('li:last-child')!;
+    expect(villaOption.textContent).toContain('Villa');
+    fireEvent.click(villaOption);
+
+    expect(handleChange).toHaveBeenCalled();
+    expect(select).toHaveValue('cat-2');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
 });
+

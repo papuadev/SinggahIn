@@ -5,6 +5,7 @@ import { calculateStayPricing } from '../room/pricing.service';
 import { generateBookingCode, calculateBookingExpiry, parseAndValidateBookingDates } from './booking.helper';
 import { CreateBookingInput, BookingResponseDto, BookingListQuery } from './booking.types';
 import { syncMidtransTransactionStatus } from '../payment/midtrans.service';
+import { generateInvoicePdf, InvoicePdfData } from '../../shared/services/invoice-pdf.service';
 
 async function validateUserEligibility(tx: Prisma.TransactionClient, userId: string) {
   const user = await tx.user.findUnique({ where: { id: userId } });
@@ -180,4 +181,38 @@ export async function getTenantBookings(tenantId: string, query: BookingListQuer
   ]);
   return { data, meta: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) } };
 }
+
+export async function getBookingInvoicePdf(userId: string, bookingId: string, role?: Role): Promise<{ buffer: Buffer; filename: string }> {
+  const b = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      property: { select: { id: true, title: true, city: true, address: true, tenantId: true } },
+      room: { select: { id: true, name: true, basePrice: true } },
+      payment: true,
+      user: { select: { id: true, name: true, email: true } },
+    },
+  });
+  assertBookingAccess(b, userId, role);
+  if (b.status !== BookingStatus.PROCESSED && b.status !== BookingStatus.COMPLETED) {
+    throw AppError.badRequest('Invoice hanya tersedia untuk pesanan yang telah dikonfirmasi atau selesai.');
+  }
+
+  const invoiceData: InvoicePdfData = {
+    bookingCode: b.bookingCode,
+    propertyName: b.property.title,
+    roomName: b.room.name,
+    checkInDate: b.checkInDate.toISOString().split('T')[0],
+    checkOutDate: b.checkOutDate.toISOString().split('T')[0],
+    totalGuests: b.guestCount,
+    totalPrice: b.totalPrice,
+    guestName: b.user?.name || undefined,
+    guestEmail: b.user?.email || undefined,
+    paymentMethod: b.payment?.paymentMethod === 'MANUAL_TRANSFER' ? 'Transfer Bank Manual' : (b.payment?.paymentMethod || 'Online Payment'),
+    paidAt: b.payment?.updatedAt ? b.payment.updatedAt.toISOString().split('T')[0] : b.updatedAt.toISOString().split('T')[0],
+  };
+
+  const buffer = await generateInvoicePdf(invoiceData);
+  return { buffer, filename: `Invoice-${b.bookingCode}.pdf` };
+}
+
 
