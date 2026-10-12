@@ -7,6 +7,7 @@ import { PropertyCard } from '../PropertyCard';
 import { SectionHeader } from './SectionHeader';
 
 export interface RecommendedSectionProps {
+  id?: string;
   title: string; subtitle: string; badgeText?: string; badgeIcon?: LucideIcon;
   variant?: 'default' | 'highlighted'; queryParams: CatalogQueryParams;
   viewAllUrl?: string; showEmptyIfFiltered?: boolean; onResetCategory?: () => void;
@@ -164,7 +165,7 @@ export function RecommendedPropertiesSection(props: RecommendedSectionProps): Re
   if (!isLoading && properties.length === 0 && (!props.showEmptyIfFiltered || !props.queryParams.category)) return null;
   const isHigh = props.variant === 'highlighted';
   return (
-    <section aria-label={props.title} className={getSectionClass(isHigh)}>
+    <section id={props.id} aria-label={props.title} className={`${getSectionClass(isHigh)} ${props.id ? 'scroll-mt-28' : ''}`}>
       {isHigh && <AmbientGlowOrbs />}
       <div className={isHigh ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10' : ''}>
         <SectionHeader {...props} onLeft={scrollLeft} onRight={scrollRight} viewAllUrl={props.viewAllUrl || '/search'} isHighlighted={isHigh} />

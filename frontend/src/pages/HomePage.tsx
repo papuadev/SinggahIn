@@ -1,6 +1,6 @@
 import React from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { ShieldCheck, CalendarCheck, CreditCard, Star, Sparkles, MapPin } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ShieldCheck, CalendarCheck, CreditCard, Star, Sparkles, MapPin, ArrowRight } from 'lucide-react';
 import { SEOHead } from '../components/atoms/SEOHead';
 import { HeroCarousel } from '../components/organisms/HeroCarousel';
 import { FloatingSearchWidget } from '../components/organisms/FloatingSearchWidget';
@@ -43,15 +43,40 @@ function ValuePropCard({ item }: { item: (typeof VALUE_PROPS)[number] }) {
 
 function ValuePropsSection() {
   return (
-    <section aria-label="Keunggulan SinggahIn" className="mt-6 mb-12">
+    <section id="about-us" aria-label="Tentang SinggahIn" className="scroll-mt-28 mt-8 mb-14">
+      <div id="tentang-kami" className="scroll-mt-28" />
       <div className="text-center max-w-xl mx-auto mb-8">
+        <span className="text-xs font-bold text-primary-600 tracking-wider uppercase bg-primary-50 px-3 py-1 rounded-full inline-block mb-2">
+          Tentang SinggahIn
+        </span>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Mengapa Memilih SinggahIn?</h2>
-        <p className="text-sm text-gray-500">Kenyamanan dan kepastian menginap di setiap langkah perjalanan Anda.</p>
+        <p className="text-sm text-gray-500">Kenyamanan, kepastian tarif, dan keramahan khas nusantara di setiap langkah perjalanan Anda.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
         {VALUE_PROPS.map((vp, idx) => (
           <ValuePropCard key={idx} item={vp} />
         ))}
+      </div>
+
+      {/* About Us Spotlight Card */}
+      <div className="bg-gradient-to-r from-slate-900 via-primary-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-md border border-slate-800">
+        <div className="space-y-2 text-center md:text-left max-w-2xl">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold text-amber-400">
+            <Sparkles className="w-4 h-4" /> Solusi Reservasi Cerdas Indonesia
+          </div>
+          <h3 className="text-xl sm:text-2xl font-black">
+            Ingin Tahu Lebih Banyak Mengenai Cerita & Nilai Kami?
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            SinggahIn berdedikasi menciptakan ekosistem penginapan yang transparan bagi pelancong dan memberdayakan pemilik properti lokal di lebih dari 30 kota.
+          </p>
+        </div>
+        <Link
+          to="/about"
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white text-primary-700 hover:bg-primary-50 font-bold text-sm shadow-sm transition-all whitespace-nowrap shrink-0"
+        >
+          Lihat Halaman About Us <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
     </section>
   );
@@ -73,6 +98,7 @@ function TopRatedSection({ category }: { category?: string }) {
   const url = `/search?sortBy=rating&sortOrder=desc${category ? `&category=${category}` : ''}`;
   return (
     <RecommendedPropertiesSection
+      id="rekomendasi"
       title="Favorit Tamu & Rating Tertinggi"
       subtitle="Pilihan penginapan dengan ulasan bintang emas tertinggi dari tamu terverifikasi"
       badgeText="Paling Direkomendasikan" badgeIcon={Star}
@@ -112,6 +138,7 @@ function FreshPicksSection({ category, onReset }: { category?: string; onReset: 
   const url = `/search${category ? `?category=${category}` : ''}`;
   return (
     <RecommendedPropertiesSection
+      id="terdekat"
       {...meta} queryParams={queryParams} isLoading={geoLoading}
       viewAllUrl={url} showEmptyIfFiltered onResetCategory={onReset}
     />

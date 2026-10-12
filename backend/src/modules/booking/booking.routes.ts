@@ -14,6 +14,7 @@ import {
   getBookingByIdHandler,
   getUserBookingsHandler,
   getTenantBookingsHandler,
+  downloadInvoiceHandler,
 } from './booking.controller';
 
 export const bookingRoutes = Router();
@@ -40,6 +41,13 @@ bookingRoutes.get(
   requireRole(Role.TENANT),
   validateRequest({ query: listBookingsQuerySchema }),
   getTenantBookingsHandler
+);
+
+bookingRoutes.get(
+  '/:id/invoice',
+  authenticate,
+  validateRequest({ params: bookingIdParamSchema }),
+  downloadInvoiceHandler
 );
 
 bookingRoutes.get(

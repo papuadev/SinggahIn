@@ -102,7 +102,7 @@ describe('OrderPaymentPage', () => {
     expect(screen.getByText(/Pilih atau Seret Foto Bukti Transfer/i)).toBeInTheDocument();
   });
 
-  it('renders exactly one Lihat Pesanan button when status is PROCESSED', async () => {
+  it('renders Download Invoice button when status is PROCESSED', async () => {
     const processedBooking = {
       ...mockBooking,
       status: 'PROCESSED',
@@ -117,8 +117,8 @@ describe('OrderPaymentPage', () => {
     await waitFor(() => {
       expect(screen.getByText(/Pembayaran Berhasil Diverifikasi!/i)).toBeInTheDocument();
     });
-    const buttons = screen.getAllByRole('button', { name: /Lihat Pesanan/i });
-    expect(buttons).toHaveLength(1);
+    expect(screen.getByRole('button', { name: /Download Invoice/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Kembali ke Riwayat Pesanan/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Ke Daftar Pesanan/i })).toBeInTheDocument();
   });
 

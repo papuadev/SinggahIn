@@ -149,5 +149,56 @@ describe('Booking HTTP Integration Tests', () => {
       expect(res.body.data).toHaveLength(1);
     });
   });
+
+  describe('GET /api/v1/bookings/:id/invoice', () => {
+    it('returns 401 when unauthenticated', async () => {
+      const res = await request(app).get(`/api/v1/bookings/${bookingId}/invoice`);
+      expect(res.status).toBe(401);
+    });
+
+    it('returns 400 when booking is not confirmed or completed', async () => {
+      vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce({
+        id: bookingId,
+        userId,
+        status: BookingStatus.WAITING_PAYMENT,
+        property: { id: 'p1', title: 'Villa Bali', city: 'Denpasar', address: 'Jl. Pantai', tenantId },
+        room: { id: 'r1', name: 'Deluxe', basePrice: 500000 },
+        payment: null,
+        user: { id: userId, name: 'User Test', email: 'user@test.com' },
+      } as any);
+
+      const res = await request(app)
+        .get(`/api/v1/bookings/${bookingId}/invoice`)
+        .set('Authorization', `Bearer ${userToken}`);
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Invoice hanya tersedia');
+    });
+
+    it('returns 200 and application/pdf when booking is PROCESSED', async () => {
+      vi.mocked(prisma.booking.findUnique).mockResolvedValueOnce({
+        id: bookingId,
+        bookingCode: 'SGH-20261201-ABCD',
+        userId,
+        status: BookingStatus.PROCESSED,
+        guestCount: 2,
+        totalPrice: 1000000,
+        checkInDate: new Date('2026-12-01'),
+        checkOutDate: new Date('2026-12-03'),
+        property: { id: 'p1', title: 'Villa Bali', city: 'Denpasar', address: 'Jl. Pantai', tenantId },
+        room: { id: 'r1', name: 'Deluxe', basePrice: 500000 },
+        payment: { paymentMethod: PaymentMethod.MANUAL_TRANSFER, updatedAt: new Date() },
+        user: { id: userId, name: 'User Test', email: 'user@test.com' },
+        updatedAt: new Date(),
+      } as any);
+
+      const res = await request(app)
+        .get(`/api/v1/bookings/${bookingId}/invoice`)
+        .set('Authorization', `Bearer ${userToken}`);
+      expect(res.status).toBe(200);
+      expect(res.header['content-type']).toBe('application/pdf');
+      expect(res.header['content-disposition']).toContain('Invoice-SGH-20261201-ABCD.pdf');
+    });
+  });
 });
+
 

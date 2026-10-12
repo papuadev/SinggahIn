@@ -19,16 +19,20 @@ import { TenantOrderManagementPage } from "./pages/tenant/TenantOrderManagementP
 import { TenantSalesReportPage } from "./pages/tenant/TenantSalesReportPage";
 import { TenantOccupancyMatrixPage } from "./pages/tenant/TenantOccupancyMatrixPage";
 import { HomePage } from "./pages/HomePage";
+import { AboutUsPage } from "./pages/AboutUsPage";
 import { CatalogSearchPage } from "./pages/CatalogSearchPage";
 import { PropertyDetailPage } from "./pages/PropertyDetailPage";
 import { CheckoutPage } from "./pages/CheckoutPage";
 import { OrderPaymentPage } from "./pages/OrderPaymentPage";
 import { OrderHistoryPage } from "./pages/OrderHistoryPage";
+import { Footer } from "./components/organisms/Footer";
+import { ScrollToTop } from "./components/atoms/ScrollToTop";
 
 function GuestRoutes(): React.JSX.Element {
   return (
     <>
       <Route path="/" element={<ProtectedRoute disallowedRole="TENANT"><HomePage /></ProtectedRoute>} />
+      <Route path="/about" element={<AboutUsPage />} />
       <Route path="/search" element={<ProtectedRoute disallowedRole="TENANT"><CatalogSearchPage /></ProtectedRoute>} />
       <Route path="/properties/:id" element={<ProtectedRoute disallowedRole="TENANT"><PropertyDetailPage /></ProtectedRoute>} />
       <Route path="/login" element={<LoginPage />} />
@@ -76,20 +80,12 @@ function AppRoutes(): React.JSX.Element {
   );
 }
 
-function AppFooter(): React.JSX.Element {
-  return (
-    <footer className="bg-white border-t border-gray-200 py-6 text-center text-sm text-gray-500">
-      &copy; {new Date().getFullYear()} SinggahIn. Hak cipta dilindungi.
-    </footer>
-  );
-}
-
 function AppLayout(): React.JSX.Element {
   return (
     <div className="min-h-screen flex flex-col justify-between bg-gray-50 text-gray-900 pb-16 md:pb-0">
       <Navbar />
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8"><AppRoutes /></main>
-      <AppFooter />
+      <Footer />
       <MobileBottomNav />
     </div>
   );
@@ -98,5 +94,10 @@ function AppLayout(): React.JSX.Element {
 export default function App(): React.JSX.Element {
   const { checkAuth } = useAuthStore();
   useEffect(() => { checkAuth(); }, [checkAuth]);
-  return <BrowserRouter><AppLayout /></BrowserRouter>;
+  return (
+    <BrowserRouter>
+      <ScrollToTop />
+      <AppLayout />
+    </BrowserRouter>
+  );
 }
