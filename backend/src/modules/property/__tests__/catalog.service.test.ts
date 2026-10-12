@@ -160,4 +160,33 @@ describe('Catalog Service - getCatalogProperties', () => {
     expect(res.data[0].distanceInKm).toBeDefined();
     expect(res.data[1].id).toBe('pFar');
   });
+
+  it('passes OR condition for city and title when city search keyword is provided', async () => {
+    vi.mocked(prisma.property.findMany).mockResolvedValueOnce([]);
+    await getCatalogProperties({
+      city: 'Bobocabin', page: 1, limit: 10, sortBy: 'price', sortOrder: 'asc',
+    });
+    expect(prisma.property.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: [
+            { city: { contains: 'bobocabin', mode: 'insensitive' } },
+            { title: { contains: 'Bobocabin', mode: 'insensitive' } },
+          ],
+        }),
+      })
+    );
+  });
+
+  it('expands regional synonyms like DIY into yogyakarta in where clause', async () => {
+    vi.mocked(prisma.property.findMany).mockResolvedValueOnce([]);
+    await getCatalogProperties({ city: 'DIY', page: 1, limit: 10, sortBy: 'price', sortOrder: 'asc' });
+    expect(prisma.property.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([{ city: { contains: 'yogyakarta', mode: 'insensitive' } }]),
+        }),
+      })
+    );
+  });
 });

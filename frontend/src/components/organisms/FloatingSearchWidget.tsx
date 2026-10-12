@@ -5,6 +5,7 @@ import { DestinationInput } from './search-widget/DestinationInput';
 import { DateRangeSelector } from './search-widget/DateRangeSelector';
 import { GuestCounter } from './search-widget/GuestCounter';
 import { CategoryFilterChips } from './search-widget/CategoryFilterChips';
+import { CatalogPropertyItem } from '../../modules/property/property.types';
 
 export interface SearchWidgetValues {
   city: string;
@@ -50,12 +51,15 @@ type GridProps = {
   city: string; setCity: (c: string) => void;
   checkIn: string; checkOut: string; onDateChange: (i: string, o: string) => void;
   guests: number; setGuests: (g: number) => void; onSearch: () => void;
+  onSelectProperty?: (p: CatalogPropertyItem) => void;
 };
 
 function SearchInputsGrid(p: GridProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 md:gap-4 items-end">
-      <div className="md:col-span-4 w-full"><DestinationInput value={p.city} onChange={p.setCity} /></div>
+      <div className="md:col-span-4 w-full">
+        <DestinationInput value={p.city} onChange={p.setCity} onSelectProperty={p.onSelectProperty} />
+      </div>
       <div className="md:col-span-4 w-full"><DateRangeSelector checkIn={p.checkIn} checkOut={p.checkOut} onChange={p.onDateChange} /></div>
       <div className="md:col-span-2 w-full"><GuestCounter value={p.guests} onChange={p.setGuests} /></div>
       <div className="md:col-span-2 w-full mt-1 md:mt-0"><SearchSubmitButton onClick={p.onSearch} /></div>
@@ -87,16 +91,25 @@ function submitSearch(
   return props.onSearch ? props.onSearch(p) : nav(buildSearchUrl(p));
 }
 
+function navigateToProperty(nav: ReturnType<typeof useNavigate>, p: CatalogPropertyItem, inDate?: string, outDate?: string) {
+  const q = new URLSearchParams();
+  if (inDate) q.set('checkIn', inDate);
+  if (outDate) q.set('checkOut', outDate);
+  const search = q.toString();
+  nav(search ? `/properties/${p.id}?${search}` : `/properties/${p.id}`);
+}
+
 export function FloatingSearchWidget(props: FloatingSearchWidgetProps): React.JSX.Element {
   const s = useWidgetFormState(props.initialValues);
   const navigate = useNavigate();
   const onSelectCat = (c: string) => { s.setCategory(c); props.onCategoryChange?.(c); };
+  const onProp = (p: CatalogPropertyItem) => navigateToProperty(navigate, p, s.checkIn, s.checkOut);
   const cls = `bg-white border border-gray-100 rounded-2xl md:rounded-3xl shadow-xl p-4 sm:p-5 md:p-6 w-full ${props.className || ''}`;
 
   return (
     <div aria-label="Widget pencarian properti" className={cls}>
       <div className="mb-3.5 md:mb-4"><CategoryFilterChips selected={s.category} onSelect={onSelectCat} /></div>
-      <SearchInputsGrid {...s} onSearch={() => submitSearch(props, s, navigate)} />
+      <SearchInputsGrid {...s} onSelectProperty={onProp} onSearch={() => submitSearch(props, s, navigate)} />
     </div>
   );
 }

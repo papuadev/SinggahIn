@@ -9,16 +9,20 @@ import {
   findBestRoomPricing,
   formatCatalogProperty,
 } from './catalog.helper';
+import { expandCitySynonyms } from './catalog.synonyms';
 
 function buildCatalogWhere(query: CatalogQueryInput): Prisma.PropertyWhereInput {
-  return {
-    city: query.city ? { contains: query.city, mode: 'insensitive' } : undefined,
-    title: query.name ? { contains: query.name, mode: 'insensitive' } : undefined,
-    category: query.category ? { slug: query.category } : undefined,
-    rooms: {
-      some: query.guests ? { capacity: { gte: query.guests } } : {},
-    },
-  };
+  const rooms = { some: query.guests ? { capacity: { gte: query.guests } } : {} };
+  const category = query.category ? { slug: query.category } : undefined;
+  if (query.city && query.name) {
+    const cityOr = expandCitySynonyms(query.city).map((t) => ({ city: { contains: t, mode: 'insensitive' as const } }));
+    return { AND: [{ OR: cityOr }, { title: { contains: query.name, mode: 'insensitive' } }], category, rooms };
+  }
+  if (query.city) {
+    const cityOr = expandCitySynonyms(query.city).map((t) => ({ city: { contains: t, mode: 'insensitive' as const } }));
+    return { OR: [...cityOr, { title: { contains: query.city, mode: 'insensitive' } }], category, rooms };
+  }
+  return { title: query.name ? { contains: query.name, mode: 'insensitive' } : undefined, category, rooms };
 }
 
 function buildEmptyRoomRelations() {

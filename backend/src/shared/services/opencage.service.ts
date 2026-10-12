@@ -1,3 +1,4 @@
+import https from 'https';
 import axios from 'axios';
 import {
   GeocodeResult,
@@ -10,19 +11,21 @@ import {
 
 export { GeocodeResult, ReverseGeocodeResult, GeocodeSuggestion };
 
+const httpsAgent = new https.Agent({ family: 4, keepAlive: true });
+
 function getApiKey(): string | undefined {
   return process.env.OPENCAGE_API_KEY;
 }
 
-function buildGeocodeUrl(query: string, key: string): string {
+function buildGeocodeUrl(query: string, key: string, limit = 1): string {
   const base = 'https://api.opencagedata.com/geocode/v1/json';
   const encoded = encodeURIComponent(query);
-  return `${base}?q=${encoded}&key=${key}&limit=1&no_annotations=1`;
+  return `${base}?q=${encoded}&key=${key}&limit=${limit}&language=id&countrycode=id&no_annotations=1`;
 }
 
 async function fetchOpenCage(url: string): Promise<OpenCageApiResponse | null> {
   try {
-    const response = await axios.get<OpenCageApiResponse>(url);
+    const response = await axios.get<OpenCageApiResponse>(url, { httpsAgent, timeout: 5000 });
     return response.data;
   } catch {
     return null;
@@ -89,9 +92,7 @@ export async function searchAddress(
 ): Promise<GeocodeSuggestion[]> {
   const key = getApiKey();
   if (!key || !query?.trim()) return [];
-  const base = 'https://api.opencagedata.com/geocode/v1/json';
-  const encoded = encodeURIComponent(query.trim());
-  const url = `${base}?q=${encoded}&key=${key}&limit=${limit}&no_annotations=1`;
+  const url = buildGeocodeUrl(query.trim(), key, limit);
   const data = await fetchOpenCage(url);
   if (!data?.results) return [];
   return data.results.map((item) => ({
