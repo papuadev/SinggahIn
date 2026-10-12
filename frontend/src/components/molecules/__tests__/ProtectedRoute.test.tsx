@@ -141,4 +141,52 @@ describe('ProtectedRoute Molecule', () => {
 
     expect(screen.getByText('Halaman Tamu Publik')).toBeInTheDocument();
   });
+
+  it('renders modern spinner and unauthorized message for unauthenticated guest on TENANT route', () => {
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      isInitialized: true,
+      isLoading: false,
+    });
+
+    render(
+      <MemoryRouter>
+        <ProtectedRoute requiredRole="TENANT">
+          <div>Dasbor Tenant</div>
+        </ProtectedRoute>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByText('Dasbor Tenant')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(
+      screen.getByText('Silahkan login sebagai TENANT untuk mengakses halaman ini')
+    ).toBeInTheDocument();
+    expect(screen.getByText('Mengalihkan ke halaman utama...')).toBeInTheDocument();
+  });
+
+  it('renders modern spinner and unauthorized message for unauthenticated guest on USER route', () => {
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      isInitialized: true,
+      isLoading: false,
+    });
+
+    render(
+      <MemoryRouter>
+        <ProtectedRoute requiredRole="USER">
+          <div>Halaman Checkout</div>
+        </ProtectedRoute>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByText('Halaman Checkout')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(
+      screen.getByText('Silahkan login sebagai USER untuk mengakses halaman ini')
+    ).toBeInTheDocument();
+    expect(screen.getByText('Mengalihkan ke halaman utama...')).toBeInTheDocument();
+  });
 });

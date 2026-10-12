@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PropertyDetailPage } from '../PropertyDetailPage';
 import { propertyApi } from '../../modules/property/services/property.api';
 import { roomApi } from '../../modules/room/services/room.api';
+import { useAuthStore } from '../../stores/auth.store';
 
 vi.mock('../../modules/property/services/property.api', () => ({
   propertyApi: { getPropertyById: vi.fn() },
@@ -83,6 +84,14 @@ function renderComponent(initialRoute = '/properties/clprop123') {
 describe('PropertyDetailPage Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useAuthStore.setState({
+      user: { id: 'usr-1', email: 'user@example.com', name: 'User Test', role: 'USER', avatarUrl: null },
+      isAuthenticated: true,
+      isInitialized: true,
+      isLoading: false,
+      error: null,
+      conflict: null,
+    });
   });
 
   it('renders loading skeleton while query is in progress', () => {
@@ -205,5 +214,36 @@ describe('PropertyDetailPage Integration', () => {
       expect(screen.getByText(/Tentukan Tanggal Menginap Anda/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Pilih Tanggal Sekarang/i })).toBeInTheDocument();
     });
+  });
+
+  it('disables Pesan Sekarang button and displays login prompt when unauthenticated', async () => {
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      isInitialized: true,
+      isLoading: false,
+    });
+
+    vi.mocked(propertyApi.getPropertyById).mockResolvedValueOnce({
+      success: true, message: 'OK', data: mockProperty as any,
+    });
+
+    renderComponent('/properties/clprop123?checkIn=2026-10-01&checkOut=2026-10-03');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: 'Villa Nuansa Asri Dago' })).toBeInTheDocument();
+    });
+
+    const allButtons = screen.getAllByRole('button', { name: /pesan sekarang/i });
+    const sidebarCta = allButtons.find((btn) => btn.closest('aside'));
+    expect(sidebarCta).toBeDefined();
+    expect(sidebarCta).toBeDisabled();
+
+    expect(
+      screen.getByText(/Silahkan login sebagai user untuk mengaktifkan fitur ini\./i)
+    ).toBeInTheDocument();
+    const loginLink = screen.getByRole('link', { name: /Login/i });
+    expect(loginLink).toBeInTheDocument();
+    expect(loginLink).toHaveAttribute('href', '/login?role=USER');
   });
 });

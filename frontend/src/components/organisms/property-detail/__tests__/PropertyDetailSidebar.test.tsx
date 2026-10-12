@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { PropertyDetailSidebar } from '../PropertyDetailSidebar';
 import { pricingApi } from '../../../../modules/room/services/pricing.api';
+import { useAuthStore } from '../../../../stores/auth.store';
 
 const mockRooms = [
   { id: 'r1', name: 'Deluxe Suite', basePrice: 500000 },
@@ -11,11 +13,23 @@ const mockRooms = [
 
 function renderSidebar(ui: React.ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>
+  );
 }
 
 describe('PropertyDetailSidebar Component', () => {
   beforeEach(() => {
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      isInitialized: true,
+      isLoading: false,
+      error: null,
+      conflict: null,
+    });
     vi.spyOn(pricingApi, 'calculateStayPricing').mockResolvedValue({
       success: true, message: 'OK',
       data: {
@@ -97,5 +111,53 @@ describe('PropertyDetailSidebar Component', () => {
       expect(screen.getByText(/1\.300\.000/i)).toBeInTheDocument();
       expect(screen.getByText('Tarif rata-rata')).toBeInTheDocument();
     });
+  });
+
+  it('disables Pesan Sekarang button and displays login prompt when unauthenticated', () => {
+    renderSidebar(
+      <PropertyDetailSidebar
+        propertyId="p1"
+        rooms={mockRooms}
+        selectedRoomId="r1"
+        checkIn="2026-10-01"
+        checkOut="2026-10-03"
+      />
+    );
+
+    const button = screen.getByRole('button', { name: /Pesan Sekarang/i });
+    expect(button).toBeDisabled();
+
+    expect(
+      screen.getByText(/Silahkan login sebagai user untuk mengaktifkan fitur ini\./i)
+    ).toBeInTheDocument();
+    const loginLink = screen.getByRole('link', { name: /Login/i });
+    expect(loginLink).toBeInTheDocument();
+    expect(loginLink).toHaveAttribute('href', '/login?role=USER');
+  });
+
+  it('enables Pesan Sekarang button and hides login prompt when user is authenticated', () => {
+    useAuthStore.setState({
+      user: { id: 'u1', email: 'user@test.com', name: 'User Test', role: 'USER', avatarUrl: null },
+      isAuthenticated: true,
+      isInitialized: true,
+      isLoading: false,
+    });
+
+    renderSidebar(
+      <PropertyDetailSidebar
+        propertyId="p1"
+        rooms={mockRooms}
+        selectedRoomId="r1"
+        checkIn="2026-10-01"
+        checkOut="2026-10-03"
+      />
+    );
+
+    const button = screen.getByRole('button', { name: /Pesan Sekarang/i });
+    expect(button).toBeEnabled();
+
+    expect(
+      screen.queryByText(/Silahkan login sebagai user untuk mengaktifkan fitur ini\./i)
+    ).not.toBeInTheDocument();
   });
 });

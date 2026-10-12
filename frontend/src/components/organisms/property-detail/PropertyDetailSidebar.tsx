@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { ShieldCheck, Zap, Sparkles } from 'lucide-react';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { Button } from '../../atoms/Button';
 import { Select } from '../../atoms/Select';
 import { formatRupiah } from '../../../libs/formatters';
 import { useStayPricing } from '../../../modules/room/hooks/useRoomPricing';
+import { useAuthStore } from '../../../stores/auth.store';
 import { DateTriggerBox, CalendarPopover } from './sidebar/CalendarPopover';
 
 export interface PropertyDetailSidebarProps {
@@ -129,6 +131,7 @@ function SidebarStayBreakdown({ nights, total }: { nights: number; total: number
 
 function useSidebarBooking(props: PropertyDetailSidebarProps) {
   const { rooms = [], selectedRoomId, lowestPrice, checkIn, checkOut, onBookRoom, isCalendarOpen, onCalendarOpenChange } = props;
+  const { isAuthenticated } = useAuthStore();
   const [internalOpen, setInternalOpen] = useState(false);
   const isCalOpen = isCalendarOpen !== undefined ? isCalendarOpen : internalOpen;
   const setIsCalOpen = onCalendarOpenChange || setInternalOpen;
@@ -138,18 +141,51 @@ function useSidebarBooking(props: PropertyDetailSidebarProps) {
   const activePrice = pricing?.averageNightRate || activeRoom?.basePrice || lowestPrice || 0;
   const totalPrice = pricing?.totalStayPrice || (nights * (activeRoom?.basePrice || 0));
   const handleCta = () => {
+    if (!isAuthenticated) return;
     if (nights <= 0) { setIsCalOpen(true); onBookRoom?.(activeRoom?.id || ''); return; }
     onBookRoom?.(activeRoom?.id || '');
   };
-  return { isCalOpen, setIsCalOpen, activeRoom, activePrice, totalPrice, nights, handleCta };
+  return { isCalOpen, setIsCalOpen, activeRoom, activePrice, totalPrice, nights, handleCta, isAuthenticated };
 }
 
-function SidebarBookingCta({ onClick, hasDates }: { onClick: () => void; hasDates: boolean }) {
+function SidebarBookingCta({
+  onClick,
+  hasDates,
+  isAuthenticated,
+}: {
+  onClick: () => void;
+  hasDates: boolean;
+  isAuthenticated: boolean;
+}) {
+  const buttonText = !isAuthenticated
+    ? 'Pesan Sekarang'
+    : hasDates
+    ? 'Pesan Sekarang'
+    : 'Pilih Tanggal Menginap';
+
   return (
-    <div className="mt-4">
-      <Button type="button" variant="primary" size="lg" onClick={onClick} className="w-full font-bold shadow-md shadow-primary-500/20">
-        {hasDates ? 'Pesan Sekarang' : 'Pilih Tanggal Menginap'}
+    <div className="mt-4 space-y-2">
+      <Button
+        type="button"
+        variant="primary"
+        size="lg"
+        onClick={onClick}
+        disabled={!isAuthenticated}
+        className="w-full font-bold shadow-md shadow-primary-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {buttonText}
       </Button>
+      {!isAuthenticated && (
+        <p className="text-xs text-center text-gray-500 leading-relaxed">
+          Silahkan login sebagai user untuk mengaktifkan fitur ini.{' '}
+          <Link
+            to="/login?role=USER"
+            className="font-semibold text-primary-600 hover:text-primary-700 underline"
+          >
+            Login
+          </Link>
+        </p>
+      )}
     </div>
   );
 }
@@ -185,7 +221,7 @@ export function PropertyDetailSidebar(props: PropertyDetailSidebarProps): React.
       <SidebarDateSection propertyId={propertyId} rooms={rooms} activeRoomId={s.activeRoom?.id} onRoomChange={onRoomChange} checkIn={checkIn} checkOut={checkOut} onSelectDates={onSelectDates} isOpen={s.isCalOpen} onToggle={() => s.setIsCalOpen(!s.isCalOpen)} onClose={() => s.setIsCalOpen(false)} />
       <SidebarRoomSelector rooms={rooms} activeId={s.activeRoom?.id} onChange={onRoomChange} />
       <SidebarStayBreakdown nights={s.nights} total={s.totalPrice} />
-      <SidebarBookingCta onClick={s.handleCta} hasDates={s.nights > 0} />
+      <SidebarBookingCta onClick={s.handleCta} hasDates={s.nights > 0} isAuthenticated={s.isAuthenticated} />
       <PerksList />
     </aside>
   );
