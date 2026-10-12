@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -60,7 +60,7 @@ function DotButton({ active, onClick, i }: { active: boolean; onClick: () => voi
 function SlideIndicators({ count, active, onSelect }: { count: number; active: number; onSelect: (idx: number) => void }) {
   const dots = Array.from({ length: count });
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
+    <div className="absolute bottom-9 sm:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
       {dots.map((_, i) => (
         <DotButton key={i} i={i} active={active === i} onClick={() => onSelect(i)} />
       ))}
@@ -99,7 +99,7 @@ function SlideContent({ slide, onCta }: { slide: CarouselSlide; onCta: (cat?: st
   );
 }
 
-const ARROW_BTN_CLS = 'absolute top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm';
+const ARROW_BTN_CLS = 'hidden sm:block absolute top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm';
 
 function NavArrows({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) {
   return (
@@ -153,13 +153,28 @@ function useCarouselAutoPlay(length: number) {
   return { index, setIndex, next, prev, setIsPaused };
 }
 
+function useSwipe(onLeft: () => void, onRight: () => void) {
+  const startX = useRef(0);
+  const endX = useRef(0);
+  const onTouchStart = (e: React.TouchEvent) => { startX.current = e.touches[0].clientX; endX.current = 0; };
+  const onTouchMove = (e: React.TouchEvent) => { endX.current = e.touches[0].clientX; };
+  const onTouchEnd = () => {
+    if (!endX.current) return;
+    const diff = startX.current - endX.current;
+    if (diff > 45) onLeft();
+    else if (diff < -45) onRight();
+  };
+  return { onTouchStart, onTouchMove, onTouchEnd };
+}
+
 export function HeroCarousel({ slides = HERO_SLIDES, onCtaClick }: HeroCarouselProps): React.JSX.Element {
   const { index, setIndex, next, prev, setIsPaused } = useCarouselAutoPlay(slides.length);
+  const swipe = useSwipe(next, prev);
   const nav = useNavigate();
   const handleCta = (cat?: string) => (onCtaClick ? onCtaClick(cat) : nav(cat ? `/search?category=${cat}` : '/search'));
   const curr = slides[index];
   return (
-    <section aria-label="Promosi Unggulan SinggahIn" onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)} className="relative w-full h-[360px] sm:h-[420px] md:h-[480px] rounded-3xl overflow-hidden shadow-xl bg-gray-900">
+    <section aria-label="Promosi Unggulan SinggahIn" onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)} {...swipe} className="relative w-full h-[360px] sm:h-[420px] md:h-[480px] rounded-3xl overflow-hidden shadow-xl bg-gray-900 select-none">
       <HeroSlideBackgrounds slides={slides} activeIndex={index} />
       <SlideContent slide={curr} onCta={handleCta} />
       <NavArrows onPrev={prev} onNext={next} />

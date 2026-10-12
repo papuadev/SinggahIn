@@ -105,7 +105,7 @@ function PricingDetails({ rate, total, nights }: PricingProps): React.JSX.Elemen
 
 function PropertyHeader({ city, rating, count }: { city: string; rating: number; count: number }): React.JSX.Element {
   return (
-    <div className="flex items-center justify-between gap-2 mb-1.5">
+    <div className="flex items-center justify-between gap-2 mb-1.5 h-5">
       <span className="text-xs font-medium text-gray-500 flex items-center gap-1 truncate">
         <MapPin className="w-3.5 h-3.5 text-primary-600 shrink-0" />
         {city}
@@ -121,7 +121,7 @@ function PropertyCardBody({ property }: { property: CatalogPropertyItem }): Reac
     <div className="p-4 flex-1 flex flex-col justify-between">
       <div>
         <PropertyHeader city={city} rating={averageRating} count={totalReviews} />
-        <h3 className="font-bold text-gray-900 text-base leading-snug group-hover:text-primary-600 transition-colors line-clamp-2">
+        <h3 className="font-bold text-gray-900 text-base leading-snug group-hover:text-primary-600 transition-colors line-clamp-2 min-h-[2.75rem]">
           {title}
         </h3>
       </div>
@@ -136,7 +136,7 @@ export function PropertyCard({ property, checkIn, checkOut, className = '' }: Pr
     <Link
       to={linkUrl}
       aria-label={`Lihat detail ${property.title}`}
-      className={`bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col ${className}`}
+      className={`bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col h-full ${className}`}
     >
       <CardImageContainer coverImage={property.coverImage} title={property.title} categoryName={property.category.name || 'Penginapan'} />
       <PropertyCardBody property={property} />
