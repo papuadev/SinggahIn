@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { render, fireEvent } from '@testing-library/react';
+import { MemoryRouter, useSearchParams } from 'react-router-dom';
 import { ScrollToTop } from '../ScrollToTop';
 
 describe('ScrollToTop Component', () => {
@@ -41,5 +41,31 @@ describe('ScrollToTop Component', () => {
     expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth' });
 
     document.body.removeChild(fakeElement);
+  });
+
+  it('does not scroll window when only search query parameters change on the same pathname', () => {
+    const scrollToMock = vi.fn();
+    window.scrollTo = scrollToMock;
+
+    function TestComponent() {
+      const [, setSearchParams] = useSearchParams();
+      return <button onClick={() => setSearchParams({ checkIn: '2026-10-15' })}>Pilih Tanggal</button>;
+    }
+
+    const { getByRole } = render(
+      <MemoryRouter initialEntries={['/properties/clprop123']}>
+        <ScrollToTop />
+        <TestComponent />
+      </MemoryRouter>
+    );
+
+    // Initial mount on route triggers scrollTo once
+    expect(scrollToMock).toHaveBeenCalledTimes(1);
+
+    // User clicks date button changing only query params (?checkIn=2026-10-15)
+    fireEvent.click(getByRole('button', { name: /Pilih Tanggal/i }));
+
+    // scrollTo should NOT be called again because pathname did not change
+    expect(scrollToMock).toHaveBeenCalledTimes(1);
   });
 });
