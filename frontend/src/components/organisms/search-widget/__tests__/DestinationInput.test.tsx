@@ -7,10 +7,15 @@ import { propertyApi } from '../../../../modules/property/services/property.api'
 vi.mock('../../../../modules/property/services/property.api', () => ({
   propertyApi: {
     searchGeocode: vi.fn(),
+    getCatalog: vi.fn(),
   },
 }));
 
-function ControlledDestinationInput({ initial = '', onSelect }: { initial?: string; onSelect?: (v: string) => void }) {
+function ControlledDestinationInput({
+  initial = '', onSelect, onSelectProperty,
+}: {
+  initial?: string; onSelect?: (v: string) => void; onSelectProperty?: (p: any) => void;
+}) {
   const [val, setVal] = useState(initial);
   return (
     <DestinationInput
@@ -19,6 +24,7 @@ function ControlledDestinationInput({ initial = '', onSelect }: { initial?: stri
         setVal(newVal);
         onSelect?.(newVal);
       }}
+      onSelectProperty={onSelectProperty}
     />
   );
 }
@@ -107,5 +113,35 @@ describe('DestinationInput Component', () => {
 
     expect(mockOnSelect).toHaveBeenCalledWith('Surabaya');
     expect(screen.queryByText('Surabaya, Jawa Timur')).not.toBeInTheDocument();
+  });
+
+  it('displays property suggestions and triggers onSelectProperty when clicked', async () => {
+    vi.mocked(propertyApi.searchGeocode).mockResolvedValueOnce({
+      success: true, message: 'OK', data: [],
+    });
+    vi.mocked(propertyApi.getCatalog).mockResolvedValueOnce({
+      success: true, message: 'OK',
+      data: [
+        {
+          id: 'prop-bobocabin', title: 'Bobocabin Cikole', city: 'Bandung Barat',
+          address: 'Jl. Cikole No. 1', category: { name: 'Cabin', slug: 'cabin' },
+          coverImage: null, averageRating: 4.9, totalReviews: 12,
+          pricing: { averageNightRate: 800000, totalStayPrice: 800000, totalNights: 1 },
+        },
+      ],
+      meta: { page: 1, limit: 12, totalItems: 1, totalPages: 1 },
+    });
+    const mockOnSelectProp = vi.fn();
+    render(<ControlledDestinationInput onSelectProperty={mockOnSelectProp} />);
+    const input = screen.getByPlaceholderText(/Mau menginap di mana/i);
+    fireEvent.change(input, { target: { value: 'Bobo' } });
+
+    expect(await screen.findByText('Bobocabin Cikole')).toBeInTheDocument();
+    expect(screen.getByText(/Penginapan & Destinasi/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Bobocabin Cikole'));
+    expect(mockOnSelectProp).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'prop-bobocabin', title: 'Bobocabin Cikole' })
+    );
   });
 });

@@ -101,6 +101,7 @@ export interface CatalogPropertyItem {
   averageRating: number;
   totalReviews: number;
   pricing: CatalogPricing;
+  distanceInKm?: number;
 }
 
 export interface CatalogQueryParams {
@@ -110,10 +111,12 @@ export interface CatalogQueryParams {
   checkIn?: string;
   checkOut?: string;
   guests?: number;
-  sortBy?: 'price' | 'name' | 'rating';
+  sortBy?: 'price' | 'name' | 'rating' | 'distance';
   sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface CalendarDayItem {

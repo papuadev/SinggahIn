@@ -33,8 +33,16 @@ export const CatalogQuerySchema = z
         .positive('Jumlah tamu minimal 1')
         .optional()
     ),
-    sortBy: z.enum(['price', 'name', 'rating']).optional().default('price'),
+    sortBy: z.enum(['price', 'name', 'rating', 'distance']).optional().default('price'),
     sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
+    latitude: z.preprocess(
+      (val) => (val === '' || val === undefined ? undefined : val),
+      z.coerce.number().min(-90, 'Latitude minimal -90').max(90, 'Latitude maksimal 90').optional()
+    ),
+    longitude: z.preprocess(
+      (val) => (val === '' || val === undefined ? undefined : val),
+      z.coerce.number().min(-180, 'Longitude minimal -180').max(180, 'Longitude maksimal 180').optional()
+    ),
     page: z.preprocess(
       (val) => (val === '' || val === undefined ? undefined : val),
       z.coerce.number().int().min(1, 'Halaman minimal 1').optional().default(1)

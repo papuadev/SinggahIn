@@ -129,11 +129,12 @@ export function CatalogSearchPage(): React.JSX.Element {
   const s = useCatalogSearch();
   const m = s.meta || { page: 1, limit: 12, totalItems: 0, totalPages: 0 };
   const { city, category, sortBy = 'price', sortOrder = 'asc' } = s.queryParams;
+  const activeSort = sortBy === 'distance' ? 'price' : sortBy;
   return (
     <div className="w-full flex flex-col py-4">
       <SEOHead title={getCatalogSEOTitle(city, category)} canonicalUrl="https://singgahin.biz.id/search" />
       <CatalogWidget q={s.queryParams} onSearch={s.onSearch} onCat={s.onCategoryChange} />
-      <SearchHeader city={city} category={category} total={m.totalItems} sortBy={sortBy} sortOrder={sortOrder} onSortChange={s.onSort} />
+      <SearchHeader city={city} category={category} total={m.totalItems} sortBy={activeSort} sortOrder={sortOrder} onSortChange={s.onSort} />
       <CatalogPropertyGrid properties={s.properties} isLoading={s.isLoading} isError={s.isError} checkIn={s.queryParams.checkIn} checkOut={s.queryParams.checkOut} onResetFilters={s.reset} />
       <CatalogPagination page={m.page} totalPages={m.totalPages} totalItems={m.totalItems} onPageChange={s.onPage} />
     </div>

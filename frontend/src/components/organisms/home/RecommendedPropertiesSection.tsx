@@ -1,107 +1,53 @@
-import React, { useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Star, ChevronLeft, ChevronRight, LucideIcon } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { LucideIcon } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { propertyApi } from '../../../modules/property/services/property.api';
 import { CatalogQueryParams, CatalogPropertyItem } from '../../../modules/property/property.types';
 import { PropertyCard } from '../PropertyCard';
+import { SectionHeader } from './SectionHeader';
 
 export interface RecommendedSectionProps {
   title: string; subtitle: string; badgeText?: string; badgeIcon?: LucideIcon;
   variant?: 'default' | 'highlighted'; queryParams: CatalogQueryParams;
   viewAllUrl?: string; showEmptyIfFiltered?: boolean; onResetCategory?: () => void;
+  isLoading?: boolean;
 }
 
-function SectionSkeletonCard() {
+function SkeletonBody({ isHigh }: { isHigh?: boolean }) {
+  const shimmer = isHigh ? 'bg-slate-700/60' : 'bg-gray-200';
+  const border = isHigh ? 'border-slate-700/60' : 'border-gray-100';
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm animate-pulse flex flex-col">
-      <div className="aspect-[4/3] w-full bg-gray-200" />
-      <div className="p-4 space-y-2.5">
-        <div className="h-4 bg-gray-200 rounded w-1/3" />
-        <div className="h-5 bg-gray-200 rounded w-3/4" />
-        <div className="pt-2 border-t border-gray-100 h-6 bg-gray-200 rounded w-2/5" />
+    <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+      <div className="space-y-2">
+        <div className="flex justify-between"><div className={`h-3.5 ${shimmer} rounded w-1/3`} /><div className={`h-3.5 ${shimmer} rounded w-10`} /></div>
+        <div className={`h-4 ${shimmer} rounded w-4/5`} />
+      </div>
+      <div className={`pt-3 border-t ${border} space-y-1.5`}>
+        <div className={`h-3 ${shimmer} rounded w-1/4`} /><div className={`h-5 ${shimmer} rounded w-1/2`} />
       </div>
     </div>
   );
 }
 
-function SectionLoadingRow() {
-  const items = Array.from({ length: 4 });
+function SectionSkeletonCard({ isHigh }: { isHigh?: boolean }) {
+  const container = isHigh ? 'bg-slate-800/80 border-slate-700/80' : 'bg-white border-gray-100 shadow-sm';
+  const img = isHigh ? 'bg-slate-700/70' : 'bg-gray-200';
+  return (
+    <div className={`${container} rounded-2xl border overflow-hidden animate-pulse flex flex-col h-full`}>
+      <div className={`aspect-[4/3] w-full ${img}`} />
+      <SkeletonBody isHigh={isHigh} />
+    </div>
+  );
+}
+
+function SectionLoadingRow({ isHigh }: { isHigh?: boolean }) {
   return (
     <div className="flex gap-4 sm:gap-5 overflow-hidden pb-4 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0">
-      {items.map((_, i) => (
+      {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="shrink-0 w-[270px] sm:w-[300px] lg:w-[320px]">
-          <SectionSkeletonCard />
+          <SectionSkeletonCard isHigh={isHigh} />
         </div>
       ))}
-    </div>
-  );
-}
-
-function SectionBadge({ text, icon: Icon, isHighlighted }: { text?: string; icon?: LucideIcon; isHighlighted?: boolean }) {
-  if (!text) return null;
-  if (!isHighlighted) {
-    return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200 mb-2">{Icon && <Icon className="w-3.5 h-3.5 text-primary-600" />}{text}</span>;
-  }
-  return (
-    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-800/80 backdrop-blur-md text-slate-100 border border-slate-700/80 shadow-xs mb-3">
-      <span className="flex items-center justify-center w-4 h-4 rounded-full bg-amber-400/20 text-amber-300 shrink-0"><Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" /></span>
-      <span>{text}</span><span className="inline-block w-1 h-1 rounded-full bg-slate-500" /><span className="text-amber-300 font-semibold text-xs">Rating 4.8+</span>
-    </div>
-  );
-}
-
-function SectionHeaderTitle({ title, isHighlighted }: { title: string; isHighlighted?: boolean }) {
-  const cls = isHighlighted
-    ? 'text-2xl sm:text-3xl font-black tracking-tight text-white'
-    : 'text-xl sm:text-2xl font-black text-gray-900';
-  return <h2 className={cls}>{title}</h2>;
-}
-
-function SectionNavButtons({ onLeft, onRight, isHighlighted }: { onLeft: () => void; onRight: () => void; isHighlighted?: boolean }) {
-  const btnCls = isHighlighted
-    ? 'p-2 rounded-full border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 transition-colors'
-    : 'p-2 rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition-colors shadow-xs';
-  return (
-    <div className="hidden sm:flex items-center gap-1.5">
-      <button type="button" onClick={onLeft} aria-label="Geser ke kiri" className={btnCls}>
-        <ChevronLeft className="w-4 h-4" />
-      </button>
-      <button type="button" onClick={onRight} aria-label="Geser ke kanan" className={btnCls}>
-        <ChevronRight className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
-
-type HeaderProps = {
-  title: string; subtitle: string; badgeText?: string; badgeIcon?: LucideIcon; viewAllUrl: string; isHighlighted?: boolean;
-};
-
-function ViewAllLink({ url, isHigh }: { url: string; isHigh?: boolean }) {
-  const cls = isHigh
-    ? 'px-4 py-2 bg-slate-800/90 hover:bg-slate-700 text-white border border-slate-700 shadow-xs'
-    : 'text-primary-600 hover:text-primary-700';
-  return (
-    <Link to={url} className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold rounded-full transition-all group ${cls}`}>
-      <span>Lihat Semua</span>
-      <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
-    </Link>
-  );
-}
-
-function SectionHeader(p: HeaderProps & { onLeft: () => void; onRight: () => void }) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 relative z-10">
-      <div>
-        <SectionBadge text={p.badgeText} icon={p.badgeIcon} isHighlighted={p.isHighlighted} />
-        <SectionHeaderTitle title={p.title} isHighlighted={p.isHighlighted} />
-        <p className={`text-xs sm:text-sm mt-1 ${p.isHighlighted ? 'text-slate-300' : 'text-gray-600'}`}>{p.subtitle}</p>
-      </div>
-      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-        <SectionNavButtons onLeft={p.onLeft} onRight={p.onRight} isHighlighted={p.isHighlighted} />
-        <ViewAllLink url={p.viewAllUrl} isHigh={p.isHighlighted} />
-      </div>
     </div>
   );
 }
@@ -121,15 +67,38 @@ function EmptyCategoryState({ category, onReset }: { category?: string; onReset?
   );
 }
 
-function SectionScrollRow({ properties, scrollRef, isHigh }: { properties: CatalogPropertyItem[]; scrollRef: React.RefObject<HTMLDivElement>; isHigh?: boolean }) {
-  const scrollCls = isHigh ? 'scrollbar-themed-dark' : 'scrollbar-themed-light';
+function ScrollIndicator({ progress, isHigh }: { progress: number; isHigh?: boolean }) {
+  const track = isHigh ? 'bg-white/15' : 'bg-gray-200';
+  const bar = isHigh ? 'bg-white/80' : 'bg-primary-600';
   return (
-    <div ref={scrollRef} className={`flex gap-4 sm:gap-5 overflow-x-auto pb-4 pt-1 scroll-smooth snap-x snap-mandatory focus:outline-none -mx-4 px-4 sm:mx-0 sm:px-0 ${scrollCls}`}>
-      {properties.map((item) => (
-        <div key={item.id} className="shrink-0 w-[270px] sm:w-[300px] lg:w-[320px] snap-start">
-          <PropertyCard property={item} />
-        </div>
-      ))}
+    <div className="flex justify-center mt-3" aria-hidden="true">
+      <div className={`relative w-24 sm:w-28 h-1 rounded-full overflow-hidden ${track}`}>
+        <div
+          className={`absolute top-0 bottom-0 left-0 w-1/3 rounded-full transition-transform duration-100 ${bar}`}
+          style={{ transform: `translateX(${progress * 200}%)` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+type ScrollRowProps = {
+  properties: CatalogPropertyItem[]; scrollRef: React.RefObject<HTMLDivElement>;
+  isHigh?: boolean; onScroll: () => void; progress: number;
+};
+
+function SectionScrollRow(p: ScrollRowProps) {
+  const showIndicator = p.properties.length > 3;
+  return (
+    <div>
+      <div ref={p.scrollRef} onScroll={p.onScroll} className="flex gap-4 sm:gap-5 overflow-x-auto pb-3 pt-1 scroll-smooth snap-x snap-mandatory focus:outline-none -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
+        {p.properties.map((item) => (
+          <div key={item.id} className="shrink-0 w-[270px] sm:w-[300px] lg:w-[320px] snap-start flex flex-col">
+            <PropertyCard property={item} className="h-full" />
+          </div>
+        ))}
+      </div>
+      {showIndicator && <ScrollIndicator progress={p.progress} isHigh={p.isHigh} />}
     </div>
   );
 }
@@ -138,14 +107,15 @@ type ContentProps = {
   isLoading: boolean; properties: CatalogPropertyItem[];
   showEmpty?: boolean; category?: string; onReset?: () => void;
   scrollRef: React.RefObject<HTMLDivElement>; isHighlighted?: boolean;
+  onScroll: () => void; progress: number;
 };
 
 function SectionContent(p: ContentProps) {
-  if (p.isLoading) return <SectionLoadingRow />;
+  if (p.isLoading) return <SectionLoadingRow isHigh={p.isHighlighted} />;
   if (p.properties.length === 0 && p.showEmpty && p.category) {
     return <EmptyCategoryState category={p.category} onReset={p.onReset} />;
   }
-  return <SectionScrollRow properties={p.properties} scrollRef={p.scrollRef} isHigh={p.isHighlighted} />;
+  return <SectionScrollRow properties={p.properties} scrollRef={p.scrollRef} isHigh={p.isHighlighted} onScroll={p.onScroll} progress={p.progress} />;
 }
 
 function useSectionData(params: CatalogQueryParams) {
@@ -158,10 +128,17 @@ function useSectionData(params: CatalogQueryParams) {
 
 function useHorizontalScroll() {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const scroll = (offset: number) => {
-    scrollRef.current?.scrollBy({ left: offset, behavior: 'smooth' });
+  const [progress, setProgress] = useState(0);
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    if (max <= 0) return setProgress(0);
+    const isEnd = max - el.scrollLeft <= 4;
+    setProgress(isEnd ? 1 : Math.min(1, Math.max(0, el.scrollLeft / max)));
   };
-  return { scrollRef, scrollLeft: () => scroll(-340), scrollRight: () => scroll(340) };
+  const scroll = (offset: number) => scrollRef.current?.scrollBy({ left: offset, behavior: 'smooth' });
+  return { scrollRef, progress, onScroll, scrollLeft: () => scroll(-340), scrollRight: () => scroll(340) };
 }
 
 function AmbientGlowOrbs() {
@@ -181,8 +158,9 @@ function getSectionClass(isHigh?: boolean) {
 }
 
 export function RecommendedPropertiesSection(props: RecommendedSectionProps): React.JSX.Element | null {
-  const { properties, isLoading } = useSectionData(props.queryParams);
-  const { scrollRef, scrollLeft, scrollRight } = useHorizontalScroll();
+  const { properties, isLoading: queryLoading } = useSectionData(props.queryParams);
+  const isLoading = Boolean(props.isLoading || queryLoading);
+  const { scrollRef, scrollLeft, scrollRight, onScroll, progress } = useHorizontalScroll();
   if (!isLoading && properties.length === 0 && (!props.showEmptyIfFiltered || !props.queryParams.category)) return null;
   const isHigh = props.variant === 'highlighted';
   return (
@@ -190,7 +168,7 @@ export function RecommendedPropertiesSection(props: RecommendedSectionProps): Re
       {isHigh && <AmbientGlowOrbs />}
       <div className={isHigh ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10' : ''}>
         <SectionHeader {...props} onLeft={scrollLeft} onRight={scrollRight} viewAllUrl={props.viewAllUrl || '/search'} isHighlighted={isHigh} />
-        <SectionContent isLoading={isLoading} properties={properties} showEmpty={props.showEmptyIfFiltered} category={props.queryParams.category} onReset={props.onResetCategory} scrollRef={scrollRef} isHighlighted={isHigh} />
+        <SectionContent isLoading={isLoading} properties={properties} showEmpty={props.showEmptyIfFiltered} category={props.queryParams.category} onReset={props.onResetCategory} scrollRef={scrollRef} isHighlighted={isHigh} onScroll={onScroll} progress={progress} />
       </div>
     </section>
   );

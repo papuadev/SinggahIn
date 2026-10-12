@@ -19,4 +19,5 @@ export interface CatalogPropertyItemDto {
   averageRating: number;
   totalReviews: number;
   pricing: CatalogPropertyPricingDto;
+  distanceInKm?: number;
 }

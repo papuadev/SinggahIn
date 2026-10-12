@@ -9,16 +9,20 @@ import {
   findBestRoomPricing,
   formatCatalogProperty,
 } from './catalog.helper';
+import { expandCitySynonyms } from './catalog.synonyms';
 
 function buildCatalogWhere(query: CatalogQueryInput): Prisma.PropertyWhereInput {
-  return {
-    city: query.city ? { contains: query.city, mode: 'insensitive' } : undefined,
-    title: query.name ? { contains: query.name, mode: 'insensitive' } : undefined,
-    category: query.category ? { slug: query.category } : undefined,
-    rooms: {
-      some: query.guests ? { capacity: { gte: query.guests } } : {},
-    },
-  };
+  const rooms = { some: query.guests ? { capacity: { gte: query.guests } } : {} };
+  const category = query.category ? { slug: query.category } : undefined;
+  if (query.city && query.name) {
+    const cityOr = expandCitySynonyms(query.city).map((t) => ({ city: { contains: t, mode: 'insensitive' as const } }));
+    return { AND: [{ OR: cityOr }, { title: { contains: query.name, mode: 'insensitive' } }], category, rooms };
+  }
+  if (query.city) {
+    const cityOr = expandCitySynonyms(query.city).map((t) => ({ city: { contains: t, mode: 'insensitive' as const } }));
+    return { OR: [...cityOr, { title: { contains: query.city, mode: 'insensitive' } }], category, rooms };
+  }
+  return { title: query.name ? { contains: query.name, mode: 'insensitive' } : undefined, category, rooms };
 }
 
 function buildEmptyRoomRelations() {
@@ -52,8 +56,9 @@ function buildRoomRelations(checkIn?: string, checkOut?: string) {
 function compareByField(
   a: CatalogPropertyItemDto,
   b: CatalogPropertyItemDto,
-  sortBy: 'price' | 'name' | 'rating'
+  sortBy: 'price' | 'name' | 'rating' | 'distance'
 ): number {
+  if (sortBy === 'distance') return (a.distanceInKm ?? 999999) - (b.distanceInKm ?? 999999);
   if (sortBy === 'rating') return a.averageRating - b.averageRating;
   if (sortBy === 'name') return a.title.localeCompare(b.title);
   return a.pricing.averageNightRate - b.pricing.averageNightRate;
@@ -61,7 +66,7 @@ function compareByField(
 
 function sortCatalogItems(
   items: CatalogPropertyItemDto[],
-  sortBy: 'price' | 'name' | 'rating' = 'price',
+  sortBy: 'price' | 'name' | 'rating' | 'distance' = 'price',
   sortOrder: 'asc' | 'desc' = 'asc'
 ): CatalogPropertyItemDto[] {
   return [...items].sort((a, b) => {
@@ -92,7 +97,7 @@ function processProperties(
   for (const prop of properties) {
     const best = findBestRoomPricing(prop.rooms, query.checkIn, query.checkOut, query.guests);
     if (best) {
-      results.push(formatCatalogProperty(prop, best));
+      results.push(formatCatalogProperty(prop, best, query.latitude, query.longitude));
     }
   }
   return results;
