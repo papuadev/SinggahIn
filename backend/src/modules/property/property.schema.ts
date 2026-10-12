@@ -85,3 +85,15 @@ export type ReverseGeocodeQuery = z.infer<typeof ReverseGeocodeQuerySchema>;
 export type SearchGeocodeQuery = z.infer<typeof SearchGeocodeQuerySchema>;
 export type ReorderPropertyImagesInput = z.infer<typeof ReorderPropertyImagesSchema>;
 
+export const GetTenantPropertiesQuerySchema = z.object({
+  search: z.string().optional(),
+  categoryId: z.string().optional(),
+  sortBy: z
+    .enum(['createdAt_desc', 'createdAt_asc', 'title_asc', 'title_desc', 'city_asc'])
+    .optional(),
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().optional(),
+});
+
+export type GetTenantPropertiesQueryInput = z.infer<typeof GetTenantPropertiesQuerySchema>;
+

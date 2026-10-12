@@ -21,4 +21,6 @@ export interface BookingListQuery {
   page?: number;
   limit?: number;
   status?: BookingStatus;
+  search?: string;
+  sortBy?: 'createdAt_desc' | 'createdAt_asc' | 'checkIn_asc' | 'checkIn_desc' | 'price_desc' | 'price_asc';
 }

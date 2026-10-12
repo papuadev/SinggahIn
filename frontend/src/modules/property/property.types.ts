@@ -138,3 +138,18 @@ export interface CalendarQueryParams {
   roomId?: string;
 }
 
+export type TenantPropertySortOption =
+  | 'createdAt_desc'
+  | 'createdAt_asc'
+  | 'title_asc'
+  | 'title_desc'
+  | 'city_asc';
+
+export interface GetTenantPropertiesParams {
+  search?: string;
+  categoryId?: string;
+  sortBy?: TenantPropertySortOption | string;
+  page?: number;
+  limit?: number;
+}
+

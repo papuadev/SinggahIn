@@ -156,9 +156,52 @@ const BOOKING_SELECT = {
 export async function getUserBookings(userId: string, query: BookingListQuery) {
   const page = query.page || 1;
   const limit = query.limit || 10;
-  const where = { userId, ...(query.status && { status: query.status }) };
+  const where: Prisma.BookingWhereInput = {
+    userId,
+    ...(query.status && { status: query.status }),
+  };
+
+  if (query.search?.trim()) {
+    const s = query.search.trim();
+    where.OR = [
+      { bookingCode: { contains: s, mode: 'insensitive' } },
+      { property: { title: { contains: s, mode: 'insensitive' } } },
+      { property: { city: { contains: s, mode: 'insensitive' } } },
+      { room: { name: { contains: s, mode: 'insensitive' } } },
+    ];
+  }
+
+  let orderBy: Prisma.BookingOrderByWithRelationInput = { createdAt: 'desc' };
+  switch (query.sortBy) {
+    case 'createdAt_asc':
+      orderBy = { createdAt: 'asc' };
+      break;
+    case 'checkIn_asc':
+      orderBy = { checkInDate: 'asc' };
+      break;
+    case 'checkIn_desc':
+      orderBy = { checkInDate: 'desc' };
+      break;
+    case 'price_desc':
+      orderBy = { totalPrice: 'desc' };
+      break;
+    case 'price_asc':
+      orderBy = { totalPrice: 'asc' };
+      break;
+    case 'createdAt_desc':
+    default:
+      orderBy = { createdAt: 'desc' };
+      break;
+  }
+
   const [data, totalItems] = await Promise.all([
-    prisma.booking.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' }, include: BOOKING_SELECT }),
+    prisma.booking.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy,
+      include: BOOKING_SELECT,
+    }),
     prisma.booking.count({ where }),
   ]);
   return { data, meta: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) } };
@@ -174,9 +217,53 @@ const TENANT_BOOKING_SELECT = {
 export async function getTenantBookings(tenantId: string, query: BookingListQuery) {
   const page = query.page || 1;
   const limit = query.limit || 10;
-  const where = { property: { tenantId }, ...(query.status && { status: query.status }) };
+  const where: Prisma.BookingWhereInput = {
+    property: { tenantId },
+    ...(query.status && { status: query.status }),
+  };
+
+  if (query.search?.trim()) {
+    const s = query.search.trim();
+    where.OR = [
+      { bookingCode: { contains: s, mode: 'insensitive' } },
+      { property: { title: { contains: s, mode: 'insensitive' } } },
+      { room: { name: { contains: s, mode: 'insensitive' } } },
+      { user: { name: { contains: s, mode: 'insensitive' } } },
+      { user: { email: { contains: s, mode: 'insensitive' } } },
+    ];
+  }
+
+  let orderBy: Prisma.BookingOrderByWithRelationInput = { createdAt: 'desc' };
+  switch (query.sortBy) {
+    case 'createdAt_asc':
+      orderBy = { createdAt: 'asc' };
+      break;
+    case 'checkIn_asc':
+      orderBy = { checkInDate: 'asc' };
+      break;
+    case 'checkIn_desc':
+      orderBy = { checkInDate: 'desc' };
+      break;
+    case 'price_desc':
+      orderBy = { totalPrice: 'desc' };
+      break;
+    case 'price_asc':
+      orderBy = { totalPrice: 'asc' };
+      break;
+    case 'createdAt_desc':
+    default:
+      orderBy = { createdAt: 'desc' };
+      break;
+  }
+
   const [data, totalItems] = await Promise.all([
-    prisma.booking.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' }, include: TENANT_BOOKING_SELECT }),
+    prisma.booking.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy,
+      include: TENANT_BOOKING_SELECT,
+    }),
     prisma.booking.count({ where }),
   ]);
   return { data, meta: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) } };

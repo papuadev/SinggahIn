@@ -109,4 +109,32 @@ describe('TenantOrderManagementPage', () => {
       expect.objectContaining({ status: 'REJECTED' })
     );
   });
+
+  it('searches orders and updates sort options', async () => {
+    vi.mocked(bookingApi.getTenantBookings).mockResolvedValue({
+      success: true, message: 'OK', data: mockTenantBookings as any,
+    });
+    renderTenantOrders();
+    await waitFor(() => {
+      expect(screen.getByText('SGH-20261015-TNT1')).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/Cari kode pesanan, nama tamu/i);
+    fireEvent.change(searchInput, { target: { value: 'Andi' } });
+
+    await waitFor(() => {
+      expect(bookingApi.getTenantBookings).toHaveBeenCalledWith(
+        expect.objectContaining({ search: 'Andi' })
+      );
+    });
+
+    const sortSelect = screen.getByDisplayValue('Terbaru');
+    fireEvent.change(sortSelect, { target: { value: 'price_desc' } });
+
+    await waitFor(() => {
+      expect(bookingApi.getTenantBookings).toHaveBeenCalledWith(
+        expect.objectContaining({ sortBy: 'price_desc' })
+      );
+    });
+  });
 });

@@ -18,6 +18,7 @@ import {
   ReorderPropertyImagesSchema,
   ReverseGeocodeQuerySchema,
   SearchGeocodeQuerySchema,
+  GetTenantPropertiesQuerySchema,
 } from './property.schema';
 import { CatalogQuerySchema } from './catalog.schema';
 import { CalendarQuerySchema } from './calendar.schema';
@@ -48,6 +49,7 @@ router.get(
   '/my-properties',
   authenticate,
   requireRole(Role.TENANT),
+  validateRequest({ query: GetTenantPropertiesQuerySchema }),
   propertyController.getMyProperties
 );
 

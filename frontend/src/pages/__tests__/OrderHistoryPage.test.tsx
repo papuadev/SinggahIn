@@ -154,4 +154,77 @@ describe('OrderHistoryPage', () => {
     renderHistory();
     expect(screen.getByRole('button', { name: 'Kembali' })).toBeInTheDocument();
   });
+
+  it('searches user orders and updates sort options', async () => {
+    const mockBookings = [
+      {
+        id: 'bk-1',
+        bookingCode: 'SGH-20261015-AAAA',
+        status: 'WAITING_PAYMENT',
+        checkInDate: '2026-10-15',
+        checkOutDate: '2026-10-17',
+        guestCount: 2,
+        totalPrice: 1000000,
+        property: { title: 'Villa Indah' },
+        room: { name: 'Deluxe' },
+      },
+    ];
+    vi.mocked(bookingApi.getUserBookings).mockResolvedValue({
+      success: true, message: 'OK', data: mockBookings as any,
+    });
+    renderHistory();
+    await waitFor(() => {
+      expect(screen.getByText('SGH-20261015-AAAA')).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/Cari kode pesanan atau nama penginapan/i);
+    fireEvent.change(searchInput, { target: { value: 'Villa Indah' } });
+
+    await waitFor(() => {
+      expect(bookingApi.getUserBookings).toHaveBeenCalledWith(
+        expect.objectContaining({ search: 'Villa Indah' })
+      );
+    });
+
+    const sortSelect = screen.getByDisplayValue('Terbaru');
+    fireEvent.change(sortSelect, { target: { value: 'price_desc' } });
+
+    await waitFor(() => {
+      expect(bookingApi.getUserBookings).toHaveBeenCalledWith(
+        expect.objectContaining({ sortBy: 'price_desc' })
+      );
+    });
+  });
+
+  it('scrolls to top smoothly when changing page', async () => {
+    const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const mockBookings = [
+      {
+        id: 'bk-1',
+        bookingCode: 'SGH-20261015-AAAA',
+        status: 'WAITING_PAYMENT',
+        checkInDate: '2026-10-15',
+        checkOutDate: '2026-10-17',
+        guestCount: 2,
+        totalPrice: 1000000,
+        property: { title: 'Villa Indah' },
+        room: { name: 'Deluxe' },
+      },
+    ];
+    vi.mocked(bookingApi.getUserBookings).mockResolvedValue({
+      success: true,
+      message: 'OK',
+      data: mockBookings as any,
+      meta: { page: 1, limit: 1, totalPages: 2, totalItems: 2 },
+    });
+    renderHistory();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Berikutnya/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Berikutnya/i }));
+
+    expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+    scrollToSpy.mockRestore();
+  });
 });

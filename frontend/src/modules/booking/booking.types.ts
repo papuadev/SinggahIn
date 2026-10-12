@@ -84,10 +84,20 @@ export interface CreateBookingPayload {
   paymentMethod: PaymentMethod;
 }
 
+export type BookingSortOption =
+  | 'createdAt_desc'
+  | 'createdAt_asc'
+  | 'checkIn_asc'
+  | 'checkIn_desc'
+  | 'price_desc'
+  | 'price_asc';
+
 export interface BookingListQuery {
   status?: BookingStatus;
   page?: number;
   limit?: number;
+  search?: string;
+  sortBy?: BookingSortOption | string;
 }
 
 export interface BookingPaginationMeta {

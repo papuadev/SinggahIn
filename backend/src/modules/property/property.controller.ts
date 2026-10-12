@@ -25,8 +25,12 @@ export async function create(req: Request, res: Response, next: NextFunction): P
 
 export async function getMyProperties(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const properties = await propertyService.getTenantProperties(req.user!.userId);
-    sendSuccess(res, properties, 'Daftar properti tenant berhasil diambil.');
+    const result = await propertyService.getTenantProperties(req.user!.userId, req.query as any);
+    if ('meta' in result && 'data' in result) {
+      sendSuccess(res, result.data, 'Daftar properti tenant berhasil diambil.', 200, result.meta);
+    } else {
+      sendSuccess(res, result, 'Daftar properti tenant berhasil diambil.');
+    }
   } catch (error) {
     next(error);
   }

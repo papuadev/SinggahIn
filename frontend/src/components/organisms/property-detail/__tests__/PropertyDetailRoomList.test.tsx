@@ -103,48 +103,60 @@ it('renders room controls and dates badge', () => {
   expect(screen.getByText('2026-10-10 - 2026-10-12')).toBeInTheDocument();
 });
 
-it('sorts rooms by price descending', () => {
+it('sorts rooms by price descending', async () => {
   renderList(createMockRooms(3));
   const select = screen.getByLabelText('Urutkan kamar');
   fireEvent.change(select, { target: { value: 'price_desc' } });
-  const headings = screen.getAllByRole('heading', { level: 3 });
-  expect(headings[0]).toHaveTextContent('Room C');
-  expect(headings[2]).toHaveTextContent('Room A');
+  await waitFor(() => {
+    const headings = screen.getAllByRole('heading', { level: 3 });
+    expect(headings[0]).toHaveTextContent('Room C');
+    expect(headings[2]).toHaveTextContent('Room A');
+  });
 });
 
-it('sorts rooms by name descending', () => {
+it('sorts rooms by name descending', async () => {
   renderList(createMockRooms(3));
   const select = screen.getByLabelText('Urutkan kamar');
   fireEvent.change(select, { target: { value: 'name_desc' } });
-  const headings = screen.getAllByRole('heading', { level: 3 });
-  expect(headings[0]).toHaveTextContent('Room C');
+  await waitFor(() => {
+    const headings = screen.getAllByRole('heading', { level: 3 });
+    expect(headings[0]).toHaveTextContent('Room C');
+  });
 });
 
-it('filters rooms by search query', () => {
+it('filters rooms by search query', async () => {
   renderList(createMockRooms(3));
   const searchInput = screen.getByPlaceholderText('Cari tipe kamar...');
   fireEvent.change(searchInput, { target: { value: 'Room B' } });
-  expect(screen.getByText('Room B')).toBeInTheDocument();
-  expect(screen.queryByText('Room A')).not.toBeInTheDocument();
-  expect(screen.queryByText('Room C')).not.toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.getByText('Room B')).toBeInTheDocument();
+    expect(screen.queryByText('Room A')).not.toBeInTheDocument();
+    expect(screen.queryByText('Room C')).not.toBeInTheDocument();
+  });
 });
 
-it('shows empty search result and clears query on reset', () => {
+it('shows empty search result and clears query on reset', async () => {
   renderList(createMockRooms(3));
   const searchInput = screen.getByPlaceholderText('Cari tipe kamar...');
   fireEvent.change(searchInput, { target: { value: 'NonExistent' } });
-  expect(screen.getByText('Tipe Kamar Tidak Ditemukan')).toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.getByText('Tipe Kamar Tidak Ditemukan')).toBeInTheDocument();
+  });
   fireEvent.click(screen.getByRole('button', { name: /bersihkan pencarian/i }));
-  expect(screen.getByText('Room A')).toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.getByText('Room A')).toBeInTheDocument();
+  });
 });
 
-it('paginates rooms when count exceeds page size', () => {
+it('paginates rooms when count exceeds page size', async () => {
   renderList(createMockRooms(7));
   expect(screen.getByText('Room A')).toBeInTheDocument();
   expect(screen.queryByText('Room F')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Halaman 2' }));
-  expect(screen.getByText('Room F')).toBeInTheDocument();
-  expect(screen.queryByText('Room A')).not.toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.getByText('Room F')).toBeInTheDocument();
+    expect(screen.queryByText('Room A')).not.toBeInTheDocument();
+  });
 });
 
 it('triggers onBookRoom when Pesan Sekarang button is clicked', () => {

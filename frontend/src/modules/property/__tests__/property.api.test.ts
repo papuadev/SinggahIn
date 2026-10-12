@@ -43,6 +43,19 @@ describe('Property API Service Tests', () => {
     expect(result.data).toEqual(mockProperties);
   });
 
+  it('getMyProperties should call /properties/my-properties with params when provided', async () => {
+    const mockProperties = [{ id: 'prop-1', title: 'Villa Hijau' }];
+    vi.mocked(apiClient.get).mockResolvedValueOnce({
+      data: { success: true, message: 'OK', data: mockProperties },
+    });
+
+    const params = { search: 'Villa', page: 1, limit: 10 };
+    const result = await propertyApi.getMyProperties(params);
+
+    expect(apiClient.get).toHaveBeenCalledWith('/properties/my-properties', { params });
+    expect(result.data).toEqual(mockProperties);
+  });
+
   it('getPropertyById should call /properties/:id', async () => {
     const mockProperty = { id: 'prop-1', title: 'Villa Hijau' };
     vi.mocked(apiClient.get).mockResolvedValueOnce({

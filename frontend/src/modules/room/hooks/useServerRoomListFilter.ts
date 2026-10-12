@@ -7,12 +7,8 @@ import {
   UseRoomListFilterOptions,
   UseRoomListFilterReturn,
 } from '../room-filter.types';
-import {
-  useFilterState,
-  matchesQuery,
-  compareBySort,
-  paginateList,
-} from './useRoomListFilter';
+import { useFilterState } from './useRoomListFilter';
+import { useDebounce } from '../../../libs/useDebounce';
 
 export function useServerRoomListFilter<T extends BaseRoomFilterItem = Room>(
   propertyId?: string,
@@ -20,13 +16,14 @@ export function useServerRoomListFilter<T extends BaseRoomFilterItem = Room>(
 ): UseRoomListFilterReturn<T> {
   const pageSize = opts.pageSize || 5;
   const state = useFilterState();
+  const debouncedSearch = useDebounce(state.searchQuery, 300);
 
   const { data, isLoading } = useQuery({
     queryKey: [
       'rooms-server-list',
       propertyId,
       {
-        search: state.searchQuery.trim() || undefined,
+        search: debouncedSearch.trim() || undefined,
         sortBy: state.sortBy,
         page: state.currentPage,
         limit: pageSize,
@@ -35,13 +32,31 @@ export function useServerRoomListFilter<T extends BaseRoomFilterItem = Room>(
     queryFn: async () => {
       if (!propertyId) throw new Error('ID properti wajib diisi');
       const res = await roomApi.getRoomsByProperty(propertyId, {
-        search: state.searchQuery.trim() || undefined,
+        search: debouncedSearch.trim() || undefined,
         sortBy: state.sortBy,
         page: state.currentPage,
         limit: pageSize,
       });
       return res ?? { success: true, message: 'OK', data: [] };
     },
+    initialData:
+      opts.initialRooms &&
+      opts.initialRooms.length > 0 &&
+      !debouncedSearch &&
+      state.sortBy === 'price_asc' &&
+      state.currentPage === 1
+        ? {
+            success: true,
+            message: 'OK',
+            data: opts.initialRooms.slice(0, pageSize) as unknown as Room[],
+            meta: {
+              page: 1,
+              limit: pageSize,
+              totalItems: opts.initialRooms.length,
+              totalPages: Math.max(1, Math.ceil(opts.initialRooms.length / pageSize)),
+            },
+          }
+        : undefined,
     enabled: Boolean(propertyId),
   });
 
@@ -60,37 +75,12 @@ export function useServerRoomListFilter<T extends BaseRoomFilterItem = Room>(
       };
     }
 
-    if (opts.initialRooms && opts.initialRooms.length > 0) {
-      const filtered = opts.initialRooms.filter((r) =>
-        matchesQuery(r, state.searchQuery)
-      );
-      const sorted = [...filtered].sort((a, b) =>
-        compareBySort(a, b, state.sortBy)
-      );
-      const total = sorted.length;
-      const pages = Math.max(1, Math.ceil(total / pageSize));
-      const safePage = Math.min(state.currentPage, pages);
-      const paginated = paginateList(sorted, safePage, pageSize);
-      return {
-        paginatedRooms: paginated,
-        totalFiltered: total,
-        totalPages: pages,
-      };
-    }
-
     return {
       paginatedRooms: [] as T[],
       totalFiltered: 0,
       totalPages: 1,
     };
-  }, [
-    data,
-    opts.initialRooms,
-    state.searchQuery,
-    state.sortBy,
-    state.currentPage,
-    pageSize,
-  ]);
+  }, [data, pageSize]);
 
   return {
     ...state,

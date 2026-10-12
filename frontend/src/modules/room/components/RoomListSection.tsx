@@ -1,9 +1,8 @@
 import React from 'react';
 import { Plus, BedDouble } from 'lucide-react';
 import { Room } from '../room.types';
-import { usePropertyRooms } from '../hooks/useRooms';
 import { useRoomActions } from '../hooks/useRoomActions';
-import { useRoomListFilter } from '../hooks/useRoomListFilter';
+import { useServerRoomListFilter } from '../hooks/useServerRoomListFilter';
 import { UseRoomListFilterReturn } from '../room-filter.types';
 import { RoomCard } from './RoomCard';
 import { RoomListControls } from './RoomListControls';
@@ -99,11 +98,11 @@ function RoomListControlsPart({ filter }: { filter: UseRoomListFilterReturn }): 
 }
 
 type ListViewProps = {
-  rooms: Room[]; filter: UseRoomListFilterReturn; actions: ReturnType<typeof useRoomActions>; onAdd: () => void;
+  filter: UseRoomListFilterReturn; actions: ReturnType<typeof useRoomActions>; onAdd: () => void;
 };
 
-function RoomListView({ rooms, filter, actions, onAdd }: ListViewProps): React.JSX.Element {
-  if (rooms.length === 0) return <RoomListEmpty onAdd={onAdd} />;
+function RoomListView({ filter, actions, onAdd }: ListViewProps): React.JSX.Element {
+  if (filter.totalFiltered === 0 && !filter.searchQuery) return <RoomListEmpty onAdd={onAdd} />;
   return (
     <div className="space-y-4">
       <RoomListControlsPart filter={filter} />
@@ -125,16 +124,17 @@ function RoomListAlerts({ actionError, error }: { actionError: string | null; er
 }
 
 export function RoomListSection({ propertyId }: RoomListSectionProps): React.JSX.Element {
-  const { data: rooms = [], isLoading, error } = usePropertyRooms(propertyId);
-  const filter = useRoomListFilter(rooms);
+  const filter = useServerRoomListFilter(propertyId, { pageSize: 5 });
   const actions = useRoomActions(propertyId);
-  if (isLoading) return <div className="flex justify-center items-center py-12"><Spinner size="md" /></div>;
+  if (filter.isLoading && filter.paginatedRooms.length === 0) {
+    return <div className="flex justify-center items-center py-12"><Spinner size="md" /></div>;
+  }
 
   return (
     <div className="space-y-4">
-      <RoomListHeader onAdd={actions.openCreate} count={rooms.length} />
-      <RoomListAlerts actionError={actions.actionError} error={error} />
-      <RoomListView rooms={rooms} filter={filter} actions={actions} onAdd={actions.openCreate} />
+      <RoomListHeader onAdd={actions.openCreate} count={filter.totalFiltered} />
+      <RoomListAlerts actionError={actions.actionError} error={null} />
+      <RoomListView filter={filter} actions={actions} onAdd={actions.openCreate} />
       <RoomModalsSection propertyId={propertyId} actions={actions} />
     </div>
   );

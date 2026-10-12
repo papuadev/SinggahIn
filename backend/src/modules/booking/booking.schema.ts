@@ -23,4 +23,10 @@ export const listBookingsQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(50).default(10),
   status: z.nativeEnum(BookingStatus).optional(),
+  search: z.string().optional(),
+  sortBy: z
+    .enum(['createdAt_desc', 'createdAt_asc', 'checkIn_asc', 'checkIn_desc', 'price_desc', 'price_asc'])
+    .optional(),
 });
+
+export type BookingListQueryInput = z.infer<typeof listBookingsQuerySchema>;

@@ -1,8 +1,10 @@
-import {prisma} from '../../shared/services/prisma.service';
-import {AppError} from '../../shared/utils/app-error';
-import {PropertyResponseDto, PropertyListItemDto, PropertyCategoryDto} from './property.types';
-import {CreatePropertyInput, UpdatePropertyInput} from './property.schema';
-import {deleteFromCloudinary} from '../../shared/services/cloudinary.service';
+import { Prisma } from '@prisma/client';
+import { prisma } from '../../shared/services/prisma.service';
+import { AppError } from '../../shared/utils/app-error';
+import { PaginationMeta } from '../../shared/types/api.types';
+import { PropertyResponseDto, PropertyListItemDto, PropertyCategoryDto } from './property.types';
+import { CreatePropertyInput, UpdatePropertyInput, GetTenantPropertiesQueryInput } from './property.schema';
+import { deleteFromCloudinary } from '../../shared/services/cloudinary.service';
 
 export async function getPropertyCategories(): Promise<PropertyCategoryDto[]> {
     return prisma.propertyCategory.findMany({
@@ -63,12 +65,72 @@ function mapPropertyListItem(prop: PropertyWithImages): PropertyListItemDto {
 }
 
 export async function getTenantProperties(
-  tenantId: string
-): Promise<PropertyListItemDto[]> {
+  tenantId: string,
+  query?: GetTenantPropertiesQueryInput
+): Promise<PropertyListItemDto[] | { data: PropertyListItemDto[]; meta: PaginationMeta }> {
+  const where: Prisma.PropertyWhereInput = { tenantId };
+
+  if (query?.search?.trim()) {
+    const s = query.search.trim();
+    where.OR = [
+      { title: { contains: s, mode: 'insensitive' } },
+      { description: { contains: s, mode: 'insensitive' } },
+      { city: { contains: s, mode: 'insensitive' } },
+      { address: { contains: s, mode: 'insensitive' } },
+    ];
+  }
+
+  if (query?.categoryId?.trim()) {
+    where.categoryId = query.categoryId.trim();
+  }
+
+  let orderBy: Prisma.PropertyOrderByWithRelationInput = { createdAt: 'desc' };
+  switch (query?.sortBy) {
+    case 'createdAt_asc':
+      orderBy = { createdAt: 'asc' };
+      break;
+    case 'title_asc':
+      orderBy = { title: 'asc' };
+      break;
+    case 'title_desc':
+      orderBy = { title: 'desc' };
+      break;
+    case 'city_asc':
+      orderBy = { city: 'asc' };
+      break;
+    case 'createdAt_desc':
+    default:
+      orderBy = { createdAt: 'desc' };
+      break;
+  }
+
+  if (query?.page || query?.limit) {
+    const page = query.page || 1;
+    const limit = query.limit || 6;
+    const skip = (page - 1) * limit;
+
+    const [totalItems, properties] = await Promise.all([
+      prisma.property.count({ where }),
+      prisma.property.findMany({
+        where,
+        include: { category: true, images: true },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+    return {
+      data: properties.map(mapPropertyListItem),
+      meta: { page, limit, totalItems, totalPages },
+    };
+  }
+
   const properties = await prisma.property.findMany({
-    where: { tenantId },
+    where,
     include: { category: true, images: true },
-    orderBy: { createdAt: 'desc' },
+    orderBy,
   });
   return properties.map(mapPropertyListItem);
 }

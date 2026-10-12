@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { Eye, Search } from 'lucide-react';
 import { useTenantOrders } from '../../modules/booking/hooks/useTenantOrders';
 import { TenantOrderApprovalModal } from '../../modules/payment/components/TenantOrderApprovalModal';
 import { getStatusBadge } from '../../modules/booking/components/OrderHistoryCard';
 import { BookingStatus, Booking } from '../../modules/booking/booking.types';
 import { formatRupiah, formatDateID } from '../../libs/formatters';
 import { Button } from '../../components/atoms/Button';
+import { Input } from '../../components/atoms/Input';
+import { Select } from '../../components/atoms/Select';
+import { Pagination } from '../../components/molecules/Pagination';
 
 const TENANT_TABS: Array<{ label: string; value?: BookingStatus }> = [
   { label: 'Semua', value: undefined },
@@ -19,12 +22,48 @@ const TENANT_TABS: Array<{ label: string; value?: BookingStatus }> = [
 
 function TenantTabs({ current, onSelect }: { current?: BookingStatus; onSelect: (s?: BookingStatus) => void }) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none items-center">
+      <span className="text-xs font-medium text-gray-500 mr-1 shrink-0">Status:</span>
       {TENANT_TABS.map((tab) => {
         const active = current === tab.value;
-        const cls = active ? 'bg-primary-600 text-white font-semibold' : 'bg-white text-gray-600 border hover:bg-gray-50';
-        return <button key={tab.label} type="button" onClick={() => onSelect(tab.value)} className={`px-3.5 py-1.5 rounded-full text-xs shrink-0 cursor-pointer ${cls}`}>{tab.label}</button>;
+        const cls = active ? 'bg-primary-600 text-white font-semibold' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50';
+        return <button key={tab.label} type="button" onClick={() => onSelect(tab.value)} className={`px-3 py-1 rounded-full text-xs shrink-0 cursor-pointer transition-colors ${cls}`}>{tab.label}</button>;
       })}
+    </div>
+  );
+}
+
+function TenantOrderFilterBar({
+  search,
+  onSearchChange,
+  sortBy,
+  onSortChange,
+}: {
+  search: string;
+  onSearchChange: (v: string) => void;
+  sortBy: string;
+  onSortChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+      <div className="relative flex-1">
+        <Input
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Cari kode pesanan, nama tamu, atau properti..."
+          leftIcon={<Search className="w-4 h-4 text-gray-400" />}
+        />
+      </div>
+      <div className="w-full sm:w-56">
+        <Select value={sortBy} onChange={(e) => onSortChange(e.target.value)} size="md">
+          <option value="createdAt_desc">Terbaru</option>
+          <option value="createdAt_asc">Terlama</option>
+          <option value="checkIn_asc">Check-in Terdekat</option>
+          <option value="checkIn_desc">Check-in Terjauh</option>
+          <option value="price_desc">Total Tertinggi</option>
+          <option value="price_asc">Total Terendah</option>
+        </Select>
+      </div>
     </div>
   );
 }
@@ -57,17 +96,6 @@ function OrderTable({ bookings, onSelect }: { bookings: Booking[]; onSelect: (b:
   );
 }
 
-function TablePagination({ meta, page, setPage }: any) {
-  if (!meta || meta.totalPages <= 1) return null;
-  return (
-    <div className="flex justify-center items-center gap-2 pt-4">
-      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p: number) => p - 1)} leftIcon={<ChevronLeft className="w-4 h-4" />}>Sebelumnya</Button>
-      <span className="text-xs text-gray-500">Hal. {page} dari {meta.totalPages}</span>
-      <Button variant="outline" size="sm" disabled={page >= meta.totalPages} onClick={() => setPage((p: number) => p + 1)} rightIcon={<ChevronRight className="w-4 h-4" />}>Berikutnya</Button>
-    </div>
-  );
-}
-
 function TenantOrderHeader() {
   return (
     <div>
@@ -77,27 +105,81 @@ function TenantOrderHeader() {
   );
 }
 
-function TenantOrdersContent({ loading, bookings, meta, page, setPage, onSelect }: any) {
+function TenantOrdersContent({ loading, bookings, meta, page, onPageChange, onSelect }: any) {
   if (loading) return <div className="py-12 text-center text-sm text-gray-500">Memuat data pesanan...</div>;
-  if (bookings.length === 0) return <p className="text-center py-12 text-gray-400 bg-white rounded-xl border">Belum ada pesanan masuk pada status ini.</p>;
+  if (bookings.length === 0) return <p className="text-center py-12 text-gray-400 bg-white rounded-xl border">Belum ada pesanan masuk yang sesuai dengan filter.</p>;
   return (
     <>
       <OrderTable bookings={bookings} onSelect={onSelect} />
-      <TablePagination meta={meta} page={page} setPage={setPage} />
+      {meta && (
+        <Pagination
+          page={page}
+          totalPages={meta.totalPages}
+          totalItems={meta.totalItems}
+          itemLabel="pesanan"
+          onPageChange={onPageChange}
+          className="mt-6"
+        />
+      )}
     </>
   );
 }
 
 export function TenantOrderManagementPage(): React.JSX.Element {
-  const { bookings, meta, isLoading, status, setStatus, page, setPage, approve, reject, emergency, isActionLoading } = useTenantOrders();
+  const {
+    bookings,
+    meta,
+    isLoading,
+    status,
+    setStatus,
+    search,
+    setSearch,
+    sortBy,
+    setSortBy,
+    page,
+    setPage,
+    approve,
+    reject,
+    emergency,
+    isActionLoading,
+  } = useTenantOrders();
   const [selected, setSelected] = useState<Booking | null>(null);
   const close = () => setSelected(null);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="space-y-6">
       <TenantOrderHeader />
-      <TenantTabs current={status} onSelect={setStatus} />
-      <TenantOrdersContent loading={isLoading} bookings={bookings} meta={meta} page={page} setPage={setPage} onSelect={setSelected} />
-      <TenantOrderApprovalModal isOpen={Boolean(selected)} onClose={close} booking={selected} onApprove={async (id) => { await approve(id); close(); }} onReject={async (id, r) => { await reject(id, r); close(); }} onEmergency={async (id, p) => { await emergency(id, p); close(); }} isLoading={isActionLoading} />
+      <div className="sticky top-16 z-30 bg-gray-50/95 backdrop-blur-md pt-2 pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 border-b border-gray-200/80 shadow-xs space-y-3">
+        <TenantOrderFilterBar
+          search={search}
+          onSearchChange={setSearch}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+        />
+        <TenantTabs current={status} onSelect={setStatus} />
+      </div>
+      <TenantOrdersContent
+        loading={isLoading}
+        bookings={bookings}
+        meta={meta}
+        page={page}
+        onPageChange={handlePageChange}
+        onSelect={setSelected}
+      />
+      <TenantOrderApprovalModal
+        isOpen={Boolean(selected)}
+        onClose={close}
+        booking={selected}
+        onApprove={async (id) => { await approve(id); close(); }}
+        onReject={async (id, r) => { await reject(id, r); close(); }}
+        onEmergency={async (id, p) => { await emergency(id, p); close(); }}
+        isLoading={isActionLoading}
+      />
     </div>
   );
 }

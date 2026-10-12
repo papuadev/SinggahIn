@@ -10,6 +10,7 @@ vi.mock('../../../modules/property/services/property.api', () => ({
   propertyApi: {
     getMyProperties: vi.fn(),
     deleteProperty: vi.fn(),
+    getCategories: vi.fn(),
   },
 }));
 
@@ -99,6 +100,67 @@ describe('TenantPropertyListPage Tests', () => {
 
     await waitFor(() => {
       expect(propertyApi.deleteProperty).toHaveBeenCalledWith('prop-123');
+    });
+  });
+
+  it('filters properties when clicking a category badge and searching', async () => {
+    vi.mocked(propertyApi.getCategories).mockResolvedValue({
+      success: true,
+      message: 'OK',
+      data: [{ id: 'cat-villa', name: 'Villa', slug: 'villa', description: null }],
+    });
+    vi.mocked(propertyApi.getMyProperties).mockResolvedValue({
+      success: true,
+      message: 'OK',
+      data: [mockProperty],
+      meta: { page: 1, limit: 6, totalPages: 1, totalItems: 1 },
+    });
+
+    renderWithProviders(<TenantPropertyListPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Villa Sunset Indah')).toBeInTheDocument();
+    });
+
+    // Search input
+    const searchInput = screen.getByPlaceholderText(/Cari properti berdasarkan judul/i);
+    fireEvent.change(searchInput, { target: { value: 'Sunset' } });
+
+    await waitFor(() => {
+      expect(propertyApi.getMyProperties).toHaveBeenCalledWith(
+        expect.objectContaining({ search: 'Sunset' })
+      );
+    });
+
+    // Category badge click
+    const categoryBadge = screen.getAllByRole('button', { name: 'Villa' })[0];
+    fireEvent.click(categoryBadge);
+
+    await waitFor(() => {
+      expect(propertyApi.getMyProperties).toHaveBeenCalledWith(
+        expect.objectContaining({ categoryId: 'cat-villa' })
+      );
+    });
+  });
+
+  it('updates sort option when selecting from dropdown', async () => {
+    vi.mocked(propertyApi.getMyProperties).mockResolvedValue({
+      success: true,
+      message: 'OK',
+      data: [mockProperty],
+    });
+
+    renderWithProviders(<TenantPropertyListPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Villa Sunset Indah')).toBeInTheDocument();
+    });
+
+    const sortSelect = screen.getByDisplayValue('Terbaru');
+    fireEvent.change(sortSelect, { target: { value: 'title_asc' } });
+
+    await waitFor(() => {
+      expect(propertyApi.getMyProperties).toHaveBeenCalledWith(
+        expect.objectContaining({ sortBy: 'title_asc' })
+      );
     });
   });
 });

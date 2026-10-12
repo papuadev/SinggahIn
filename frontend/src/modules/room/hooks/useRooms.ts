@@ -38,6 +38,7 @@ export function useCreateRoom(propertyId: string) {
     mutationFn: (data: CreateRoomPayload) => roomApi.createRoom(propertyId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ROOM_KEYS.list(propertyId) });
+      queryClient.invalidateQueries({ queryKey: ['rooms-server-list', propertyId] });
       queryClient.invalidateQueries({ queryKey: PROPERTY_KEYS.detail(propertyId) });
     },
   });
@@ -49,6 +50,7 @@ export function useUpdateRoom(propertyId: string, id: string) {
     mutationFn: (data: UpdateRoomPayload) => roomApi.updateRoom(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ROOM_KEYS.list(propertyId) });
+      queryClient.invalidateQueries({ queryKey: ['rooms-server-list', propertyId] });
       queryClient.invalidateQueries({ queryKey: ROOM_KEYS.detail(id) });
       queryClient.invalidateQueries({ queryKey: PROPERTY_KEYS.detail(propertyId) });
     },
@@ -61,6 +63,7 @@ export function useDeleteRoom(propertyId: string) {
     mutationFn: (id: string) => roomApi.deleteRoom(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ROOM_KEYS.list(propertyId) });
+      queryClient.invalidateQueries({ queryKey: ['rooms-server-list', propertyId] });
       queryClient.invalidateQueries({ queryKey: PROPERTY_KEYS.detail(propertyId) });
     },
   });

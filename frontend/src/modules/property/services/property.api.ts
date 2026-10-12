@@ -12,6 +12,7 @@ import {
   CatalogQueryParams,
   CalendarResponseData,
   CalendarQueryParams,
+  GetTenantPropertiesParams,
 } from '../property.types';
 
 export const propertyApi = {
@@ -22,9 +23,12 @@ export const propertyApi = {
     return res.data;
   },
 
-  async getMyProperties(): Promise<ApiResponse<PropertyItem[]>> {
+  async getMyProperties(
+    params?: GetTenantPropertiesParams
+  ): Promise<ApiResponse<PropertyItem[]>> {
     const res = await apiClient.get<ApiResponse<PropertyItem[]>>(
-      '/properties/my-properties'
+      '/properties/my-properties',
+      ...(params ? [{ params }] : [])
     );
     return res.data;
   },
