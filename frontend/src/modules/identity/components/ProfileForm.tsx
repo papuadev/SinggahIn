@@ -58,7 +58,7 @@ function ProfileHeader({ user, onUploadAvatar, isLoading }: { user: User; onUplo
 
 function EmailField({ email }: { email: string }) {
   return (
-    <FormField label="Alamat Email (Akun)" hint="Email akun tidak dapat diubah secara langsung." htmlFor="profile-email">
+    <FormField label="Alamat Email (Akun)" hint="Untuk memperbarui alamat email Anda, silakan gunakan tab Ubah Email." htmlFor="profile-email">
       <Input id="profile-email" type="email" value={email} disabled leftIcon={<Mail className="w-4 h-4 text-gray-400" />} />
     </FormField>
   );

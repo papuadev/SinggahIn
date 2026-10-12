@@ -3,6 +3,10 @@ import {
   registerSchema,
   verifySchema,
   loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
+  requestEmailChangeSchema,
 } from '../schemas/identity.schema';
 
 describe('Identity Zod Schemas', () => {
@@ -100,6 +104,102 @@ describe('Identity Zod Schemas', () => {
         email: 'user@example.com',
         password: '',
         role: 'USER',
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('forgotPasswordSchema', () => {
+    it('should validate valid email', () => {
+      const result = forgotPasswordSchema.safeParse({ email: 'user@example.com' });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid email format', () => {
+      const result = forgotPasswordSchema.safeParse({ email: 'not-an-email' });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('resetPasswordSchema', () => {
+    it('should validate matching passwords >= 8 chars and token', () => {
+      const result = resetPasswordSchema.safeParse({
+        token: 'reset-token-abc',
+        password: 'newPassword123',
+        confirmPassword: 'newPassword123',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject mismatched passwords', () => {
+      const result = resetPasswordSchema.safeParse({
+        token: 'reset-token-abc',
+        password: 'newPassword123',
+        confirmPassword: 'differentPassword123',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject short passwords', () => {
+      const result = resetPasswordSchema.safeParse({
+        token: 'reset-token-abc',
+        password: 'short',
+        confirmPassword: 'short',
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('changePasswordSchema', () => {
+    it('should validate valid password change', () => {
+      const result = changePasswordSchema.safeParse({
+        currentPassword: 'oldPassword123',
+        newPassword: 'newPassword123',
+        confirmPassword: 'newPassword123',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject same new password as current password', () => {
+      const result = changePasswordSchema.safeParse({
+        currentPassword: 'samePassword123',
+        newPassword: 'samePassword123',
+        confirmPassword: 'samePassword123',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject mismatched new password confirmation', () => {
+      const result = changePasswordSchema.safeParse({
+        currentPassword: 'oldPassword123',
+        newPassword: 'newPassword123',
+        confirmPassword: 'wrongPassword123',
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('requestEmailChangeSchema', () => {
+    it('should validate valid email change request', () => {
+      const result = requestEmailChangeSchema.safeParse({
+        newEmail: 'newemail@example.com',
+        password: 'currentPassword123',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid new email format', () => {
+      const result = requestEmailChangeSchema.safeParse({
+        newEmail: 'invalid-email',
+        password: 'currentPassword123',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject empty password', () => {
+      const result = requestEmailChangeSchema.safeParse({
+        newEmail: 'newemail@example.com',
+        password: '',
       });
       expect(result.success).toBe(false);
     });

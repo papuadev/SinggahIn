@@ -8,6 +8,11 @@ import {
   VerifySchema,
   LoginSchema,
   UpdateProfileSchema,
+  ForgotPasswordSchema,
+  ResetPasswordSchema,
+  ChangePasswordSchema,
+  RequestEmailChangeSchema,
+  VerifyEmailChangeSchema,
 } from './identity.schema';
 
 const router = Router();
@@ -46,6 +51,38 @@ router.patch(
   authenticate,
   validateRequest({ body: UpdateProfileSchema }),
   identityController.updateProfile
+);
+
+router.post(
+  '/forgot-password',
+  validateRequest({ body: ForgotPasswordSchema }),
+  identityController.forgotPassword
+);
+
+router.post(
+  '/reset-password',
+  validateRequest({ body: ResetPasswordSchema }),
+  identityController.resetPassword
+);
+
+router.patch(
+  '/profile/password',
+  authenticate,
+  validateRequest({ body: ChangePasswordSchema }),
+  identityController.changePassword
+);
+
+router.post(
+  '/profile/email-change',
+  authenticate,
+  validateRequest({ body: RequestEmailChangeSchema }),
+  identityController.requestEmailChange
+);
+
+router.post(
+  '/profile/verify-email-change',
+  validateRequest({ body: VerifyEmailChangeSchema }),
+  identityController.verifyEmailChange
 );
 
 export const identityRoutes = router;

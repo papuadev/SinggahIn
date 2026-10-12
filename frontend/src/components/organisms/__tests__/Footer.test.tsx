@@ -4,17 +4,15 @@ import { MemoryRouter } from 'react-router-dom';
 import { Footer } from '../Footer';
 
 describe('Footer Component', () => {
-  it('renders brand info and value props in footer', () => {
+  it('renders brand info and description in footer', () => {
     render(
       <MemoryRouter>
         <Footer />
       </MemoryRouter>
     );
 
-    expect(screen.getByText('SinggahIn')).toBeInTheDocument();
-    expect(screen.getByText('100% Properti Terverifikasi')).toBeInTheDocument();
-    expect(screen.getByText('Pembayaran Aman & Sah')).toBeInTheDocument();
-    expect(screen.getByText('Dukungan Siaga 24/7')).toBeInTheDocument();
+    expect(screen.getByAltText('SinggahIn')).toBeInTheDocument();
+    expect(screen.getByText(/Platform reservasi hotel, villa/i)).toBeInTheDocument();
   });
 
   it('renders accommodation menu links', () => {
@@ -24,13 +22,13 @@ describe('Footer Component', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Tentang Penginapan')).toBeInTheDocument();
-    expect(screen.getByText(/Hotel & Resort/i)).toBeInTheDocument();
-    expect(screen.getByText(/Villa Private Pool/i)).toBeInTheDocument();
-    expect(screen.getByText(/Apartemen & Studio/i)).toBeInTheDocument();
-    expect(screen.getByText(/Homestay Autentik/i)).toBeInTheDocument();
-    expect(screen.getByText(/Penginapan di Bandung/i)).toBeInTheDocument();
-    expect(screen.getByText(/Penginapan di Bali/i)).toBeInTheDocument();
+    expect(screen.getByText('Cari Penginapan')).toBeInTheDocument();
+    expect(screen.getByText('Hotel & Resort')).toBeInTheDocument();
+    expect(screen.getByText('Villa')).toBeInTheDocument();
+    expect(screen.getByText('Homestay')).toBeInTheDocument();
+    expect(screen.getByText('Penginapan di Jakarta')).toBeInTheDocument();
+    expect(screen.getByText('Penginapan di Yogyakarta')).toBeInTheDocument();
+    expect(screen.getByText('Penginapan di Bali')).toBeInTheDocument();
   });
 
   it('renders about us and company links', () => {

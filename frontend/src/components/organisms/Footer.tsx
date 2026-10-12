@@ -9,9 +9,7 @@ import {
   Facebook,
   Twitter,
   Youtube,
-  Linkedin,
-  ShieldCheck,
-  CreditCard
+  Linkedin
 } from 'lucide-react';
 
 const ACCOMMODATION_LINKS = [
@@ -23,10 +21,10 @@ const ACCOMMODATION_LINKS = [
   { label: 'Penginapan di Bali', href: '/search?city=Bali' },
 ];
 
-const ABOUT_LINKS = [
+const ABOUT_LINKS: { label: string; to?: string; href?: string }[] = [
   { label: 'Tentang SinggahIn', to: '/about' },
-  { label: 'Visi & Misi Perusahaan', to: '/about' },
-  { label: 'Mengapa Memilih Kami', href: '/#about-us' },
+  { label: 'Visi & Misi Perusahaan', to: '/about#visi-misi' },
+  { label: 'Nilai-Nilai Perusahaan', to: '/about#core-values' },
   { label: 'Daftar Mitra Properti (Tenant)', to: '/register' },
 ];
 
@@ -66,7 +64,6 @@ export function Footer(): React.JSX.Element {
           <div className="lg:col-span-2 space-y-5">
             <Link to="/" onClick={handleRouteClick} className="inline-flex items-center gap-2.5">
               <img src="/logo.webp" alt="SinggahIn" className="h-9 w-auto brightness-110" />
-              <span className="text-2xl font-black tracking-tight text-white">SinggahIn</span>
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
               Platform reservasi hotel, villa, apartemen, dan penginapan terkurasi di seluruh Indonesia. Hadir dengan kalender tarif transparan tanpa biaya tersembunyi untuk kepastian singgah Anda.

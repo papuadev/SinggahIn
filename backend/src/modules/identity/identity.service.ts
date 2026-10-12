@@ -2,13 +2,15 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { User, TokenType } from "@prisma/client";
 import { prisma } from "../../shared/services/prisma.service";
-import { sendVerificationEmail } from "../../shared/services/mail.service";
+import { sendVerificationEmail, sendPasswordResetEmail } from "../../shared/services/mail.service";
 import { signToken } from "../../shared/services/token.service";
 import { AppError } from "../../shared/utils/app-error";
 import {
   RegisterInput,
   VerifyInput,
   LoginInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
   UserResponseDto,
 } from "./identity.types";
 
@@ -156,3 +158,81 @@ export async function getProfile(userId: string): Promise<UserResponseDto> {
   }
   return toUserDto(user);
 }
+
+export async function requestPasswordReset(
+  input: ForgotPasswordInput
+): Promise<{ message: string }> {
+  const user = await prisma.user.findUnique({
+    where: { email: input.email.toLowerCase() },
+  });
+
+  // Always return a generic success message to prevent user enumeration
+  if (!user || !user.isVerified) {
+    return {
+      message: 'Jika alamat email terdaftar di SinggahIn, tautan reset password telah dikirim ke email Anda.',
+    };
+  }
+
+  // Invalidate any active previous password reset tokens for this user
+  await prisma.verificationToken.updateMany({
+    where: {
+      userId: user.id,
+      type: TokenType.PASSWORD_RESET,
+      isUsed: false,
+    },
+    data: { isUsed: true },
+  });
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  await prisma.verificationToken.create({
+    data: {
+      userId: user.id,
+      email: user.email,
+      token,
+      type: TokenType.PASSWORD_RESET,
+      expiresAt,
+    },
+  });
+
+  await sendPasswordResetEmail(user.email, token);
+
+  return {
+    message: 'Jika alamat email terdaftar di SinggahIn, tautan reset password telah dikirim ke email Anda.',
+  };
+}
+
+export async function resetPassword(
+  input: ResetPasswordInput
+): Promise<{ message: string }> {
+  const record = await prisma.verificationToken.findFirst({
+    where: {
+      token: input.token,
+      type: TokenType.PASSWORD_RESET,
+      isUsed: false,
+    },
+  });
+
+  if (!record || record.expiresAt < new Date()) {
+    throw AppError.badRequest('Token reset password tidak valid atau telah kedaluwarsa.');
+  }
+
+  const hash = await bcrypt.hash(input.password, 10);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.verificationToken.update({
+      where: { id: record.id },
+      data: { isUsed: true },
+    });
+    await tx.user.update({
+      where: { id: record.userId },
+      data: { passwordHash: hash },
+    });
+  });
+
+  return {
+    message: 'Password berhasil diatur ulang. Silakan masuk menggunakan password baru Anda.',
+  };
+}
+

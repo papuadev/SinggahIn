@@ -35,3 +35,42 @@ export const UpdateProfileSchema = z.object({
     .optional()
 });
 
+export const ForgotPasswordSchema = z.object({
+  email: z.string().email('Format email tidak valid'),
+});
+
+export const ResetPasswordSchema = z
+  .object({
+    token: z.string().min(1, 'Token reset password wajib diisi'),
+    password: z.string().min(8, 'Password minimal 8 karakter'),
+    confirmPassword: z.string().min(8, 'Konfirmasi password minimal 8 karakter'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Konfirmasi password tidak cocok',
+    path: ['confirmPassword'],
+  });
+
+export const ChangePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Password saat ini wajib diisi'),
+    newPassword: z.string().min(8, 'Password baru minimal 8 karakter'),
+    confirmPassword: z.string().min(8, 'Konfirmasi password baru minimal 8 karakter'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Konfirmasi password baru tidak cocok',
+    path: ['confirmPassword'],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: 'Password baru harus berbeda dari password saat ini',
+    path: ['newPassword'],
+  });
+
+export const RequestEmailChangeSchema = z.object({
+  newEmail: z.string().email('Format email baru tidak valid'),
+  password: z.string().min(1, 'Password akun wajib diisi untuk konfirmasi keamanan'),
+});
+
+export const VerifyEmailChangeSchema = z.object({
+  token: z.string().min(1, 'Token verifikasi email wajib diisi'),
+});
+

@@ -39,15 +39,33 @@ function PasswordToggle({ showPassword, togglePassword }: any) {
 
 function PasswordField({ register, errors, isLoading, showPassword, togglePassword }: any) {
   return (
-    <FormField label="Password" required error={errors.password?.message} htmlFor="login-password">
+    <div className="w-full space-y-1">
+      <div className="flex items-center justify-between">
+        <label htmlFor="login-password" className="text-sm font-medium text-gray-700">
+          Password <span className="text-red-500">*</span>
+        </label>
+        <a
+          href="/forgot-password"
+          className="text-xs font-semibold text-primary-600 hover:text-primary-500 transition-colors"
+        >
+          Lupa password?
+        </a>
+      </div>
       <Input
-        id="login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password"
-        placeholder="Masukkan password Anda" leftIcon={<Lock className="w-4 h-4" />}
+        id="login-password"
+        type={showPassword ? 'text' : 'password'}
+        autoComplete="current-password"
+        placeholder="Masukkan password Anda"
+        leftIcon={<Lock className="w-4 h-4" />}
         rightIcon={<PasswordToggle showPassword={showPassword} togglePassword={togglePassword} />}
-        hasError={!!errors.password} disabled={isLoading}
+        hasError={!!errors.password}
+        disabled={isLoading}
         {...register('password')}
       />
-    </FormField>
+      {errors.password?.message && (
+        <p className="text-xs text-red-600 font-medium mt-1">{errors.password.message}</p>
+      )}
+    </div>
   );
 }
 

@@ -126,3 +126,69 @@ export async function updateProfile(
   }
 }
 
+export async function forgotPassword(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await identityService.requestPasswordReset(req.body);
+    sendSuccess(res, null, result.message);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function resetPassword(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await identityService.resetPassword(req.body);
+    sendSuccess(res, null, result.message);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function changePassword(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await profileService.changePassword(req.user!.userId, req.body);
+    sendSuccess(res, null, result.message);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function requestEmailChange(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await profileService.requestEmailChange(req.user!.userId, req.body);
+    sendSuccess(res, null, result.message);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function verifyEmailChange(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await profileService.verifyEmailChange(req.body.token);
+    sendSuccess(res, { user: result.user }, result.message);
+  } catch (error) {
+    next(error);
+  }
+}
+
+
