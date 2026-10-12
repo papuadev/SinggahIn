@@ -103,12 +103,13 @@ function PricingDetails({ rate, total, nights }: PricingProps): React.JSX.Elemen
   );
 }
 
-function PropertyHeader({ city, rating, count }: { city: string; rating: number; count: number }): React.JSX.Element {
+function PropertyHeader({ city, rating, count, distance }: { city: string; rating: number; count: number; distance?: number }): React.JSX.Element {
   return (
     <div className="flex items-center justify-between gap-2 mb-1.5 h-5">
       <span className="text-xs font-medium text-gray-500 flex items-center gap-1 truncate">
         <MapPin className="w-3.5 h-3.5 text-primary-600 shrink-0" />
         {city}
+        {distance !== undefined && <span className="text-primary-600 font-semibold">• {distance} km</span>}
       </span>
       <RatingDisplay rating={rating} count={count} />
     </div>
@@ -116,11 +117,11 @@ function PropertyHeader({ city, rating, count }: { city: string; rating: number;
 }
 
 function PropertyCardBody({ property }: { property: CatalogPropertyItem }): React.JSX.Element {
-  const { title, city, averageRating, totalReviews, pricing } = property;
+  const { title, city, averageRating, totalReviews, pricing, distanceInKm } = property;
   return (
     <div className="p-4 flex-1 flex flex-col justify-between">
       <div>
-        <PropertyHeader city={city} rating={averageRating} count={totalReviews} />
+        <PropertyHeader city={city} rating={averageRating} count={totalReviews} distance={distanceInKm} />
         <h3 className="font-bold text-gray-900 text-base leading-snug group-hover:text-primary-600 transition-colors line-clamp-2 min-h-[2.75rem]">
           {title}
         </h3>

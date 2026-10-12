@@ -52,8 +52,9 @@ function buildRoomRelations(checkIn?: string, checkOut?: string) {
 function compareByField(
   a: CatalogPropertyItemDto,
   b: CatalogPropertyItemDto,
-  sortBy: 'price' | 'name' | 'rating'
+  sortBy: 'price' | 'name' | 'rating' | 'distance'
 ): number {
+  if (sortBy === 'distance') return (a.distanceInKm ?? 999999) - (b.distanceInKm ?? 999999);
   if (sortBy === 'rating') return a.averageRating - b.averageRating;
   if (sortBy === 'name') return a.title.localeCompare(b.title);
   return a.pricing.averageNightRate - b.pricing.averageNightRate;
@@ -61,7 +62,7 @@ function compareByField(
 
 function sortCatalogItems(
   items: CatalogPropertyItemDto[],
-  sortBy: 'price' | 'name' | 'rating' = 'price',
+  sortBy: 'price' | 'name' | 'rating' | 'distance' = 'price',
   sortOrder: 'asc' | 'desc' = 'asc'
 ): CatalogPropertyItemDto[] {
   return [...items].sort((a, b) => {
@@ -92,7 +93,7 @@ function processProperties(
   for (const prop of properties) {
     const best = findBestRoomPricing(prop.rooms, query.checkIn, query.checkOut, query.guests);
     if (best) {
-      results.push(formatCatalogProperty(prop, best));
+      results.push(formatCatalogProperty(prop, best, query.latitude, query.longitude));
     }
   }
   return results;

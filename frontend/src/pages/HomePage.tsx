@@ -1,10 +1,12 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ShieldCheck, CalendarCheck, CreditCard, Star, Sparkles } from 'lucide-react';
+import { ShieldCheck, CalendarCheck, CreditCard, Star, Sparkles, MapPin } from 'lucide-react';
 import { SEOHead } from '../components/atoms/SEOHead';
 import { HeroCarousel } from '../components/organisms/HeroCarousel';
 import { FloatingSearchWidget } from '../components/organisms/FloatingSearchWidget';
 import { RecommendedPropertiesSection } from '../components/organisms/home/RecommendedPropertiesSection';
+import { useUserLocation, UserCoordinates } from '../modules/property/hooks/useUserLocation';
+import { CatalogQueryParams } from '../modules/property/property.types';
 
 const VALUE_PROPS = [
   {
@@ -81,14 +83,36 @@ function TopRatedSection({ category }: { category?: string }) {
   );
 }
 
+function getFreshPicksMeta(hasCoords: boolean) {
+  if (hasCoords) {
+    return {
+      title: 'Penginapan Terdekat di Sekitar Anda',
+      subtitle: 'Temukan hotel, villa, dan homestay paling dekat dari lokasi Anda saat ini',
+      badgeText: 'Terdekat dari Anda', badgeIcon: MapPin,
+    };
+  }
+  return {
+    title: 'Jelajahi Penginapan Pilihan',
+    subtitle: 'Koleksi villa, hotel, dan homestay terverifikasi untuk liburan tak terlupakan',
+    badgeText: 'Pilihan Segar', badgeIcon: Sparkles,
+  };
+}
+
+function buildFreshQueryParams(category?: string, coords?: UserCoordinates | null): CatalogQueryParams {
+  if (coords) {
+    return { limit: 10, category, latitude: coords.latitude, longitude: coords.longitude, sortBy: 'distance', sortOrder: 'asc' };
+  }
+  return { limit: 10, category };
+}
+
 function FreshPicksSection({ category, onReset }: { category?: string; onReset: () => void }) {
+  const { coords, loading: geoLoading } = useUserLocation();
+  const meta = getFreshPicksMeta(Boolean(coords));
+  const queryParams = buildFreshQueryParams(category, coords);
   const url = `/search${category ? `?category=${category}` : ''}`;
   return (
     <RecommendedPropertiesSection
-      title="Jelajahi Penginapan Pilihan"
-      subtitle="Koleksi villa, hotel, dan homestay terverifikasi untuk liburan tak terlupakan"
-      badgeText="Pilihan Segar" badgeIcon={Sparkles}
-      queryParams={{ limit: 10, category }}
+      {...meta} queryParams={queryParams} isLoading={geoLoading}
       viewAllUrl={url} showEmptyIfFiltered onResetCategory={onReset}
     />
   );

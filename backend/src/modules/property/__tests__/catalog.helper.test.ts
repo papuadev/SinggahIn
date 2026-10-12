@@ -5,6 +5,7 @@ import {
   isRoomAvailableForDates,
   computeRoomPricing,
   findBestRoomPricing,
+  calculateHaversineDistance,
 } from '../catalog.helper';
 import { AdjustmentType } from '@prisma/client';
 
@@ -79,5 +80,12 @@ describe('catalog.helper', () => {
 
     const forFourGuests = findBestRoomPricing(rooms, undefined, undefined, 3);
     expect(forFourGuests?.averageNightRate).toBe(600000);
+  });
+
+  it('calculates accurate Haversine distance between coordinates in km', () => {
+    // Jakarta Monas (-6.1754, 106.8272) to Bandung Gedung Sate (-6.9025, 107.6186) ~ 118 km
+    const dist = calculateHaversineDistance(-6.1754, 106.8272, -6.9025, 107.6186);
+    expect(dist).toBeGreaterThan(115);
+    expect(dist).toBeLessThan(125);
   });
 });

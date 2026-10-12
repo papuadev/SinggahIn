@@ -27,6 +27,8 @@ export interface RawPropertyRecord {
   title: string;
   city: string;
   address: string;
+  latitude?: number | null;
+  longitude?: number | null;
   category: { name: string; slug: string };
   images: { imageUrl: string; isCover: boolean }[];
   reviews: { rating: number }[];
@@ -124,10 +126,32 @@ function mapPropertyBase(
   };
 }
 
+export function calculateHaversineDistance(
+  lat1: number, lon1: number, lat2: number, lon2: number
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+
 export function formatCatalogProperty(
   property: RawPropertyRecord,
-  pricing: CatalogPropertyPricingDto
+  pricing: CatalogPropertyPricingDto,
+  userLat?: number,
+  userLon?: number
 ): CatalogPropertyItemDto {
   const ratingInfo = calculateRating(property.reviews);
-  return { ...mapPropertyBase(property, ratingInfo), pricing };
+  const dist =
+    userLat !== undefined && userLon !== undefined && property.latitude && property.longitude
+      ? calculateHaversineDistance(userLat, userLon, property.latitude, property.longitude)
+      : undefined;
+  return { ...mapPropertyBase(property, ratingInfo), pricing, distanceInKm: dist };
 }

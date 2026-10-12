@@ -136,4 +136,28 @@ describe('Catalog Service - getCatalogProperties', () => {
     expect(page2.data[0].id).toBe('p3');
     expect(page2.meta).toEqual({ page: 2, limit: 2, totalItems: 3, totalPages: 2 });
   });
+
+  it('sorts properties by distance when coordinates are provided', async () => {
+    const nearProp = {
+      id: 'pNear', title: 'Near Hotel', city: 'Bandung', address: 'Jl. Near',
+      latitude: -6.903, longitude: 107.618,
+      category: mockCategory, images: mockImages, reviews: [],
+      rooms: [{ id: 'r1', basePrice: 500000, capacity: 2, totalUnits: 1, modifiers: [], unavailabilities: [], bookings: [] }],
+    };
+    const farProp = {
+      id: 'pFar', title: 'Far Hotel', city: 'Jakarta', address: 'Jl. Far',
+      latitude: -6.175, longitude: 106.827,
+      category: mockCategory, images: mockImages, reviews: [],
+      rooms: [{ id: 'r2', basePrice: 500000, capacity: 2, totalUnits: 1, modifiers: [], unavailabilities: [], bookings: [] }],
+    };
+    vi.mocked(prisma.property.findMany).mockResolvedValueOnce([farProp as any, nearProp as any]);
+
+    const res = await getCatalogProperties({
+      page: 1, limit: 10, sortBy: 'distance', sortOrder: 'asc',
+      latitude: -6.902, longitude: 107.618,
+    });
+    expect(res.data[0].id).toBe('pNear');
+    expect(res.data[0].distanceInKm).toBeDefined();
+    expect(res.data[1].id).toBe('pFar');
+  });
 });

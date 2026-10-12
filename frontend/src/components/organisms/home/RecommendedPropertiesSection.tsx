@@ -10,26 +10,43 @@ export interface RecommendedSectionProps {
   title: string; subtitle: string; badgeText?: string; badgeIcon?: LucideIcon;
   variant?: 'default' | 'highlighted'; queryParams: CatalogQueryParams;
   viewAllUrl?: string; showEmptyIfFiltered?: boolean; onResetCategory?: () => void;
+  isLoading?: boolean;
 }
 
-function SectionSkeletonCard() {
+function SkeletonBody({ isHigh }: { isHigh?: boolean }) {
+  const shimmer = isHigh ? 'bg-slate-700/60' : 'bg-gray-200';
+  const border = isHigh ? 'border-slate-700/60' : 'border-gray-100';
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm animate-pulse flex flex-col">
-      <div className="aspect-[4/3] w-full bg-gray-200" />
-      <div className="p-4 space-y-2.5">
-        <div className="h-4 bg-gray-200 rounded w-1/3" />
-        <div className="h-5 bg-gray-200 rounded w-3/4" />
-        <div className="pt-2 border-t border-gray-100 h-6 bg-gray-200 rounded w-2/5" />
+    <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+      <div className="space-y-2">
+        <div className="flex justify-between"><div className={`h-3.5 ${shimmer} rounded w-1/3`} /><div className={`h-3.5 ${shimmer} rounded w-10`} /></div>
+        <div className={`h-4 ${shimmer} rounded w-4/5`} />
+      </div>
+      <div className={`pt-3 border-t ${border} space-y-1.5`}>
+        <div className={`h-3 ${shimmer} rounded w-1/4`} /><div className={`h-5 ${shimmer} rounded w-1/2`} />
       </div>
     </div>
   );
 }
 
-function SectionLoadingRow() {
+function SectionSkeletonCard({ isHigh }: { isHigh?: boolean }) {
+  const container = isHigh ? 'bg-slate-800/80 border-slate-700/80' : 'bg-white border-gray-100 shadow-sm';
+  const img = isHigh ? 'bg-slate-700/70' : 'bg-gray-200';
+  return (
+    <div className={`${container} rounded-2xl border overflow-hidden animate-pulse flex flex-col h-full`}>
+      <div className={`aspect-[4/3] w-full ${img}`} />
+      <SkeletonBody isHigh={isHigh} />
+    </div>
+  );
+}
+
+function SectionLoadingRow({ isHigh }: { isHigh?: boolean }) {
   return (
     <div className="flex gap-4 sm:gap-5 overflow-hidden pb-4 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="shrink-0 w-[270px] sm:w-[300px] lg:w-[320px]"><SectionSkeletonCard /></div>
+        <div key={i} className="shrink-0 w-[270px] sm:w-[300px] lg:w-[320px]">
+          <SectionSkeletonCard isHigh={isHigh} />
+        </div>
       ))}
     </div>
   );
@@ -94,7 +111,7 @@ type ContentProps = {
 };
 
 function SectionContent(p: ContentProps) {
-  if (p.isLoading) return <SectionLoadingRow />;
+  if (p.isLoading) return <SectionLoadingRow isHigh={p.isHighlighted} />;
   if (p.properties.length === 0 && p.showEmpty && p.category) {
     return <EmptyCategoryState category={p.category} onReset={p.onReset} />;
   }
@@ -141,7 +158,8 @@ function getSectionClass(isHigh?: boolean) {
 }
 
 export function RecommendedPropertiesSection(props: RecommendedSectionProps): React.JSX.Element | null {
-  const { properties, isLoading } = useSectionData(props.queryParams);
+  const { properties, isLoading: queryLoading } = useSectionData(props.queryParams);
+  const isLoading = Boolean(props.isLoading || queryLoading);
   const { scrollRef, scrollLeft, scrollRight, onScroll, progress } = useHorizontalScroll();
   if (!isLoading && properties.length === 0 && (!props.showEmptyIfFiltered || !props.queryParams.category)) return null;
   const isHigh = props.variant === 'highlighted';
