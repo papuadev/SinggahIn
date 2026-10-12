@@ -44,3 +44,52 @@ export const profileSchema = z.object({
 
 export type ProfileFormData = z.infer<typeof profileSchema>;
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().min(1, 'Email wajib diisi').email('Format email tidak valid'),
+});
+
+export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, 'Token reset password wajib diisi'),
+    password: z.string().min(8, 'Password minimal 8 karakter'),
+    confirmPassword: z.string().min(8, 'Konfirmasi password minimal 8 karakter'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Konfirmasi password tidak cocok',
+    path: ['confirmPassword'],
+  });
+
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Password saat ini wajib diisi'),
+    newPassword: z.string().min(8, 'Password baru minimal 8 karakter'),
+    confirmPassword: z.string().min(8, 'Konfirmasi password baru minimal 8 karakter'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Konfirmasi password baru tidak cocok',
+    path: ['confirmPassword'],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: 'Password baru harus berbeda dari password saat ini',
+    path: ['newPassword'],
+  });
+
+export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
+
+export const requestEmailChangeSchema = z.object({
+  newEmail: z.string().min(1, 'Email baru wajib diisi').email('Format email baru tidak valid'),
+  password: z.string().min(1, 'Password akun wajib diisi untuk konfirmasi keamanan'),
+});
+
+export type RequestEmailChangeFormData = z.infer<typeof requestEmailChangeSchema>;
+
+export const verifyEmailChangeSchema = z.object({
+  token: z.string().min(1, 'Token verifikasi email wajib diisi'),
+});
+
+export type VerifyEmailChangeFormData = z.infer<typeof verifyEmailChangeSchema>;
+

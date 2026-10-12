@@ -5,6 +5,7 @@ import { useAuthStore } from '../../../stores/auth.store';
 import { Navbar } from '../Navbar';
 import { MobileBottomNav } from '../MobileBottomNav';
 import { TenantSidebar } from '../TenantSidebar';
+import { AppLayout } from '../../../App';
 
 const mockTenant = {
   id: 'tenant-123',
@@ -119,4 +120,31 @@ describe('Navigation Components', () => {
     );
     expect(screen.queryByLabelText('Mobile Navigation')).not.toBeInTheDocument();
   });
+
+  it('does not render Navbar, Footer, or MobileBottomNav on /login', () => {
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <AppLayout />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByRole('navigation', { name: /Navbar/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Footer SinggahIn')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Mobile Navigation')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Masuk ke SinggahIn/i })).toBeInTheDocument();
+  });
+
+  it('does not render Navbar, Footer, or MobileBottomNav on /register', () => {
+    render(
+      <MemoryRouter initialEntries={['/register']}>
+        <AppLayout />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByRole('navigation', { name: /Navbar/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Footer SinggahIn')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Mobile Navigation')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Bergabung dengan SinggahIn/i })).toBeInTheDocument();
+  });
 });
+

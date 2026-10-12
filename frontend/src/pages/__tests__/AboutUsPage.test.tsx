@@ -22,34 +22,33 @@ describe('AboutUsPage Component', () => {
     expect(screen.getByText(/Hubungi Tim Kami/i)).toBeInTheDocument();
   });
 
-  it('renders key metrics and impact statistics', () => {
+  it('renders story, vision, and mission sections', () => {
     render(
       <MemoryRouter>
         <AboutUsPage />
       </MemoryRouter>
     );
 
-    expect(screen.getByText('500+')).toBeInTheDocument();
-    expect(screen.getByText('Properti Terkurasi')).toBeInTheDocument();
-    expect(screen.getByText('30+')).toBeInTheDocument();
-    expect(screen.getByText('Kota & Destinasi')).toBeInTheDocument();
-    expect(screen.getByText('25.000+')).toBeInTheDocument();
-    expect(screen.getByText('Tamu Bahagia')).toBeInTheDocument();
-    expect(screen.getByText('4.9 / 5')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Membangun Standar Baru Kenyamanan Menginap Tanpa Biaya Tersembunyi/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Visi & Misi SinggahIn/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Menjadi ekosistem reservasi akomodasi paling tepercaya di Indonesia/i)
+    ).toBeInTheDocument();
   });
 
-  it('renders core values, vision, mission, and tenant CTA', () => {
+  it('renders core values and principles', () => {
     render(
       <MemoryRouter>
         <AboutUsPage />
       </MemoryRouter>
     );
 
+    expect(screen.getByText(/Prinsip yang Selalu Kami Pegang Teguh/i)).toBeInTheDocument();
     expect(screen.getByText(/Transparansi Tarif Penuh/i)).toBeInTheDocument();
     expect(screen.getByText(/Keamanan & Verifikasi Resmi/i)).toBeInTheDocument();
     expect(screen.getByText(/Dukungan untuk Mitra Lokal/i)).toBeInTheDocument();
-    expect(screen.getByText(/Visi & Misi SinggahIn/i)).toBeInTheDocument();
-    expect(screen.getByText(/Punya Properti atau Penginapan\?/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Daftar Sebagai Tenant/i })).toBeInTheDocument();
+    expect(screen.getByText(/Layanan Pelanggan Responsif/i)).toBeInTheDocument();
   });
 });

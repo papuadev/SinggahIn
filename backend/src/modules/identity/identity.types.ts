@@ -32,3 +32,28 @@ export interface UpdateProfileInput {
   phoneNumber?: string;
 }
 
+export interface ForgotPasswordInput {
+  email: string;
+}
+
+export interface ResetPasswordInput {
+  token: string;
+  password: string;
+  confirmPassword?: string;
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword?: string;
+}
+
+export interface RequestEmailChangeInput {
+  newEmail: string;
+  password: string;
+}
+
+export interface VerifyEmailChangeInput {
+  token: string;
+}
+

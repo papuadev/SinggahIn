@@ -88,7 +88,7 @@ export function AboutUsPage(): React.JSX.Element {
       </section>
 
       {/* Our Story & Mission Section */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+      <section id='visi-misi' className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
         <div className="space-y-6">
           <div className="inline-flex items-center gap-2 text-xs font-bold text-primary-600 tracking-wider uppercase bg-primary-50 px-3 py-1 rounded-full">
             <Compass className="w-3.5 h-3.5" /> Cerita SinggahIn
@@ -146,7 +146,7 @@ export function AboutUsPage(): React.JSX.Element {
       </section>
 
       {/* Core Values Section */}
-      <section className="space-y-8">
+      <section id="core-values" className="space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-3">
           <div className="inline-flex items-center gap-2 text-xs font-bold text-primary-600 tracking-wider uppercase bg-primary-50 px-3 py-1 rounded-full">
             <TrendingUp className="w-3.5 h-3.5" /> Nilai-Nilai Utama

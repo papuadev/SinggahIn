@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import nodemailer from 'nodemailer';
 import {
   sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendEmailChangeVerificationEmail,
   sendBookingVoucherEmail,
   sendEmergencyCancellationEmail,
 } from '../mail.service';
@@ -41,6 +43,30 @@ describe('Mail Service', () => {
     expect(sendMailMock).toHaveBeenCalledWith(expect.objectContaining({
       to: 'user@test.com',
       subject: 'Verifikasi Akun SinggahIn Anda (Berlaku 1 Jam)',
+    }));
+  });
+
+  it('should send password reset email with secure token link', async () => {
+    const sendMailMock = vi.fn().mockResolvedValue({ messageId: 'm1-reset' });
+    vi.mocked(nodemailer.createTransport).mockReturnValue({ sendMail: sendMailMock } as any);
+
+    await sendPasswordResetEmail('user@test.com', 'reset-tok-456');
+    expect(sendMailMock).toHaveBeenCalledWith(expect.objectContaining({
+      to: 'user@test.com',
+      subject: 'Permintaan Reset Password Akun SinggahIn (Berlaku 1 Jam)',
+      html: expect.stringContaining('reset-password?token=reset-tok-456'),
+    }));
+  });
+
+  it('should send email change verification email to new email address', async () => {
+    const sendMailMock = vi.fn().mockResolvedValue({ messageId: 'm1-change' });
+    vi.mocked(nodemailer.createTransport).mockReturnValue({ sendMail: sendMailMock } as any);
+
+    await sendEmailChangeVerificationEmail('newuser@test.com', 'change-tok-789');
+    expect(sendMailMock).toHaveBeenCalledWith(expect.objectContaining({
+      to: 'newuser@test.com',
+      subject: 'Konfirmasi Perubahan Alamat Email SinggahIn (Berlaku 1 Jam)',
+      html: expect.stringContaining('verify-email-change?token=change-tok-789'),
     }));
   });
 

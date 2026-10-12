@@ -29,6 +29,11 @@ interface AuthState {
   checkAuth: () => Promise<void>;
   uploadAvatar: (file: File) => Promise<string>;
   updateProfile: (input: UpdateProfileInput) => Promise<User>;
+  forgotPassword: (email: string) => Promise<string>;
+  resetPassword: (input: { token: string; password: string; confirmPassword: string }) => Promise<string>;
+  changePassword: (input: { currentPassword: string; newPassword: string; confirmPassword: string }) => Promise<string>;
+  requestEmailChange: (input: { newEmail: string; password: string }) => Promise<string>;
+  verifyEmailChange: (token: string) => Promise<User>;
   setConflict: (conflict: ConflictState | null) => void;
   clearError: () => void;
 }
@@ -138,4 +143,70 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       throw err;
     }
   },
+
+  forgotPassword: async (email: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await identityApi.forgotPassword({ email });
+      set({ isLoading: false });
+      return res.message;
+    } catch (err) {
+      const message = extractErrorMessage(err);
+      set({ error: message, isLoading: false });
+      throw err;
+    }
+  },
+
+  resetPassword: async (input) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await identityApi.resetPassword(input);
+      set({ isLoading: false });
+      return res.message;
+    } catch (err) {
+      const message = extractErrorMessage(err);
+      set({ error: message, isLoading: false });
+      throw err;
+    }
+  },
+
+  changePassword: async (input) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await identityApi.changePassword(input);
+      set({ isLoading: false });
+      return res.message;
+    } catch (err) {
+      const message = extractErrorMessage(err);
+      set({ error: message, isLoading: false });
+      throw err;
+    }
+  },
+
+  requestEmailChange: async (input) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await identityApi.requestEmailChange(input);
+      set({ isLoading: false });
+      return res.message;
+    } catch (err) {
+      const message = extractErrorMessage(err);
+      set({ error: message, isLoading: false });
+      throw err;
+    }
+  },
+
+  verifyEmailChange: async (token: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await identityApi.verifyEmailChange(token);
+      set({ user: res.data.user, isAuthenticated: true, isLoading: false });
+      return res.data.user;
+    } catch (err) {
+      const message = extractErrorMessage(err);
+      set({ error: message, isLoading: false });
+      throw err;
+    }
+  },
 }));
+

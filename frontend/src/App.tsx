@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useAuthStore } from "./stores/auth.store";
 import { Navbar } from "./components/organisms/Navbar";
 import { MobileBottomNav } from "./components/organisms/MobileBottomNav";
@@ -7,6 +7,9 @@ import { TenantLayout } from "./components/organisms/TenantLayout";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { VerifyTokenPage } from "./pages/VerifyTokenPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { VerifyEmailChangePage } from "./pages/VerifyEmailChangePage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ProtectedRoute } from "./components/molecules/ProtectedRoute";
 import { ForbiddenPage } from "./pages/ForbiddenPage";
@@ -38,6 +41,9 @@ function GuestRoutes(): React.JSX.Element {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/verify" element={<VerifyTokenPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/verify-email-change" element={<VerifyEmailChangePage />} />
       <Route path="/forbidden" element={<ForbiddenPage />} />
     </>
   );
@@ -80,13 +86,26 @@ function AppRoutes(): React.JSX.Element {
   );
 }
 
-function AppLayout(): React.JSX.Element {
+export function AppLayout(): React.JSX.Element {
+  const location = useLocation();
+  const isAuthPage = ['/login', '/register'].includes(location.pathname);
+
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-gray-50 text-gray-900 pb-16 md:pb-0">
-      <Navbar />
-      <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8"><AppRoutes /></main>
-      <Footer />
-      <MobileBottomNav />
+    <div
+      className={`min-h-screen flex flex-col justify-between bg-gray-50 text-gray-900 ${
+        isAuthPage ? 'pb-0' : 'pb-16 md:pb-0'
+      }`}
+    >
+      {!isAuthPage && <Navbar />}
+      <main
+        className={`flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 ${
+          isAuthPage ? 'flex flex-col justify-center' : ''
+        }`}
+      >
+        <AppRoutes />
+      </main>
+      {!isAuthPage && <Footer />}
+      {!isAuthPage && <MobileBottomNav />}
     </div>
   );
 }

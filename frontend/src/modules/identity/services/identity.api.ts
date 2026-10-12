@@ -7,6 +7,10 @@ import {
   LoginInput,
   LoginResponseData,
   UpdateProfileInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
+  ChangePasswordInput,
+  RequestEmailChangeInput,
 } from '../../../types/auth.types';
 
 export const identityApi = {
@@ -62,4 +66,45 @@ export const identityApi = {
     );
     return res.data;
   },
+
+  async forgotPassword(data: ForgotPasswordInput): Promise<ApiResponse<null>> {
+    const res = await apiClient.post<ApiResponse<null>>(
+      '/identity/forgot-password',
+      data
+    );
+    return res.data;
+  },
+
+  async resetPassword(data: ResetPasswordInput): Promise<ApiResponse<null>> {
+    const res = await apiClient.post<ApiResponse<null>>(
+      '/identity/reset-password',
+      data
+    );
+    return res.data;
+  },
+
+  async changePassword(data: ChangePasswordInput): Promise<ApiResponse<null>> {
+    const res = await apiClient.patch<ApiResponse<null>>(
+      '/identity/profile/password',
+      data
+    );
+    return res.data;
+  },
+
+  async requestEmailChange(data: RequestEmailChangeInput): Promise<ApiResponse<null>> {
+    const res = await apiClient.post<ApiResponse<null>>(
+      '/identity/profile/email-change',
+      data
+    );
+    return res.data;
+  },
+
+  async verifyEmailChange(token: string): Promise<ApiResponse<LoginResponseData>> {
+    const res = await apiClient.post<ApiResponse<LoginResponseData>>(
+      '/identity/profile/verify-email-change',
+      { token }
+    );
+    return res.data;
+  },
 };
+

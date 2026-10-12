@@ -10,12 +10,26 @@ vi.mock('../../../shared/services/prisma.service', () => ({
       findUnique: vi.fn(),
       update: vi.fn(),
     },
+    verificationToken: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
+    $transaction: vi.fn(),
   },
 }));
+
+import bcrypt from 'bcryptjs';
+import * as mailService from '../../../shared/services/mail.service';
 
 vi.mock('../../../shared/services/cloudinary.service', () => ({
   uploadToCloudinary: vi.fn(),
   deleteFromCloudinary: vi.fn(),
+}));
+
+vi.mock('../../../shared/services/mail.service', () => ({
+  sendEmailChangeVerificationEmail: vi.fn(),
 }));
 
 describe('Profile Service', () => {
@@ -86,5 +100,105 @@ describe('Profile Service', () => {
     await expect(profileService.updateAvatar('non-existent', fakeFile)).rejects.toThrow(
       'Pengguna tidak ditemukan.'
     );
+  });
+
+  describe('changePassword', () => {
+    it('successfully changes password when current password matches', async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(mockUser as any);
+      vi.spyOn(bcrypt, 'compare')
+        .mockResolvedValueOnce(true as never) // current matches
+        .mockResolvedValueOnce(false as never); // new is different
+      vi.mocked(prisma.user.update).mockResolvedValueOnce(mockUser as any);
+
+      const res = await profileService.changePassword('usr-123', {
+        currentPassword: 'oldpassword',
+        newPassword: 'newpassword123',
+      });
+
+      expect(res.message).toBe('Password berhasil diperbarui.');
+      expect(prisma.user.update).toHaveBeenCalled();
+    });
+
+    it('throws error when current password is wrong', async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(mockUser as any);
+      vi.spyOn(bcrypt, 'compare').mockResolvedValueOnce(false as never);
+
+      await expect(
+        profileService.changePassword('usr-123', {
+          currentPassword: 'wrongpassword',
+          newPassword: 'newpassword123',
+        })
+      ).rejects.toThrow('Password saat ini salah.');
+    });
+  });
+
+  describe('requestEmailChange', () => {
+    it('creates verification token and dispatches email when password is valid and new email available', async () => {
+      vi.mocked(prisma.user.findUnique)
+        .mockResolvedValueOnce(mockUser as any) // findUser
+        .mockResolvedValueOnce(null); // existingEmail check
+      vi.spyOn(bcrypt, 'compare').mockResolvedValueOnce(true as never);
+      vi.mocked(prisma.verificationToken.updateMany).mockResolvedValueOnce({ count: 0 });
+      vi.mocked(prisma.verificationToken.create).mockResolvedValueOnce({} as any);
+
+      const res = await profileService.requestEmailChange('usr-123', {
+        newEmail: 'newemail@example.com',
+        password: 'password123',
+      });
+
+      expect(res.message).toContain('Tautan verifikasi telah dikirim ke newemail@example.com');
+      expect(prisma.verificationToken.create).toHaveBeenCalled();
+      expect(mailService.sendEmailChangeVerificationEmail).toHaveBeenCalled();
+    });
+
+    it('rejects email change when password is wrong', async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(mockUser as any);
+      vi.spyOn(bcrypt, 'compare').mockResolvedValueOnce(false as never);
+
+      await expect(
+        profileService.requestEmailChange('usr-123', {
+          newEmail: 'newemail@example.com',
+          password: 'wrongpassword',
+        })
+      ).rejects.toThrow('Password akun salah.');
+    });
+
+    it('rejects email change if new email is already taken', async () => {
+      vi.mocked(prisma.user.findUnique)
+        .mockResolvedValueOnce(mockUser as any) // findUser
+        .mockResolvedValueOnce({ id: 'other-user', email: 'taken@example.com' } as any); // existing
+      vi.spyOn(bcrypt, 'compare').mockResolvedValueOnce(true as never);
+
+      await expect(
+        profileService.requestEmailChange('usr-123', {
+          newEmail: 'taken@example.com',
+          password: 'password123',
+        })
+      ).rejects.toThrow('Email baru sudah terdaftar');
+    });
+  });
+
+  describe('verifyEmailChange', () => {
+    it('updates user email and marks token used', async () => {
+      const tokenRecord = {
+        id: 'tok-1',
+        userId: 'usr-123',
+        email: 'newverified@example.com',
+        expiresAt: new Date(Date.now() + 100000),
+        isUsed: false,
+      };
+      vi.mocked(prisma.verificationToken.findFirst).mockResolvedValueOnce(tokenRecord as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(null);
+      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) =>
+        cb({
+          verificationToken: { update: vi.fn() },
+          user: { update: vi.fn().mockResolvedValue({ ...mockUser, email: 'newverified@example.com' }) },
+        })
+      );
+
+      const res = await profileService.verifyEmailChange('valid-token');
+      expect(res.user.email).toBe('newverified@example.com');
+      expect(res.message).toContain('berhasil diperbarui dan diverifikasi');
+    });
   });
 });

@@ -9,7 +9,7 @@ import bcrypt from 'bcryptjs';
 vi.mock('../../../shared/services/prisma.service', () => ({
   prisma: {
     user: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
-    verificationToken: { create: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
+    verificationToken: { create: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     $transaction: vi.fn()
   }
 }));
@@ -33,6 +33,7 @@ describe('Identity Service (TASK-007 Verification)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(mailService, 'sendVerificationEmail').mockResolvedValue();
+    vi.spyOn(mailService, 'sendPasswordResetEmail').mockResolvedValue();
     vi.spyOn(tokenService, 'signToken').mockReturnValue('mock-jwt-token');
   });
 
@@ -137,6 +138,59 @@ describe('Identity Service (TASK-007 Verification)', () => {
     it('should throw 404 when user profile not found', async () => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
       await expect(identityService.getProfile('none')).rejects.toThrow('Pengguna tidak ditemukan.');
+    });
+  });
+
+  describe('requestPasswordReset', () => {
+    it('should create password reset token and dispatch email when user exists and verified', async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser({ id: 'u1', email: 'user@example.com', isVerified: true }));
+      vi.mocked(prisma.verificationToken.updateMany).mockResolvedValue({ count: 1 });
+      vi.mocked(prisma.verificationToken.create).mockResolvedValue({} as any);
+
+      const res = await identityService.requestPasswordReset({ email: 'user@example.com' });
+      expect(res.message).toContain('Jika alamat email terdaftar');
+      expect(prisma.verificationToken.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'u1',
+          type: TokenType.PASSWORD_RESET,
+        }),
+      }));
+      expect(mailService.sendPasswordResetEmail).toHaveBeenCalled();
+    });
+
+    it('should return generic success message when user does not exist (anti-enumeration)', async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      const res = await identityService.requestPasswordReset({ email: 'unknown@example.com' });
+      expect(res.message).toContain('Jika alamat email terdaftar');
+      expect(prisma.verificationToken.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should reset password hash and mark token as used', async () => {
+      const validToken = {
+        id: 'tok-1',
+        userId: 'u1',
+        token: 'valid-token',
+        type: TokenType.PASSWORD_RESET,
+        expiresAt: new Date(Date.now() + 100000),
+        isUsed: false,
+      };
+      vi.mocked(prisma.verificationToken.findFirst).mockResolvedValue(validToken as any);
+      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb({
+        verificationToken: { update: vi.fn() },
+        user: { update: vi.fn() },
+      }));
+
+      const res = await identityService.resetPassword({ token: 'valid-token', password: 'newpassword123' });
+      expect(res.message).toContain('Password berhasil diatur ulang');
+    });
+
+    it('should throw 400 when token is expired or not found', async () => {
+      vi.mocked(prisma.verificationToken.findFirst).mockResolvedValue(null);
+      await expect(
+        identityService.resetPassword({ token: 'invalid-token', password: 'newpassword123' })
+      ).rejects.toThrow('Token reset password tidak valid atau telah kedaluwarsa.');
     });
   });
 });
