@@ -9,48 +9,43 @@ const client_1 = require("@prisma/client");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 exports.SEED_USERS = [
     {
-        email: 'tenant@example.com',
-        name: 'Sarah Wijaya',
+        email: 'wafflecraft.id@gmail.com',
+        name: 'Natan Budi',
         role: client_1.Role.TENANT,
         phoneNumber: '081234567801'
     },
     {
-        email: 'tenant2@example.com',
-        name: 'Budi Santoso',
+        email: 'nilm.atelier@gmail.com',
+        name: 'Agung Setyo',
         role: client_1.Role.TENANT,
         phoneNumber: '081234567802'
     },
     {
-        email: 'user@example.com',
-        name: 'Rian Pratama',
+        email: 'formalsquad.id@gmail.com',
+        name: 'Nolan Ari',
         role: client_1.Role.USER,
         phoneNumber: '081234567803'
     },
     {
-        email: 'user2@example.com',
-        name: 'Dinda Lestari',
+        email: 'ali.wpurbo@gmail.com',
+        name: 'Ali Mustofa',
         role: client_1.Role.USER,
         phoneNumber: '081234567804'
     }
 ];
+async function upsertSingleUser(prisma, u, hash) {
+    const data = {
+        email: u.email, name: u.name, role: u.role, phoneNumber: u.phoneNumber,
+        isVerified: true, passwordHash: hash
+    };
+    const user = await prisma.user.upsert({ where: { email: u.email }, update: data, create: data });
+    return user.id;
+}
 async function seedDemoUsers(prisma) {
-    const hash = await bcryptjs_1.default.hash('Password123!', 10);
+    const hash = await bcryptjs_1.default.hash('jangantanya', 10);
     const userMap = {};
     for (const u of exports.SEED_USERS) {
-        const data = {
-            email: u.email,
-            name: u.name,
-            role: u.role,
-            phoneNumber: u.phoneNumber,
-            isVerified: true,
-            passwordHash: hash
-        };
-        const user = await prisma.user.upsert({
-            where: { email: u.email },
-            update: data,
-            create: data
-        });
-        userMap[u.email] = user.id;
+        userMap[u.email] = await upsertSingleUser(prisma, u, hash);
     }
     return userMap;
 }
