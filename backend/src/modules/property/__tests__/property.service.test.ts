@@ -25,6 +25,9 @@ vi.mock('../../../shared/services/prisma.service', () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    booking: {
+      count: vi.fn(),
+    },
   },
 }));
 
@@ -161,16 +164,20 @@ describe('Property Service', () => {
     });
 
     it('deletes property and cleans up Cloudinary images', async () => {
-      vi.mocked(prisma.property.findUnique).mockResolvedValueOnce({
-        id: 'p1',
-        tenantId: 't1',
-        images: [{ publicId: 'pub-1' }],
-      } as any);
+      vi.mocked(prisma.property.findUnique).mockResolvedValueOnce({ id: 'p1', tenantId: 't1', images: [{ publicId: 'pub-1' }] } as any);
+      vi.mocked(prisma.booking.count).mockResolvedValueOnce(0);
       vi.mocked(prisma.property.delete).mockResolvedValueOnce({ id: 'p1' } as any);
-
       await deleteProperty('p1', 't1');
       expect(cloudinaryService.deleteFromCloudinary).toHaveBeenCalledWith('pub-1');
       expect(prisma.property.delete).toHaveBeenCalledWith({ where: { id: 'p1' } });
+    });
+
+    it('rejects deletion if property has active bookings or booking history', async () => {
+      vi.mocked(prisma.property.findUnique).mockResolvedValue({ id: 'p1', tenantId: 't1', images: [] } as any);
+      vi.mocked(prisma.booking.count).mockResolvedValueOnce(1).mockResolvedValueOnce(1);
+      await expect(deleteProperty('p1', 't1')).rejects.toThrow('pesanan aktif');
+      vi.mocked(prisma.booking.count).mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+      await expect(deleteProperty('p1', 't1')).rejects.toThrow('riwayat pemesanan');
     });
   });
 });

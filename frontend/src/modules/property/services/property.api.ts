@@ -2,6 +2,8 @@ import { apiClient } from '../../../libs/axios';
 import { ApiResponse } from '../../../types/api.types';
 import {
   PropertyCategory,
+  CreateCategoryPayload,
+  UpdateCategoryPayload,
   PropertyItem,
   PropertyImage,
   CreatePropertyPayload,
@@ -16,9 +18,33 @@ import {
 } from '../property.types';
 
 export const propertyApi = {
-  async getCategories(): Promise<ApiResponse<PropertyCategory[]>> {
+  async getCategories(params?: { activeOnly?: boolean }): Promise<ApiResponse<PropertyCategory[]>> {
     const res = await apiClient.get<ApiResponse<PropertyCategory[]>>(
-      '/properties/categories'
+      '/properties/categories',
+      ...(params ? [{ params }] : [])
+    );
+    return res.data;
+  },
+
+  async createCategory(data: CreateCategoryPayload): Promise<ApiResponse<PropertyCategory>> {
+    const res = await apiClient.post<ApiResponse<PropertyCategory>>(
+      '/properties/categories',
+      data
+    );
+    return res.data;
+  },
+
+  async updateCategory(id: string, data: UpdateCategoryPayload): Promise<ApiResponse<PropertyCategory>> {
+    const res = await apiClient.put<ApiResponse<PropertyCategory>>(
+      `/properties/categories/${id}`,
+      data
+    );
+    return res.data;
+  },
+
+  async deleteCategory(id: string): Promise<ApiResponse<null>> {
+    const res = await apiClient.delete<ApiResponse<null>>(
+      `/properties/categories/${id}`
     );
     return res.data;
   },

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Tag } from 'lucide-react';
 import { Property, TenantPropertySortOption } from '../../modules/property/property.types';
 import { useTenantPropertiesQuery, usePropertyCategories, useDeleteProperty } from '../../modules/property/hooks/useProperties';
 import { Button } from '../../components/atoms/Button';
@@ -20,9 +20,14 @@ function PageHeader(): React.JSX.Element {
         <h1 className="text-2xl font-bold text-gray-900">Kelola Properti</h1>
         <p className="text-sm text-gray-600 mt-1">Daftar seluruh penginapan dan properti yang Anda kelola.</p>
       </div>
-      <Link to="/tenant/properties/new">
-        <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />}>Tambah Properti</Button>
-      </Link>
+      <div className="flex items-center gap-2 flex-wrap">
+        <Link to="/tenant/categories">
+          <Button variant="outline" leftIcon={<Tag className="w-4 h-4" />}>Kelola Kategori</Button>
+        </Link>
+        <Link to="/tenant/properties/new">
+          <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />}>Tambah Properti</Button>
+        </Link>
+      </div>
     </div>
   );
 }
@@ -65,7 +70,11 @@ export function TenantPropertyListPage(): React.JSX.Element {
   const deleteMutation = useDeleteProperty();
   const resetFilters = () => { setSearch(''); setCategoryId(undefined); setSortBy('createdAt_desc'); setPage(1); };
   const onPageChange = (p: number) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-  const confirmDelete = async () => { if (!target) return; await deleteMutation.mutateAsync(target.id); setTarget(null); };
+  const closeModal = () => { deleteMutation.reset(); setTarget(null); };
+  const confirmDelete = async () => {
+    if (!target) return;
+    try { await deleteMutation.mutateAsync(target.id); setTarget(null); } catch (_) {}
+  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -90,7 +99,8 @@ export function TenantPropertyListPage(): React.JSX.Element {
       )}
       <TenantPropertyDeleteModal
         target={target} isDeleting={deleteMutation.isPending}
-        onClose={() => setTarget(null)} onConfirm={confirmDelete}
+        error={deleteMutation.isError ? (deleteMutation.error as Error).message : null}
+        onClose={closeModal} onConfirm={confirmDelete}
       />
     </div>
   );

@@ -160,14 +160,8 @@ describe('OrderPaymentPage', () => {
   });
 
   it('renders existing review comment when COMPLETED booking already has review', async () => {
-    const reviewedBooking = {
-      ...mockBooking,
-      status: 'COMPLETED',
-      review: { id: 'rev-1', rating: 5, comment: 'Pengalaman luar biasa!' },
-    };
-    vi.mocked(bookingApi.getBookingById).mockResolvedValueOnce({
-      success: true, message: 'OK', data: reviewedBooking as any,
-    });
+    const reviewed = { ...mockBooking, status: 'COMPLETED', review: { id: 'rev-1', rating: 5, comment: 'Pengalaman luar biasa!' } };
+    vi.mocked(bookingApi.getBookingById).mockResolvedValueOnce({ success: true, message: 'OK', data: reviewed as any });
     renderOrderPayment();
     await waitFor(() => {
       expect(screen.getByText('"Pengalaman luar biasa!"')).toBeInTheDocument();
@@ -176,15 +170,18 @@ describe('OrderPaymentPage', () => {
   });
 
   it('renders correct stay duration nights from booking record in OrderSummaryCard', async () => {
-    const stayBooking = { ...mockBooking, totalNights: 4 };
-    vi.mocked(bookingApi.getBookingById).mockResolvedValueOnce({
-      success: true, message: 'OK', data: stayBooking as any,
-    });
+    vi.mocked(bookingApi.getBookingById).mockResolvedValueOnce({ success: true, message: 'OK', data: { ...mockBooking, totalNights: 4 } as any });
+    renderOrderPayment();
+    await waitFor(() => expect(screen.getAllByText(/4 malam/i).length).toBeGreaterThan(0));
+  });
+
+  it('renders rejection alert when status is WAITING_PAYMENT with cancellationReason', async () => {
+    const rej = { ...mockBooking, cancellationReason: 'Bukti transfer tidak terbaca' };
+    vi.mocked(bookingApi.getBookingById).mockResolvedValueOnce({ success: true, message: 'OK', data: rej as any });
     renderOrderPayment();
     await waitFor(() => {
-      expect(screen.getAllByText(/4 malam/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Bukti Transfer Sebelumnya Ditolak/i)).toBeInTheDocument();
+      expect(screen.getByText(/Bukti transfer tidak terbaca/i)).toBeInTheDocument();
     });
   });
 });
-
-

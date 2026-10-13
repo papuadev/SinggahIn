@@ -66,22 +66,35 @@ function RoomCardActions({
   );
 }
 
+function RoomRateBadges({ room }: { room: Room }) {
+  const weekend = room.weekendRatePercent && room.weekendRatePercent > 0;
+  const holiday = room.holidayRatePercent && room.holidayRatePercent > 0;
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <h4 className="font-bold text-gray-900 text-base">{room.name}</h4>
+      <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md shrink-0">
+        {formatRupiah(room.basePrice)} / malam
+      </span>
+      {weekend ? (
+        <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md shrink-0 border border-primary-200">
+          Weekend: +{room.weekendRatePercent}%
+        </span>
+      ) : null}
+      {holiday ? (
+        <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md shrink-0 border border-amber-200">
+          Libur Nasional: +{room.holidayRatePercent}%
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 export function RoomCard(props: RoomCardProps): React.JSX.Element {
   const { room } = props;
   return (
     <div className="p-4 rounded-xl border border-gray-200 bg-white hover:border-primary-200 transition-all shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div className="space-y-1.5 flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h4 className="font-bold text-gray-900 text-base">{room.name}</h4>
-          <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md shrink-0">
-            {formatRupiah(room.basePrice)} / malam
-          </span>
-          {room.weekendRatePercent && room.weekendRatePercent > 0 ? (
-            <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md shrink-0 border border-primary-200">
-              Weekend: +{room.weekendRatePercent}%
-            </span>
-          ) : null}
-        </div>
+        <RoomRateBadges room={room} />
         {room.description && <p className="text-xs text-gray-500 line-clamp-2">{room.description}</p>}
         <RoomMetaBadges capacity={room.capacity} totalUnits={room.totalUnits} />
       </div>

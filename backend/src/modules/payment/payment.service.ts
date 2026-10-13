@@ -3,6 +3,7 @@ import { prisma } from '../../shared/services/prisma.service';
 import { uploadToCloudinary, deleteFromCloudinary, UploadResult } from '../../shared/services/cloudinary.service';
 import { sendBookingVoucherEmail, sendEmergencyCancellationEmail } from '../../shared/services/mail.service';
 import {
+  calculateGraceExpiry,
   assertUploadEligibility,
   assertTenantActionEligibility,
   assertEmergencyCancelEligibility,
@@ -38,6 +39,7 @@ async function executeProofUploadTx(tx: Prisma.TransactionClient, bookingId: str
     where: { id: bookingId },
     data: {
       status: BookingStatus.WAITING_CONFIRMATION,
+      cancellationReason: null,
       payment: {
         update: { status: PaymentStatus.WAITING_APPROVAL, proofImageUrl: res.secureUrl, proofPublicId: res.publicId },
       },
@@ -85,9 +87,16 @@ async function executeRejectTx(tx: Prisma.TransactionClient, bookingId: string, 
   return tx.booking.update({
     where: { id: bookingId },
     data: {
-      status: BookingStatus.REJECTED,
+      status: BookingStatus.WAITING_PAYMENT,
+      expiresAt: calculateGraceExpiry(1),
       cancellationReason: reason || 'Bukti transfer ditolak oleh tenant',
-      payment: { update: { status: PaymentStatus.REJECTED } },
+      payment: {
+        update: {
+          status: PaymentStatus.REJECTED,
+          proofImageUrl: null,
+          proofPublicId: null,
+        },
+      },
     },
     include: { payment: true },
   });
@@ -96,6 +105,9 @@ async function executeRejectTx(tx: Prisma.TransactionClient, bookingId: string, 
 export async function rejectPaymentProof(tenantId: string, bookingId: string, input?: RejectPaymentInput): Promise<PaymentActionResponse> {
   const b = await findBookingForTenant(bookingId);
   assertTenantActionEligibility(b, tenantId);
+  if (b!.payment?.proofPublicId) {
+    try { await deleteFromCloudinary(b!.payment.proofPublicId); } catch (_) {}
+  }
   const updated = await prisma.$transaction((tx) => executeRejectTx(tx, bookingId, input?.reason));
   return mapActionResponse(updated);
 }

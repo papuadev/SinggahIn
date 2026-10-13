@@ -119,11 +119,11 @@ describe('Payment Service', () => {
       return { txMock, b };
     }
 
-    it('sets booking status and payment status to REJECTED', async () => {
+    it('sets booking status to WAITING_PAYMENT and payment status to REJECTED', async () => {
       setupRejectMock();
       const res = await rejectPaymentProof(tenantId, bookingId, { reason: 'Bukti transfer buram' });
 
-      expect(res.bookingStatus).toBe(BookingStatus.REJECTED);
+      expect(res.bookingStatus).toBe(BookingStatus.WAITING_PAYMENT);
       expect(res.paymentStatus).toBe(PaymentStatus.REJECTED);
       expect(res.cancellationReason).toBe('Bukti transfer buram');
     });

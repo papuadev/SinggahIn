@@ -27,6 +27,13 @@ describe('Room Schemas', () => {
       }
     });
 
+    it('should validate valid room payload with holidayRatePercent', () => {
+      const data = { name: 'Holiday Suite', basePrice: 500000, capacity: 2, holidayRatePercent: 25 };
+      const res = CreateRoomSchema.safeParse(data);
+      expect(res.success).toBe(true);
+      if (res.success) expect(res.data.holidayRatePercent).toBe(25);
+    });
+
     it('should default totalUnits to 1 and weekendRatePercent to 0 when omitted', () => {
       const data = {
         name: 'Standard Room',

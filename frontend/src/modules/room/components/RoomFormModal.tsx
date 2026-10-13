@@ -66,6 +66,14 @@ function RoomWeekendRateField({ register, errors }: FieldsProps): React.JSX.Elem
   );
 }
 
+function RoomHolidayRateField({ register, errors }: FieldsProps): React.JSX.Element {
+  return (
+    <FormField label="Tarif Libur (+%)" error={errors.holidayRatePercent?.message}>
+      <Input type="number" min={0} max={100} step={5} placeholder="Contoh: 25" hasError={Boolean(errors.holidayRatePercent)} {...register('holidayRatePercent', { valueAsNumber: true })} />
+    </FormField>
+  );
+}
+
 function RoomCapacityField({ register, errors }: FieldsProps): React.JSX.Element {
   return (
     <FormField label="Kapasitas Tamu" required error={errors.capacity?.message}>
@@ -117,9 +125,10 @@ function RoomFormBody({ register, control, errors, onSubmit }: {
   return (
     <form id="room-form" onSubmit={onSubmit} className="space-y-4">
       <RoomNameField register={register} errors={errors} />
+      <RoomPriceField control={control} errors={errors} />
       <div className="grid grid-cols-2 gap-3">
-        <RoomPriceField control={control} errors={errors} />
         <RoomWeekendRateField register={register} errors={errors} />
+        <RoomHolidayRateField register={register} errors={errors} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <RoomCapacityField register={register} errors={errors} />
@@ -141,6 +150,7 @@ function useRoomFormReset(
         name: initialData?.name ?? '',
         basePrice: initialData?.basePrice ?? 100000,
         weekendRatePercent: initialData?.weekendRatePercent ?? 0,
+        holidayRatePercent: initialData?.holidayRatePercent ?? 0,
         capacity: initialData?.capacity ?? 2,
         totalUnits: initialData?.totalUnits ?? 1,
         description: initialData?.description ?? '',
@@ -159,7 +169,7 @@ export function RoomFormModal({
 }: RoomFormModalProps): React.JSX.Element {
   const { register, control, handleSubmit, reset, formState: { errors } } = useForm<RoomFormData>({
     resolver: zodResolver(roomFormSchema) as any,
-    defaultValues: { name: '', basePrice: 100000, weekendRatePercent: 0, capacity: 2, totalUnits: 1, description: '' },
+    defaultValues: { name: '', basePrice: 100000, weekendRatePercent: 0, holidayRatePercent: 0, capacity: 2, totalUnits: 1, description: '' },
   });
   useRoomFormReset(isOpen, initialData, reset);
 
