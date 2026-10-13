@@ -65,7 +65,11 @@ export function TenantPropertyListPage(): React.JSX.Element {
   const deleteMutation = useDeleteProperty();
   const resetFilters = () => { setSearch(''); setCategoryId(undefined); setSortBy('createdAt_desc'); setPage(1); };
   const onPageChange = (p: number) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-  const confirmDelete = async () => { if (!target) return; await deleteMutation.mutateAsync(target.id); setTarget(null); };
+  const closeModal = () => { deleteMutation.reset(); setTarget(null); };
+  const confirmDelete = async () => {
+    if (!target) return;
+    try { await deleteMutation.mutateAsync(target.id); setTarget(null); } catch (_) {}
+  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -90,7 +94,8 @@ export function TenantPropertyListPage(): React.JSX.Element {
       )}
       <TenantPropertyDeleteModal
         target={target} isDeleting={deleteMutation.isPending}
-        onClose={() => setTarget(null)} onConfirm={confirmDelete}
+        error={deleteMutation.isError ? (deleteMutation.error as Error).message : null}
+        onClose={closeModal} onConfirm={confirmDelete}
       />
     </div>
   );

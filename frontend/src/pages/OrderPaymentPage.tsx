@@ -16,6 +16,7 @@ import { getStatusBadge } from '../modules/booking/components/OrderHistoryCard';
 import { BookingStatus } from '../modules/booking/booking.types';
 import { Button } from '../components/atoms/Button';
 import { BackButton } from '../components/atoms/BackButton';
+import { Alert } from '../components/atoms/Alert';
 
 export function getPageTitle(status: BookingStatus): string {
   switch (status) {
@@ -92,6 +93,11 @@ function PaymentActiveFlow({ p, onCancel }: { p: ReturnType<typeof useOrderPayme
   const isWait = b.status === 'WAITING_PAYMENT';
   return (
     <div className="space-y-6">
+      {isWait && b.cancellationReason && (
+        <Alert variant="warning" title="Bukti Transfer Sebelumnya Ditolak">
+          {b.cancellationReason}. Silakan unggah bukti transfer baru yang valid sebelum batas waktu berakhir.
+        </Alert>
+      )}
       {isWait && <CountdownTimerBadge timer={p.timer} />}
       {isWait && <PaymentMethodSwitcher currentMethod={b.payment?.paymentMethod || 'MANUAL_TRANSFER'} isSwitching={p.isSwitching} switchError={p.switchError} onSwitch={p.changeMethod} />}
       <PaymentMethodRenderer p={p} />
