@@ -66,4 +66,27 @@ describe('Footer Component', () => {
     expect(screen.getByRole('link', { name: 'YouTube' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'LinkedIn' })).toBeInTheDocument();
   });
+
+  it('renders only minimal copyright footer on tenant dashboard and user pages', () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/tenant/dashboard']}>
+        <Footer />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText(/SinggahIn\. Seluruh hak cipta dilindungi undang-undang\./i)).toBeInTheDocument();
+    expect(screen.queryByText('Cari Penginapan')).not.toBeInTheDocument();
+    expect(screen.queryByText('About Us & Bantuan')).not.toBeInTheDocument();
+    expect(container.querySelector('#contact-us')).not.toBeInTheDocument();
+  });
+
+  it('renders minimal footer on user orders page and profile page', () => {
+    render(
+      <MemoryRouter initialEntries={['/orders']}>
+        <Footer />
+      </MemoryRouter>
+    );
+    expect(screen.getByText(/SinggahIn\. Seluruh hak cipta dilindungi undang-undang\./i)).toBeInTheDocument();
+    expect(screen.queryByText('Cari Penginapan')).not.toBeInTheDocument();
+  });
 });

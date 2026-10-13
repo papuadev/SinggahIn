@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, User as UserIcon, LayoutDashboard, Compass, ClipboardList } from 'lucide-react';
+import { LogOut, User as UserIcon, Compass, ClipboardList } from 'lucide-react';
 import { useAuthStore } from '../../../stores/auth.store';
 import { RoleBadge } from '../../atoms/Badge';
+import { TenantMenuDropdown } from './TenantMenuDropdown';
 
 function UserAvatarVisual({ user }: { user: { avatarUrl?: string | null; name?: string | null } }): React.JSX.Element {
   if (user.avatarUrl) return <img src={user.avatarUrl} alt={user.name || 'Avatar'} className="w-full h-full object-cover" />;
@@ -16,19 +17,6 @@ function AccountInfoHeader({ user }: { user: NonNullable<ReturnType<typeof useAu
       <p className="text-xs text-gray-500 truncate mb-2">{user.email}</p>
       <RoleBadge role={user.role} />
     </div>
-  );
-}
-
-function TenantLinks({ onSelect }: { onSelect: () => void }) {
-  return (
-    <>
-      <Link to="/tenant/dashboard" onClick={onSelect} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 hover:text-primary-600 transition-colors">
-        <LayoutDashboard className="w-4 h-4 text-primary-600 shrink-0" /> Dashboard
-      </Link>
-      <Link to="/tenant/orders" onClick={onSelect} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 hover:text-primary-600 transition-colors">
-        <ClipboardList className="w-4 h-4 text-primary-600 shrink-0" /> Kelola Pesanan
-      </Link>
-    </>
   );
 }
 
@@ -55,7 +43,7 @@ function LogoutButton({ onLogout }: { onLogout: () => void }) {
 function MenuLinksSection({ user, onClose }: any) {
   return (
     <div className="py-1 text-sm text-gray-700">
-      {user.role === 'TENANT' && <TenantLinks onSelect={onClose} />}
+      {user.role === 'TENANT' && <TenantMenuDropdown onSelect={onClose} />}
       <CommonLinks onSelect={onClose} isTenant={user.role === 'TENANT'} />
     </div>
   );
@@ -66,7 +54,7 @@ function UserDropdownMenu({ user, isOpen, onClose, onLogout }: any): React.JSX.E
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden="true" />
-      <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 z-50 py-1 divide-y divide-gray-100">
+      <div className="absolute right-0 top-full mt-2 w-64 max-h-[85vh] overflow-y-auto bg-white rounded-xl shadow-xl border border-gray-100 z-50 py-1 divide-y divide-gray-100">
         <AccountInfoHeader user={user} />
         <MenuLinksSection user={user} onClose={onClose} />
         <LogoutButton onLogout={onLogout} />
