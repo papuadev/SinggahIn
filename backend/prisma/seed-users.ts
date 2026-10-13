@@ -10,51 +10,45 @@ export interface SeedUserDef {
 
 export const SEED_USERS: SeedUserDef[] = [
   {
-    email: 'tenant@example.com',
-    name: 'Sarah Wijaya',
+    email: 'wafflecraft.id@gmail.com',
+    name: 'Natan Budi',
     role: Role.TENANT,
     phoneNumber: '081234567801'
   },
   {
-    email: 'tenant2@example.com',
-    name: 'Budi Santoso',
+    email: 'nilm.atelier@gmail.com',
+    name: 'Agung Setyo',
     role: Role.TENANT,
     phoneNumber: '081234567802'
   },
   {
-    email: 'user@example.com',
-    name: 'Rian Pratama',
+    email: 'formalsquad.id@gmail.com',
+    name: 'Nolan Ari',
     role: Role.USER,
     phoneNumber: '081234567803'
   },
   {
-    email: 'user2@example.com',
-    name: 'Dinda Lestari',
+    email: 'ali.wpurbo@gmail.com',
+    name: 'Ali Mustofa',
     role: Role.USER,
     phoneNumber: '081234567804'
   }
 ];
 
+async function upsertSingleUser(prisma: PrismaClient, u: SeedUserDef, hash: string): Promise<string> {
+  const data = {
+    email: u.email, name: u.name, role: u.role, phoneNumber: u.phoneNumber,
+    isVerified: true, passwordHash: hash
+  };
+  const user = await prisma.user.upsert({ where: { email: u.email }, update: data, create: data });
+  return user.id;
+}
+
 export async function seedDemoUsers(prisma: PrismaClient): Promise<Record<string, string>> {
-  const hash = await bcrypt.hash('Password123!', 10);
+  const hash = await bcrypt.hash('jangantanya', 10);
   const userMap: Record<string, string> = {};
-
   for (const u of SEED_USERS) {
-    const data = {
-      email: u.email,
-      name: u.name,
-      role: u.role,
-      phoneNumber: u.phoneNumber,
-      isVerified: true,
-      passwordHash: hash
-    };
-    const user = await prisma.user.upsert({
-      where: { email: u.email },
-      update: data,
-      create: data
-    });
-    userMap[u.email] = user.id;
+    userMap[u.email] = await upsertSingleUser(prisma, u, hash);
   }
-
   return userMap;
 }

@@ -6,90 +6,104 @@ const client_1 = require("@prisma/client");
 const seed_categories_1 = require("./seed-categories");
 Object.defineProperty(exports, "INITIAL_CATEGORIES", { enumerable: true, get: function () { return seed_categories_1.INITIAL_CATEGORIES; } });
 const seed_users_1 = require("./seed-users");
-const seed_props_part1_1 = require("./seed-props-part1");
-const seed_props_part2_1 = require("./seed-props-part2");
+const seed_images_1 = require("./seed-images");
+const seed_props_data1_1 = require("./seed-props-data1");
+const seed_props_data2_1 = require("./seed-props-data2");
+const seed_props_data3_1 = require("./seed-props-data3");
 const seed_reviews_1 = require("./seed-reviews");
 const prisma = new client_1.PrismaClient();
-async function seedCategory(prisma, cat) {
-    return prisma.propertyCategory.upsert({
-        where: { slug: cat.slug },
-        update: { name: cat.name, description: cat.description },
-        create: cat
+async function cleanDatabase(prisma) {
+    console.log('Cleaning existing records...');
+    await prisma.review.deleteMany();
+    await prisma.payment.deleteMany();
+    await prisma.booking.deleteMany();
+    await prisma.roomPriceModifier.deleteMany();
+    await prisma.roomUnavailability.deleteMany();
+    await prisma.propertyImage.deleteMany();
+    await prisma.room.deleteMany();
+    await prisma.property.deleteMany();
+    await prisma.user.deleteMany({
+        where: { email: { in: ['tenant@example.com', 'tenant2@example.com', 'user@example.com', 'user2@example.com'] } }
     });
 }
 async function seedCategories(prisma) {
     const map = {};
     for (const c of seed_categories_1.INITIAL_CATEGORIES) {
-        const record = await seedCategory(prisma, c);
+        const record = await prisma.propertyCategory.upsert({
+            where: { slug: c.slug }, update: { name: c.name, description: c.description }, create: c
+        });
         map[c.slug] = record.id;
     }
     return map;
 }
-async function upsertProperty(prisma, p, tenantId, categoryId) {
-    const existing = await prisma.property.findFirst({
-        where: { title: p.title, tenantId }
-    });
-    if (existing) {
-        return prisma.property.update({
-            where: { id: existing.id },
-            data: { description: p.description, address: p.address, city: p.city, latitude: p.latitude, longitude: p.longitude, facilities: p.facilities, categoryId }
+async function seedPropertyGeneralImages(prisma, propId, imgs) {
+    for (let idx = 0; idx < imgs.length; idx++) {
+        await prisma.propertyImage.create({
+            data: { propertyId: propId, roomId: null, imageUrl: imgs[idx].secureUrl, publicId: imgs[idx].publicId, isCover: idx === 0, order: idx }
         });
     }
-    return prisma.property.create({
-        data: { title: p.title, description: p.description, address: p.address, city: p.city, latitude: p.latitude, longitude: p.longitude, facilities: p.facilities, tenantId, categoryId }
-    });
 }
-async function upsertSingleRoom(prisma, propertyId, r) {
-    const existing = await prisma.room.findFirst({ where: { propertyId, name: r.name } });
-    if (existing) {
-        return prisma.room.update({
-            where: { id: existing.id },
-            data: { basePrice: r.basePrice, capacity: r.capacity, totalUnits: r.totalUnits, description: r.description }
+async function seedSingleRoom(prisma, propId, r, imgs) {
+    const room = await prisma.room.create({
+        data: { propertyId: propId, name: r.name, basePrice: r.basePrice, capacity: r.capacity, totalUnits: r.totalUnits, description: r.description }
+    });
+    for (let idx = 0; idx < imgs.length; idx++) {
+        await prisma.propertyImage.create({
+            data: { propertyId: propId, roomId: room.id, imageUrl: imgs[idx].secureUrl, publicId: imgs[idx].publicId, isCover: false, order: idx }
         });
     }
-    return prisma.room.create({
-        data: { propertyId, name: r.name, basePrice: r.basePrice, capacity: r.capacity, totalUnits: r.totalUnits, description: r.description }
-    });
+    return room;
 }
-async function upsertPropertyRooms(prisma, propertyId, rooms) {
-    const seededRooms = [];
-    for (const r of rooms) {
-        const room = await upsertSingleRoom(prisma, propertyId, r);
-        seededRooms.push({ id: room.id, basePrice: room.basePrice });
+async function seedRoomsForProperty(prisma, propId, rooms, rImgs, pIdx) {
+    const roomsRef = [];
+    for (let rIdx = 0; rIdx < rooms.length; rIdx++) {
+        const slice = [rImgs[(pIdx * 4 + rIdx * 2) % rImgs.length], rImgs[(pIdx * 4 + rIdx * 2 + 1) % rImgs.length]];
+        const room = await seedSingleRoom(prisma, propId, rooms[rIdx], slice);
+        roomsRef.push({ id: room.id, basePrice: room.basePrice });
     }
-    return seededRooms;
+    return roomsRef;
 }
-async function seedSingleProperty(prisma, p, userMap, catMap) {
-    const tenantId = userMap[p.tenantEmail];
-    const categoryId = catMap[p.categorySlug];
-    const prop = await upsertProperty(prisma, p, tenantId, categoryId);
-    const rooms = await upsertPropertyRooms(prisma, prop.id, p.rooms);
+async function seedOneProperty(prisma, p, tenantId, catId, pImgs, rImgs, pIdx) {
+    const prop = await prisma.property.create({
+        data: {
+            title: p.title, description: p.description, address: p.address, city: p.city,
+            latitude: p.latitude, longitude: p.longitude, facilities: p.facilities, tenantId, categoryId: catId
+        }
+    });
+    await seedPropertyGeneralImages(prisma, prop.id, pImgs);
+    const rooms = await seedRoomsForProperty(prisma, prop.id, p.rooms, rImgs, pIdx);
     return { id: prop.id, title: prop.title, rooms };
 }
-async function seedAllProperties(prisma, userMap, catMap) {
-    const allDefs = [...seed_props_part1_1.PROPERTIES_PART_1, ...seed_props_part2_1.PROPERTIES_PART_2];
-    const results = [];
-    for (const def of allDefs) {
-        results.push(await seedSingleProperty(prisma, def, userMap, catMap));
+async function seedAllProperties(prisma, allProps, users, cats, images) {
+    const seededProps = [];
+    for (let i = 0; i < allProps.length; i++) {
+        const p = allProps[i];
+        const tenantId = users[p.tenantEmail];
+        const catId = cats[p.categorySlug];
+        const pImgs = [images.properties[(i * 3) % images.properties.length], images.properties[(i * 3 + 1) % images.properties.length], images.properties[(i * 3 + 2) % images.properties.length]];
+        const seeded = await seedOneProperty(prisma, p, tenantId, catId, pImgs, images.rooms, i);
+        seededProps.push(seeded);
     }
-    return results;
+    return seededProps;
 }
 async function main() {
-    console.log('🌱 Starting database seed...');
+    console.log('--- Starting SinggahIn Database Seeder ---');
+    await cleanDatabase(prisma);
     const catMap = await seedCategories(prisma);
     const userMap = await (0, seed_users_1.seedDemoUsers)(prisma);
-    const seededProps = await seedAllProperties(prisma, userMap, catMap);
-    const normalUserIds = [userMap['user@example.com'], userMap['user2@example.com']];
-    await (0, seed_reviews_1.seedPropertyReviews)(prisma, seededProps, normalUserIds);
-    console.log(`✅ Seed finished successfully: 6 categories, 4 users, ${seededProps.length} properties with rooms and reviews.`);
+    const images = await (0, seed_images_1.ensureSeedImages)();
+    const allProps = [...seed_props_data1_1.PROPERTIES_DATA_1, ...seed_props_data2_1.PROPERTIES_DATA_2, ...seed_props_data3_1.PROPERTIES_DATA_3];
+    console.log(`Seeding ${allProps.length} properties...`);
+    const seededProps = await seedAllProperties(prisma, allProps, userMap, catMap, images);
+    const customerIds = [userMap['formalsquad.id@gmail.com'], userMap['ali.wpurbo@gmail.com']];
+    await (0, seed_reviews_1.seedPropertyReviews)(prisma, seededProps, customerIds);
+    console.log('--- Seeding successfully finished! ---');
 }
-if (process.env.NODE_ENV !== 'test') {
-    main()
-        .catch((error) => {
-        console.error('Seeding failed:', error);
-        process.exit(1);
-    })
-        .finally(async () => {
-        await prisma.$disconnect();
-    });
-}
+main()
+    .catch((e) => {
+    console.error(e);
+    process.exit(1);
+})
+    .finally(async () => {
+    await prisma.$disconnect();
+});
