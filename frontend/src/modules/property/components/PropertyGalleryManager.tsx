@@ -3,6 +3,7 @@ import { PropertyImage } from '../property.types';
 import { MAX_PROPERTY_IMAGES } from '../schemas/property-image.schema';
 import { Alert } from '../../../components/atoms/Alert';
 import { useGalleryManager } from '../hooks/useGalleryManager';
+import { useAssignImageRoom } from '../hooks/useProperties';
 import { UploadDropzone } from './UploadDropzone';
 import { StagedGallerySection } from './StagedGallerySection';
 import { UploadedImageCard } from './UploadedImageCard';
@@ -26,8 +27,9 @@ function GalleryHeader({ count, stagedCount }: { count: number; stagedCount: num
 }
 
 interface GalleryGridProps {
-  images: PropertyImage[]; disabled: boolean;
+  images: PropertyImage[]; disabled: boolean; rooms?: Array<{ id: string; name: string }>;
   onSetCover: (id: string) => void; onDelete: (id: string) => void; onMove: (from: number, to: number) => void;
+  onAssignRoom?: (imageId: string, roomId: string | null) => void;
 }
 
 function GridHeader({ count }: { count: number }): React.JSX.Element {
@@ -39,16 +41,26 @@ function GridHeader({ count }: { count: number }): React.JSX.Element {
   );
 }
 
+function GalleryCardList(p: GalleryGridProps): React.JSX.Element {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {p.images.map((img, idx) => (
+        <UploadedImageCard
+          key={img.id} image={img} index={idx} total={p.images.length}
+          disabled={p.disabled} rooms={p.rooms} onSetCover={p.onSetCover}
+          onDelete={p.onDelete} onMove={p.onMove} onAssignRoom={p.onAssignRoom}
+        />
+      ))}
+    </div>
+  );
+}
+
 function GalleryGrid(p: GalleryGridProps): React.JSX.Element | null {
   if (p.images.length === 0) return null;
   return (
     <div>
       <GridHeader count={p.images.length} />
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {p.images.map((img, idx) => (
-          <UploadedImageCard key={img.id} image={img} index={idx} total={p.images.length} disabled={p.disabled} onSetCover={p.onSetCover} onDelete={p.onDelete} onMove={p.onMove} />
-        ))}
-      </div>
+      <GalleryCardList {...p} />
     </div>
   );
 }
@@ -57,26 +69,44 @@ function resolveError(valError: string | null, uploadErr: unknown, deleteErr: un
   return valError || (uploadErr as Error)?.message || (deleteErr as Error)?.message || (reorderErr as Error)?.message || null;
 }
 
-function useManagerHandlers(gm: ReturnType<typeof useGalleryManager>, onUpdated?: () => void) {
+function useManagerHandlers(
+  gm: ReturnType<typeof useGalleryManager>,
+  assignMut: ReturnType<typeof useAssignImageRoom>,
+  onUpdated?: () => void,
+) {
   const onDelete = (id: string) => gm.deleteMut.mutateAsync(id).then(() => onUpdated?.());
   const onCover = (id: string) => gm.coverMut.mutateAsync(id).then(() => onUpdated?.());
-  const err = resolveError(gm.valError, gm.uploadMut.error, gm.deleteMut.error, gm.reorderMut.error);
+  const onAssign = (imgId: string, rId: string | null) => assignMut.mutateAsync({ imageId: imgId, roomId: rId }).then(() => onUpdated?.());
+  const err = resolveError(gm.valError, gm.uploadMut.error, gm.deleteMut.error, gm.reorderMut.error || assignMut.error);
   const isFull = gm.uploadedImages.length + gm.stagedImages.length >= MAX_PROPERTY_IMAGES;
-  return { onDelete, onCover, err, isFull };
+  return { onDelete, onCover, onAssign, err, isFull };
 }
 
-export function PropertyGalleryManager({ propertyId, images = [], onImagesUpdated }: PropertyGalleryManagerProps): React.JSX.Element {
-  const gm = useGalleryManager(propertyId, images, onImagesUpdated);
-  const { onDelete, onCover, err, isFull } = useManagerHandlers(gm, onImagesUpdated);
+function GallerySections({ gm, isBusy, rooms, onCover, onDelete, onAssign }: {
+  gm: ReturnType<typeof useGalleryManager>; isBusy: boolean; rooms?: Array<{ id: string; name: string }>;
+  onCover: (id: string) => void; onDelete: (id: string) => void; onAssign: (imgId: string, rId: string | null) => void;
+}) {
   const hasCover = gm.uploadedImages.some((i) => i.isCover);
+  return (
+    <>
+      <StagedGallerySection stagedImages={gm.stagedImages} hasExistingCover={hasCover} isUploading={gm.uploadMut.isPending} onMove={gm.handleMoveStaged} onRemove={gm.handleRemoveStaged} onClearAll={gm.handleClearAllStaged} onUpload={gm.handleCommitUpload} />
+      <GalleryGrid images={gm.uploadedImages} rooms={rooms} disabled={isBusy} onSetCover={onCover} onDelete={onDelete} onMove={gm.handleMoveUploaded} onAssignRoom={onAssign} />
+    </>
+  );
+}
+
+export function PropertyGalleryManager({ propertyId, images = [], rooms, onImagesUpdated }: PropertyGalleryManagerProps): React.JSX.Element {
+  const gm = useGalleryManager(propertyId, images, onImagesUpdated);
+  const assignMut = useAssignImageRoom(propertyId);
+  const { onDelete, onCover, onAssign, err, isFull } = useManagerHandlers(gm, assignMut, onImagesUpdated);
+  const isBusy = gm.isBusy || assignMut.isPending;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-xs">
       <GalleryHeader count={gm.uploadedImages.length} stagedCount={gm.stagedImages.length} />
       {err && <Alert variant="error" className="mb-4">{err}</Alert>}
       <UploadDropzone isFull={isFull} isUploading={gm.uploadMut.isPending} onFilesSelected={gm.handleStageFiles} />
-      <StagedGallerySection stagedImages={gm.stagedImages} hasExistingCover={hasCover} isUploading={gm.uploadMut.isPending} onMove={gm.handleMoveStaged} onRemove={gm.handleRemoveStaged} onClearAll={gm.handleClearAllStaged} onUpload={gm.handleCommitUpload} />
-      <GalleryGrid images={gm.uploadedImages} disabled={gm.isBusy} onSetCover={onCover} onDelete={onDelete} onMove={gm.handleMoveUploaded} />
+      <GallerySections gm={gm} isBusy={isBusy} rooms={rooms} onCover={onCover} onDelete={onDelete} onAssign={onAssign} />
     </div>
   );
 }

@@ -8,6 +8,7 @@ export interface Room {
   capacity: number;
   totalUnits: number;
   description?: string | null;
+  images?: any[];
   createdAt?: string;
   updatedAt?: string;
 }

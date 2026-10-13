@@ -97,3 +97,9 @@ export const GetTenantPropertiesQuerySchema = z.object({
 
 export type GetTenantPropertiesQueryInput = z.infer<typeof GetTenantPropertiesQuerySchema>;
 
+export const AssignImageRoomSchema = z.object({
+  roomId: z.string().nullable().optional(),
+});
+
+export type AssignImageRoomInput = z.infer<typeof AssignImageRoomSchema>;
+

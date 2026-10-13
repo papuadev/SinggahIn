@@ -109,6 +109,7 @@ describe('Room Service', () => {
         orderBy: { basePrice: 'desc' },
         skip: 0,
         take: 5,
+        include: { images: { orderBy: [{ order: 'asc' }, { createdAt: 'asc' }] } },
       });
       expect(result).toEqual({
         data: mockRooms,

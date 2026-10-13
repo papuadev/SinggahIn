@@ -24,6 +24,7 @@ export interface UpdateCategoryPayload {
 export interface PropertyImage {
   id: string;
   propertyId: string;
+  roomId?: string | null;
   imageUrl: string;
   publicId: string;
   isCover: boolean;
@@ -40,6 +41,7 @@ export interface PropertyRoomSummary {
   description?: string | null;
   weekendRatePercent?: number | null;
   holidayRatePercent?: number | null;
+  images?: PropertyImage[];
 }
 
 export interface PropertyItem {

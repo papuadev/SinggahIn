@@ -116,3 +116,23 @@ export async function reorderPropertyImages(
   validateReorderImageIds(existingImages, imageIds);
   return executeReorderTransaction(propertyId, imageIds);
 }
+
+async function verifyRoomBelongsToProperty(roomId: string, propertyId: string): Promise<void> {
+  const room = await prisma.room.findUnique({ where: { id: roomId } });
+  if (!room || room.propertyId !== propertyId) {
+    throw AppError.badRequest('Tipe kamar tidak valid atau bukan milik properti ini.');
+  }
+}
+
+export async function assignImageToRoom(
+  propertyId: string, imageId: string, tenantId: string, roomId: string | null
+): Promise<PropertyImageDto> {
+  await verifyPropertyOwnership(propertyId, tenantId);
+  await findImageOrThrow(propertyId, imageId);
+  if (roomId) await verifyRoomBelongsToProperty(roomId, propertyId);
+  return prisma.propertyImage.update({
+    where: { id: imageId },
+    data: { roomId: roomId || null },
+  });
+}
+

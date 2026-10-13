@@ -179,5 +179,18 @@ export const propertyApi = {
     );
     return res.data;
   },
+
+  async assignImageToRoom(
+    propertyId: string,
+    imageId: string,
+    roomId: string | null
+  ): Promise<ApiResponse<PropertyImage>> {
+    const res = await apiClient.patch<ApiResponse<PropertyImage>>(
+      `/properties/${propertyId}/images/${imageId}/room`,
+      { roomId }
+    );
+    return res.data;
+  },
 };
+
 
