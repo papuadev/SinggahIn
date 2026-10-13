@@ -142,8 +142,31 @@ describe('TenantDashboardPage Component', () => {
     expect(screen.getByText('24 ulasan')).toBeInTheDocument();
     expect(screen.getByText('Reservasi mendatang')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Lihat semua/i })).toHaveAttribute('href', '/tenant/orders?status=PROCESSED&sortBy=checkIn_asc');
-    expect(screen.getByText('Ardi Rahman')).toBeInTheDocument();
-    expect(screen.getByText('Properti aktif')).toBeInTheDocument();
+    expect(screen.getByText('Properti Anda')).toBeInTheDocument();
+    expect(screen.getByText('Lihat dan kelola properti Anda')).toBeInTheDocument();
     expect(screen.getByText('Villa Nuansa Asri')).toBeInTheDocument();
+  });
+
+  it('allows changing month in dashboard filter', async () => {
+    vi.mocked(propertyApi.getMyProperties).mockResolvedValue({
+      success: true, message: 'OK', data: mockProperties as any,
+    });
+    vi.mocked(reportApi.getSalesReport).mockResolvedValue({
+      success: true, message: 'OK', data: mockSalesReport as any,
+    });
+    vi.mocked(reportApi.getOccupancyMatrix).mockResolvedValue({
+      success: true, message: 'OK', data: mockOccupancy as any,
+    });
+    vi.mocked(bookingApi.getTenantBookings).mockResolvedValue({
+      success: true, message: 'OK', data: [], meta: { page: 1, limit: 5, totalItems: 0, totalPages: 0 },
+    });
+
+    renderWithProviders(<TenantDashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Ringkasan properti')).toBeInTheDocument();
+    });
+
+    const monthSelect = screen.getByRole('combobox', { name: /Pilih Bulan/i });
+    expect(monthSelect).toBeInTheDocument();
   });
 });

@@ -9,6 +9,8 @@ interface SummaryGridProps {
   bookingsDiffText: string;
   occupancyRate: number;
   totalDays: number;
+  bookedUnits?: number;
+  totalCapacity?: number;
   averageRating: number;
   totalReviews: number;
 }
@@ -67,15 +69,17 @@ function RevenueCard({ revenue, subtext }: { revenue: number; subtext: string })
   );
 }
 
-function OccupancyCard({ rate, totalDays }: { rate: number; totalDays: number }) {
-  const days = totalDays > 0 ? totalDays : 30;
-  const occupied = Math.round((rate / 100) * days);
+function OccupancyCard({ rate, bookedUnits, totalCapacity }: { rate: number; bookedUnits?: number; totalCapacity?: number }) {
+  const formattedCapacity = totalCapacity ? totalCapacity.toLocaleString('id-ID') : '0';
+  const subtext = totalCapacity && totalCapacity > 0
+    ? `${bookedUnits ?? 0} dari ${formattedCapacity} unit terisi`
+    : (rate > 0 ? `${rate}% kapasitas terisi` : 'Belum ada unit terisi');
   return (
     <StatCard
       icon={<Home className="w-5 h-5" />}
       label="Tingkat hunian"
       value={`${rate}%`}
-      subtext={`${occupied} dari ${days} malam`}
+      subtext={subtext}
     />
   );
 }
@@ -98,7 +102,7 @@ export function DashboardPropertySummaryGrid(p: SummaryGridProps): React.JSX.Ele
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <BookingsCard bookings={p.currentMonthBookings} subtext={p.bookingsDiffText} />
       <RevenueCard revenue={p.currentMonthRevenue} subtext={p.revenueDiffText} />
-      <OccupancyCard rate={p.occupancyRate} totalDays={p.totalDays} />
+      <OccupancyCard rate={p.occupancyRate} bookedUnits={p.bookedUnits} totalCapacity={p.totalCapacity} />
       <RatingCard rating={p.averageRating} reviews={p.totalReviews} />
     </div>
   );
