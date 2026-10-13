@@ -1,4 +1,5 @@
 import { AdjustmentType } from '@prisma/client';
+import { getIndonesianNationalHoliday } from '../../shared/utils/national-holidays.util';
 import {
   computeAdjustedPrice,
   resolveModifierForDate,
@@ -47,36 +48,34 @@ export function calculateDayPrice(
   dateStr: string,
   basePrice: number,
   weekendPercent: number | null | undefined,
-  modifiers: RoomPriceModifierDto[]
+  modifiers: RoomPriceModifierDto[],
+  holidayPercent?: number | null
 ): { price: number; reason: string | null } {
-  const dateObj = new Date(`${dateStr}T00:00:00.000Z`);
-  const mod = resolveModifierForDate(modifiers, dateObj, basePrice);
+  const mod = resolveModifierForDate(modifiers, new Date(`${dateStr}T00:00:00.000Z`), basePrice);
   if (mod) {
-    const price = computeAdjustedPrice(basePrice, mod.adjustmentType, mod.adjustmentValue);
-    return { price, reason: mod.reason || 'Peak Season Rate' };
+    return { price: computeAdjustedPrice(basePrice, mod.adjustmentType, mod.adjustmentValue), reason: mod.reason || 'Peak Season Rate' };
+  }
+  const holiday = getIndonesianNationalHoliday(dateStr);
+  if (holiday.isHoliday && holidayPercent && holidayPercent > 0) {
+    return { price: computeAdjustedPrice(basePrice, AdjustmentType.PERCENTAGE, holidayPercent), reason: holiday.name ? `Libur Nasional: ${holiday.name}` : 'Libur Nasional' };
   }
   if (isDateWeekend(dateStr) && weekendPercent && weekendPercent > 0) {
-    const price = computeAdjustedPrice(basePrice, AdjustmentType.PERCENTAGE, weekendPercent);
-    return { price, reason: 'Weekend Rate' };
+    return { price: computeAdjustedPrice(basePrice, AdjustmentType.PERCENTAGE, weekendPercent), reason: 'Weekend Rate' };
   }
   return { price: basePrice, reason: null };
 }
 
 export function buildCalendarDay(
   dateStr: string,
-  room: { basePrice: number; weekendRatePercent?: number | null; totalUnits: number },
+  room: { basePrice: number; weekendRatePercent?: number | null; holidayRatePercent?: number | null; totalUnits: number },
   modifiers: RoomPriceModifierDto[],
   unavailabilities: { startDate: Date; endDate: Date; reason?: string | null }[],
   bookings: { checkInDate: Date; checkOutDate: Date }[]
 ): CalendarDayItemDto {
   const block = checkDateUnavailability(dateStr, unavailabilities);
-  if (block.isBlocked) {
-    return { date: dateStr, price: 0, isAvailable: false, reason: block.reason };
-  }
+  if (block.isBlocked) return { date: dateStr, price: 0, isAvailable: false, reason: block.reason };
   const bookedCount = countBookingsForDate(dateStr, bookings);
-  if (bookedCount >= room.totalUnits) {
-    return { date: dateStr, price: 0, isAvailable: false, reason: 'Sold Out' };
-  }
-  const pricing = calculateDayPrice(dateStr, room.basePrice, room.weekendRatePercent, modifiers);
+  if (bookedCount >= room.totalUnits) return { date: dateStr, price: 0, isAvailable: false, reason: 'Sold Out' };
+  const pricing = calculateDayPrice(dateStr, room.basePrice, room.weekendRatePercent, modifiers, room.holidayRatePercent);
   return { date: dateStr, price: pricing.price, isAvailable: true, reason: pricing.reason };
 }

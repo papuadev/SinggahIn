@@ -17,6 +17,13 @@ export const roomFormSchema = z.object({
     .max(100, 'Persentase akhir pekan maksimal 100%')
     .optional()
     .default(0),
+  holidayRatePercent: z.coerce
+    .number()
+    .int('Persentase libur nasional harus bilangan bulat')
+    .min(0, 'Persentase libur nasional minimal 0%')
+    .max(100, 'Persentase libur nasional maksimal 100%')
+    .optional()
+    .default(0),
   capacity: z.coerce
     .number({ required_error: 'Kapasitas tamu wajib diisi' })
     .int('Kapasitas harus bilangan bulat')

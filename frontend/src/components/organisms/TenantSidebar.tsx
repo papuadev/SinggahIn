@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Building2, PlusCircle, User, Calendar, ClipboardList, BarChart3, CalendarRange } from 'lucide-react';
+import { Building2, PlusCircle, User, Calendar, ClipboardList, BarChart3, CalendarRange, Tags } from 'lucide-react';
 
 interface SidebarLinkProps {
   to: string;
@@ -29,6 +29,7 @@ function SidebarNavGroup({ p }: { p: string }) {
       <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider pt-3 mb-2">Manajemen Properti</p>
       <SidebarLink to="/tenant/dashboard" icon={<Calendar className="w-4 h-4" />} label="Dasbor & Kalender" isActive={p === '/tenant/dashboard'} />
       <SidebarLink to="/tenant/properties" icon={<Building2 className="w-4 h-4" />} label="Daftar Properti" isActive={p === '/tenant/properties'} />
+      <SidebarLink to="/tenant/categories" icon={<Tags className="w-4 h-4" />} label="Kategori Properti" isActive={p === '/tenant/categories'} />
       <SidebarLink to="/tenant/properties/new" icon={<PlusCircle className="w-4 h-4" />} label="Tambah Properti" isActive={p === '/tenant/properties/new'} />
     </div>
   );

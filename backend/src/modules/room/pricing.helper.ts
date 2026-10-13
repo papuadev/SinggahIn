@@ -1,4 +1,5 @@
 import { AdjustmentType } from '@prisma/client';
+import { getIndonesianNationalHoliday } from '../../shared/utils/national-holidays.util';
 import {
   RoomPriceModifierDto,
   DailyPriceDto,
@@ -68,27 +69,39 @@ function isWeekendDay(date: Date): boolean {
   return day === 0 || day === 6;
 }
 
+function resolveHolidayPrice(basePrice: number, rate: number, date: Date) {
+  const hol = getIndonesianNationalHoliday(date);
+  if (!hol.isHoliday) return null;
+  const reason = hol.name ? `Tarif Libur Nasional: ${hol.name} (+${rate}%)` : `Tarif Libur Nasional (+${rate}%)`;
+  return { price: computeAdjustedPrice(basePrice, AdjustmentType.PERCENTAGE, rate), type: AdjustmentType.PERCENTAGE, value: rate, reason };
+}
+
+function resolveWeekendPrice(basePrice: number, rate: number) {
+  return {
+    price: computeAdjustedPrice(basePrice, AdjustmentType.PERCENTAGE, rate),
+    type: AdjustmentType.PERCENTAGE,
+    value: rate,
+    reason: `Tarif Akhir Pekan (+${rate}%)`,
+  };
+}
+
 function resolveEffectivePrice(
   basePrice: number,
   mod: RoomPriceModifierDto | null,
   isWeekend: boolean,
-  weekendRatePercent?: number | null
-): { price: number; type: AdjustmentType | null; value: number | null; reason: string | null } {
+  weekendRatePercent?: number | null,
+  holidayRatePercent?: number | null,
+  date?: Date
+) {
   if (mod) {
-    return {
-      price: computeAdjustedPrice(basePrice, mod.adjustmentType, mod.adjustmentValue),
-      type: mod.adjustmentType,
-      value: mod.adjustmentValue,
-      reason: mod.reason,
-    };
+    return { price: computeAdjustedPrice(basePrice, mod.adjustmentType, mod.adjustmentValue), type: mod.adjustmentType, value: mod.adjustmentValue, reason: mod.reason };
+  }
+  if (date && holidayRatePercent && holidayRatePercent > 0) {
+    const hol = resolveHolidayPrice(basePrice, holidayRatePercent, date);
+    if (hol) return hol;
   }
   if (isWeekend && weekendRatePercent && weekendRatePercent > 0) {
-    return {
-      price: computeAdjustedPrice(basePrice, AdjustmentType.PERCENTAGE, weekendRatePercent),
-      type: AdjustmentType.PERCENTAGE,
-      value: weekendRatePercent,
-      reason: `Tarif Akhir Pekan (+${weekendRatePercent}%)`,
-    };
+    return resolveWeekendPrice(basePrice, weekendRatePercent);
   }
   return { price: basePrice, type: null, value: null, reason: null };
 }
@@ -97,10 +110,11 @@ export function buildDailyPrice(
   date: Date,
   basePrice: number,
   mod: RoomPriceModifierDto | null,
-  weekendRatePercent?: number | null
+  weekendRatePercent?: number | null,
+  holidayRatePercent?: number | null
 ): DailyPriceDto {
   const isWeekend = isWeekendDay(date);
-  const resolved = resolveEffectivePrice(basePrice, mod, isWeekend, weekendRatePercent);
+  const resolved = resolveEffectivePrice(basePrice, mod, isWeekend, weekendRatePercent, holidayRatePercent, date);
   return {
     date: toUtcDate(date).toISOString().slice(0, 10),
     basePrice,

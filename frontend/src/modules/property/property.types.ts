@@ -3,8 +3,22 @@ export interface PropertyCategory {
   name: string;
   slug: string;
   description: string | null;
+  tenantId?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  isProtected?: boolean;
+  propertyCount?: number;
+  _count?: { properties: number };
+}
+
+export interface CreateCategoryPayload {
+  name: string;
+  description?: string;
+}
+
+export interface UpdateCategoryPayload {
+  name: string;
+  description?: string;
 }
 
 export interface PropertyImage {
@@ -25,6 +39,7 @@ export interface PropertyRoomSummary {
   totalUnits: number;
   description?: string | null;
   weekendRatePercent?: number | null;
+  holidayRatePercent?: number | null;
 }
 
 export interface PropertyItem {

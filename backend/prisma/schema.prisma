@@ -61,6 +61,7 @@ model User {
 
   tokens         VerificationToken[]
   properties     Property[]          @relation("TenantProperties")
+  categories     PropertyCategory[]  @relation("TenantCategories")
   bookings       Booking[]           @relation("UserBookings")
   reviews        Review[]            @relation("UserReviews")
 
@@ -85,14 +86,17 @@ model VerificationToken {
 
 model PropertyCategory {
   id          String     @id @default(cuid())
+  tenantId    String?
   name        String     @unique
   slug        String     @unique
   description String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
+  tenant      User?      @relation("TenantCategories", fields: [tenantId], references: [id], onDelete: SetNull)
   properties  Property[]
 
+  @@index([tenantId])
   @@map("property_categories")
 }
 
@@ -143,6 +147,7 @@ model Room {
   name             String
   basePrice        Int
   weekendRatePercent Int?               @default(0)
+  holidayRatePercent Int?               @default(0)
   capacity         Int
   totalUnits       Int                  @default(1)
   description      String?              @db.Text

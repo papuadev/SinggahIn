@@ -10,6 +10,7 @@ import { uploadMultipleImages } from '../../shared/middleware/upload.middleware'
 import { propertyRoomRoutes } from '../room/room.routes';
 import * as catalogController from './catalog.controller';
 import * as calendarController from './calendar.controller';
+import * as categoryController from './category.controller';
 import {
   CreatePropertySchema,
   UpdatePropertySchema,
@@ -22,11 +23,46 @@ import {
 } from './property.schema';
 import { CatalogQuerySchema } from './catalog.schema';
 import { CalendarQuerySchema } from './calendar.schema';
+import {
+  CreateCategorySchema,
+  UpdateCategorySchema,
+  CategoryIdParamSchema,
+  GetCategoriesQuerySchema,
+} from './category.schema';
 
 const router = Router();
 
 // Public: Master Categories
-router.get('/categories', propertyController.getCategories);
+router.get(
+  '/categories',
+  validateRequest({ query: GetCategoriesQuerySchema }),
+  categoryController.getCategories
+);
+
+// Tenant-Only: Category CRUD
+router.post(
+  '/categories',
+  authenticate,
+  requireRole(Role.TENANT),
+  validateRequest({ body: CreateCategorySchema }),
+  categoryController.createCategory
+);
+
+router.put(
+  '/categories/:id',
+  authenticate,
+  requireRole(Role.TENANT),
+  validateRequest({ params: CategoryIdParamSchema, body: UpdateCategorySchema }),
+  categoryController.updateCategory
+);
+
+router.delete(
+  '/categories/:id',
+  authenticate,
+  requireRole(Role.TENANT),
+  validateRequest({ params: CategoryIdParamSchema }),
+  categoryController.deleteCategory
+);
 
 // Tenant-Only: Reverse Geocode Proxy
 router.get(

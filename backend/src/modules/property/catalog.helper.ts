@@ -15,6 +15,7 @@ export interface RawRoomRecord {
   id: string;
   basePrice: number;
   weekendRatePercent?: number | null;
+  holidayRatePercent?: number | null;
   capacity: number;
   totalUnits: number;
   modifiers: RoomPriceModifierDto[];
@@ -69,7 +70,7 @@ export function computeRoomPricing(
   const dates = generateDateRange(toUtcDate(checkIn), toUtcDate(checkOut));
   const breakdown = dates.map((d) => {
     const mod = resolveModifierForDate(room.modifiers, d, room.basePrice);
-    return buildDailyPrice(d, room.basePrice, mod, room.weekendRatePercent);
+    return buildDailyPrice(d, room.basePrice, mod, room.weekendRatePercent, room.holidayRatePercent);
   });
   const res = aggregateStayPricing(room.id, checkIn, checkOut, room.basePrice, breakdown);
   return { averageNightRate: res.averageNightRate, totalStayPrice: res.totalStayPrice, totalNights: res.totalNights };

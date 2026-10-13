@@ -1,23 +1,61 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { propertyApi } from '../services/property.api';
-import { CreatePropertyPayload, UpdatePropertyPayload, GetTenantPropertiesParams } from '../property.types';
+import {
+  CreatePropertyPayload,
+  UpdatePropertyPayload,
+  GetTenantPropertiesParams,
+  CreateCategoryPayload,
+  UpdateCategoryPayload,
+} from '../property.types';
 
 export const PROPERTY_KEYS = {
   categories: ['propertyCategories'] as const,
+  categoriesActive: ['propertyCategories', 'active'] as const,
   myProperties: ['myProperties'] as const,
   myPropertiesList: (params?: GetTenantPropertiesParams) => ['myPropertiesList', params] as const,
   detail: (id?: string) => ['property', id] as const,
 };
 
-export function usePropertyCategories() {
+export function usePropertyCategories(activeOnly?: boolean) {
   return useQuery({
-    queryKey: PROPERTY_KEYS.categories,
+    queryKey: activeOnly ? PROPERTY_KEYS.categoriesActive : PROPERTY_KEYS.categories,
     queryFn: async () => {
       if (typeof propertyApi.getCategories !== 'function') return [];
-      const res = await propertyApi.getCategories();
+      const res = await propertyApi.getCategories(activeOnly ? { activeOnly: true } : undefined);
       return res?.data || [];
     },
     staleTime: 1000 * 60 * 60,
+  });
+}
+
+export function useCreateCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateCategoryPayload) => propertyApi.createCategory(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['propertyCategories'] });
+    },
+  });
+}
+
+export function useUpdateCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateCategoryPayload }) =>
+      propertyApi.updateCategory(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['propertyCategories'] });
+    },
+  });
+}
+
+export function useDeleteCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => propertyApi.deleteCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['propertyCategories'] });
+    },
   });
 }
 
