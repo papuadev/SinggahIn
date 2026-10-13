@@ -44,6 +44,17 @@ function VerifyContent({ token, onSubmit, isLoading, error }: ContentProps): Rea
   return <VerifyForm token={token} onSubmit={onSubmit} isLoading={isLoading} serverError={error} />;
 }
 
+function VerifyCard({ token, onSubmit, isLoading, error }: ContentProps): React.JSX.Element {
+  return (
+    <div className="max-w-md mx-auto py-8">
+      <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+        <VerifyHeader />
+        <VerifyContent token={token} onSubmit={onSubmit} isLoading={isLoading} error={error} />
+      </div>
+    </div>
+  );
+}
+
 export function VerifyTokenPage(): React.JSX.Element {
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -53,15 +64,8 @@ export function VerifyTokenPage(): React.JSX.Element {
   useEffect(() => { clearError(); }, [clearError]);
   const onSubmit = async (d: VerifyFormData) => {
     const u = await verify(d);
-    navigate(u.role === 'TENANT' ? '/tenant/orders' : '/');
+    navigate(u.role === 'TENANT' ? '/tenant/dashboard' : '/');
   };
 
-  return (
-    <div className="max-w-md mx-auto py-8">
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
-        <VerifyHeader />
-        <VerifyContent token={token} onSubmit={onSubmit} isLoading={isLoading} error={error} />
-      </div>
-    </div>
-  );
+  return <VerifyCard token={token} onSubmit={onSubmit} isLoading={isLoading} error={error} />;
 }

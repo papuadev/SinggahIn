@@ -134,6 +134,8 @@ describe('Property Service', () => {
 
       const result = await getTenantProperties('t1');
       expect(result[0].coverImage).toBe('https://cdn.com/cover.webp');
+      expect(result[0].averageRating).toBe(0);
+      expect(result[0].totalReviews).toBe(0);
     });
 
     it('returns property detail by id', async () => {

@@ -36,17 +36,45 @@ export async function createProperty(tenantId: string, input: CreatePropertyInpu
   });
 }
 
+function computeRatingSummary(reviews: { rating: number }[]) {
+  const total = reviews.length;
+  if (total === 0) return { averageRating: 0, totalReviews: 0 };
+  const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+  return { averageRating: Math.round((sum / total) * 10) / 10, totalReviews: total };
+}
+
 type PropertyWithImages = {
   id: string; title: string; city: string; address: string; createdAt: Date;
   category: PropertyCategoryDto; images: { imageUrl: string; isCover: boolean }[];
+  reviews?: { rating: number }[];
 };
 
 function mapPropertyListItem(prop: PropertyWithImages): PropertyListItemDto {
   const cover = prop.images.find((img) => img.isCover) || prop.images[0];
   const coverImage = cover ? cover.imageUrl : null;
+  const rating = computeRatingSummary(prop.reviews || []);
   return {
     id: prop.id, title: prop.title, city: prop.city, address: prop.address,
     category: prop.category, coverImage, createdAt: prop.createdAt,
+    averageRating: rating.averageRating, totalReviews: rating.totalReviews,
+  };
+}
+
+const TENANT_PROP_INCLUDE = {
+  category: true,
+  images: true,
+  reviews: { select: { rating: true } },
+};
+
+async function fetchPaginatedTenantProps(where: any, orderBy: any, page = 1, limit = 6) {
+  const skip = (page - 1) * limit;
+  const [totalItems, properties] = await Promise.all([
+    prisma.property.count({ where }),
+    prisma.property.findMany({ where, include: TENANT_PROP_INCLUDE, orderBy, skip, take: limit }),
+  ]);
+  return {
+    data: properties.map(mapPropertyListItem),
+    meta: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) },
   };
 }
 
@@ -56,48 +84,27 @@ export async function getTenantProperties(
 ): Promise<PropertyListItemDto[] | { data: PropertyListItemDto[]; meta: PaginationMeta }> {
   const where = buildTenantPropertyWhere(tenantId, query);
   const orderBy = buildTenantPropertyOrderBy(query?.sortBy);
-
   if (query?.page || query?.limit) {
-    const page = query.page || 1;
-    const limit = query.limit || 6;
-    const skip = (page - 1) * limit;
-    const [totalItems, properties] = await Promise.all([
-      prisma.property.count({ where }),
-      prisma.property.findMany({ where, include: { category: true, images: true }, orderBy, skip, take: limit }),
-    ]);
-    return {
-      data: properties.map(mapPropertyListItem),
-      meta: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) },
-    };
+    return fetchPaginatedTenantProps(where, orderBy, query.page, query.limit);
   }
-
-  const properties = await prisma.property.findMany({ where, include: { category: true, images: true }, orderBy });
+  const properties = await prisma.property.findMany({ where, include: TENANT_PROP_INCLUDE, orderBy });
   return properties.map(mapPropertyListItem);
 }
 
 export const getPropertyTenant = getTenantProperties;
 
-function computeRatingSummary(reviews: { rating: number }[]) {
-  const total = reviews.length;
-  if (total === 0) return { averageRating: 0, totalReviews: 0 };
-  const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
-  return { averageRating: Math.round((sum / total) * 10) / 10, totalReviews: total };
-}
+const PROP_DETAIL_INCLUDE = {
+  category: true,
+  images: { orderBy: [{ order: 'asc' as const }, { createdAt: 'asc' as const }] },
+  rooms: {
+    orderBy: { basePrice: 'asc' as const },
+    include: { images: { orderBy: [{ order: 'asc' as const }, { createdAt: 'asc' as const }] } },
+  },
+  reviews: { select: { rating: true } },
+};
 
 export async function getPropertyById(id: string): Promise<PropertyResponseDto> {
-  const query = {
-    where: { id },
-    include: {
-      category: true,
-      images: { orderBy: [{ order: 'asc' as const }, { createdAt: 'asc' as const }] },
-      rooms: {
-        orderBy: { basePrice: 'asc' as const },
-        include: { images: { orderBy: [{ order: 'asc' as const }, { createdAt: 'asc' as const }] } },
-      },
-      reviews: { select: { rating: true } },
-    },
-  };
-  const property = await prisma.property.findUnique(query);
+  const property = await prisma.property.findUnique({ where: { id }, include: PROP_DETAIL_INCLUDE });
   if (!property) throw AppError.notFound('Properti tidak ditemukan.');
   const ratingInfo = computeRatingSummary((property as any).reviews || []);
   return { ...(property as any), ...ratingInfo };

@@ -25,25 +25,29 @@ function RoleBadgeHeader(): React.JSX.Element {
   );
 }
 
+function TenantForbiddenText(): React.JSX.Element {
+  return (
+    <p className="text-sm text-gray-600 leading-relaxed">
+      Akun Anda terdaftar sebagai <strong className="text-gray-900">Tenant (Pemilik Properti)</strong>.
+      Sesuai kebijakan keamanan SinggahIn, akun Tenant hanya dapat mengakses area manajemen properti
+      dan tidak dapat mengakses halaman eksplorasi atau pemesanan tamu biasa.
+    </p>
+  );
+}
+
+function UserForbiddenText(): React.JSX.Element {
+  return (
+    <p className="text-sm text-gray-600 leading-relaxed">
+      Akun Anda terdaftar sebagai <strong className="text-gray-900">Penyewa (User)</strong>.
+      Halaman ini merupakan area khusus pengelolaan properti untuk Tenant dan tidak dapat diakses
+      oleh akun penyewa biasa.
+    </p>
+  );
+}
+
 function ForbiddenExplanation({ role }: { role?: string }): React.JSX.Element {
-  if (role === 'TENANT') {
-    return (
-      <p className="text-sm text-gray-600 leading-relaxed">
-        Akun Anda terdaftar sebagai <strong className="text-gray-900">Tenant (Pemilik Properti)</strong>.
-        Sesuai kebijakan keamanan SinggahIn, akun Tenant hanya dapat mengakses area manajemen properti
-        dan tidak dapat mengakses halaman eksplorasi atau pemesanan tamu biasa.
-      </p>
-    );
-  }
-  if (role === 'USER') {
-    return (
-      <p className="text-sm text-gray-600 leading-relaxed">
-        Akun Anda terdaftar sebagai <strong className="text-gray-900">Penyewa (User)</strong>.
-        Halaman ini merupakan area khusus pengelolaan properti untuk Tenant dan tidak dapat diakses
-        oleh akun penyewa biasa.
-      </p>
-    );
-  }
+  if (role === 'TENANT') return <TenantForbiddenText />;
+  if (role === 'USER') return <UserForbiddenText />;
   return (
     <p className="text-sm text-gray-600 leading-relaxed">
       Anda tidak memiliki izin yang sesuai untuk membuka halaman ini. Silakan masuk dengan akun yang memiliki hak akses.
@@ -54,7 +58,7 @@ function ForbiddenExplanation({ role }: { role?: string }): React.JSX.Element {
 function TenantActions({ onLogout }: { onLogout: () => void }): React.JSX.Element {
   return (
     <div className="flex flex-col sm:flex-row gap-3 justify-center w-full">
-      <Link to="/tenant/orders" className="w-full sm:w-auto">
+      <Link to="/tenant/dashboard" className="w-full sm:w-auto">
         <Button variant="primary" size="md" className="w-full" leftIcon={<LayoutDashboard className="w-4 h-4" />}>
           Dasbor Tenant
         </Button>

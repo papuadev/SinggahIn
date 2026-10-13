@@ -16,7 +16,7 @@ function GuestButtons(): React.JSX.Element {
 
 function BrandLogo({ isTenant }: { isTenant: boolean }): React.JSX.Element {
   return (
-    <Link to={isTenant ? "/tenant/orders" : "/"} className="flex items-center gap-2.5">
+    <Link to={isTenant ? "/tenant/dashboard" : "/"} className="flex items-center gap-2.5">
       <img src="/logo.webp" alt="SinggahIn" className="h-8 w-auto object-contain" />
       <span className="text-2xl font-black tracking-tight text-primary-600 sr-only">SinggahIn</span>
       {isTenant && (
@@ -51,22 +51,32 @@ function DesktopLandingNav(): React.JSX.Element {
   );
 }
 
+const MOBILE_NAV_LINKS = [
+  { id: 'rekomendasi', label: 'Rekomendasi Penginapan', icon: <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400 animate-blink" />, cls: 'bg-amber-50/90 border border-amber-200 text-amber-900 hover:bg-amber-100' },
+  { id: 'terdekat', label: 'Penginapan Terdekat', icon: <MapPin className="w-3.5 h-3.5 text-primary-500" />, cls: 'bg-gray-100/90 hover:bg-primary-50 text-gray-700 hover:text-primary-700' },
+  { id: 'about-us', label: 'About Us', icon: <Info className="w-3.5 h-3.5 text-sky-500" />, cls: 'bg-gray-100/90 hover:bg-primary-50 text-gray-700 hover:text-primary-700' },
+  { id: 'contact-us', label: 'Contact Us', icon: <Phone className="w-3.5 h-3.5 text-emerald-500" />, cls: 'bg-gray-100/90 hover:bg-primary-50 text-gray-700 hover:text-primary-700' },
+];
+
 function MobileLandingNav(): React.JSX.Element {
   return (
     <nav aria-label="Navigasi Cepat Penginapan" className="md:hidden border-t border-gray-100 bg-white/95 backdrop-blur-xs px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth">
-      <a href="#rekomendasi" onClick={(e) => handleScrollTo(e, 'rekomendasi')} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50/90 border border-amber-200 text-amber-900 hover:bg-amber-100 whitespace-nowrap transition-colors shrink-0 active:scale-95">
-        <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400 animate-blink" /> Rekomendasi Penginapan
-      </a>
-      <a href="#terdekat" onClick={(e) => handleScrollTo(e, 'terdekat')} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100/90 hover:bg-primary-50 text-gray-700 hover:text-primary-700 whitespace-nowrap transition-colors shrink-0 active:scale-95">
-        <MapPin className="w-3.5 h-3.5 text-primary-500" /> Penginapan Terdekat
-      </a>
-      <a href="#about-us" onClick={(e) => handleScrollTo(e, 'about-us')} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100/90 hover:bg-primary-50 text-gray-700 hover:text-primary-700 whitespace-nowrap transition-colors shrink-0 active:scale-95">
-        <Info className="w-3.5 h-3.5 text-sky-500" /> About Us
-      </a>
-      <a href="#contact-us" onClick={(e) => handleScrollTo(e, 'contact-us')} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100/90 hover:bg-primary-50 text-gray-700 hover:text-primary-700 whitespace-nowrap transition-colors shrink-0 active:scale-95">
-        <Phone className="w-3.5 h-3.5 text-emerald-500" /> Contact Us
-      </a>
+      {MOBILE_NAV_LINKS.map((l) => (
+        <a key={l.id} href={`#${l.id}`} onClick={(e) => handleScrollTo(e, l.id)} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors shrink-0 active:scale-95 ${l.cls}`}>
+          {l.icon} {l.label}
+        </a>
+      ))}
     </nav>
+  );
+}
+
+function NavbarContent({ isLandingPage, isTenant, isAuthenticated }: { isLandingPage: boolean; isTenant: boolean; isAuthenticated: boolean }) {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <BrandLogo isTenant={isTenant} />
+      {isLandingPage && <DesktopLandingNav />}
+      <div className="flex items-center gap-2">{isAuthenticated ? <UserMenu /> : <GuestButtons />}</div>
+    </div>
   );
 }
 
@@ -78,13 +88,7 @@ export function Navbar(): React.JSX.Element {
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <BrandLogo isTenant={isTenant} />
-        {isLandingPage && <DesktopLandingNav />}
-        <div className="flex items-center gap-2">
-          {isAuthenticated ? <UserMenu /> : <GuestButtons />}
-        </div>
-      </div>
+      <NavbarContent isLandingPage={isLandingPage} isTenant={isTenant} isAuthenticated={isAuthenticated} />
       {isLandingPage && <MobileLandingNav />}
     </header>
   );

@@ -1,114 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, Plus, Edit, Calendar } from 'lucide-react';
-import { useTenantProperties, usePropertyDetail } from '../../modules/property/hooks/useProperties';
-import { TenantRoomStatusCalendar } from '../../modules/room/components/TenantRoomStatusCalendar';
-import { Property } from '../../modules/property/property.types';
+import { Building2, Plus } from 'lucide-react';
 import { Button } from '../../components/atoms/Button';
-import { Select } from '../../components/atoms/Select';
 import { Spinner } from '../../components/atoms/Spinner';
-import { Alert } from '../../components/atoms/Alert';
-
-function DashboardHeader(): React.JSX.Element {
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-      <div>
-        <div className="flex items-center gap-2">
-          <Calendar className="w-6 h-6 text-primary-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Dasbor &amp; Kalender Kamar</h1>
-        </div>
-        <p className="text-sm text-gray-600 mt-1">
-          Pantau status ketersediaan unit kamar (allotment) dan tarif harian untuk rekonsiliasi.
-        </p>
-      </div>
-      <Link to="/tenant/properties/new">
-        <Button variant="primary" size="sm" leftIcon={<Plus className="w-4 h-4" />}>
-          Tambah Properti
-        </Button>
-      </Link>
-    </div>
-  );
-}
+import { useTenantDashboardData } from './dashboard/useTenantDashboardData';
+import { DashboardGreetingHeader } from './dashboard/DashboardGreetingHeader';
+import { DashboardPropertySummaryGrid } from './dashboard/DashboardPropertySummaryGrid';
+import { DashboardRevenueBarChart } from './dashboard/DashboardRevenueBarChart';
+import { DashboardUpcomingBookings } from './dashboard/DashboardUpcomingBookings';
+import { DashboardActiveProperties } from './dashboard/DashboardActiveProperties';
+import { DashboardPendingActionAlert } from './dashboard/DashboardPendingActionAlert';
 
 function EmptyDashboard(): React.JSX.Element {
   return (
-    <div className="text-center py-16 bg-white rounded-xl border border-gray-200 p-8 shadow-xs">
-      <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+    <div className="text-center py-16 bg-white rounded-3xl border border-gray-100 p-8 shadow-xs max-w-xl mx-auto my-8">
+      <Building2 className="w-12 h-12 text-primary-600 mx-auto mb-3" />
       <h3 className="text-lg font-bold text-gray-900 mb-1">Belum Ada Properti Terdaftar</h3>
       <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">
-        Tambahkan properti pertama Anda untuk mulai mengelola unit kamar dan memantau kalender status ketersediaan.
+        Tambahkan properti pertama Anda untuk mulai menerima reservasi tamu dan memantau performa penjualan secara realtime.
       </p>
       <Link to="/tenant/properties/new">
-        <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />}>
-          Tambah Properti Sekarang
-        </Button>
+        <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />}>Tambah Properti Sekarang</Button>
       </Link>
     </div>
   );
 }
 
-interface SelectorProps {
-  properties: Property[];
-  selectedId: string;
-  onChange: (id: string) => void;
-}
-
-function PropertySelectorDropdown({ properties, selectedId, onChange }: SelectorProps): React.JSX.Element {
+function DashboardMiddleSection({ d }: { d: ReturnType<typeof useTenantDashboardData> }) {
   return (
-    <div className="flex items-center gap-2 flex-1 min-w-0">
-      <label htmlFor="dashboard-prop-select" className="text-xs sm:text-sm font-semibold text-gray-700 shrink-0">
-        Pilih Properti:
-      </label>
-      <Select
-        id="dashboard-prop-select" size="sm" value={selectedId} onChange={(e) => onChange(e.target.value)}
-        wrapperClassName="w-auto flex-1 max-w-sm" className="font-medium text-gray-800 truncate"
-      >
-        {properties.map((p) => (<option key={p.id} value={p.id}>{p.title} ({p.city})</option>))}
-      </Select>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+      <div className="lg:col-span-7">
+        <DashboardRevenueBarChart monthlyData={d.monthlyData} />
+      </div>
+      <div className="lg:col-span-5">
+        <DashboardUpcomingBookings bookings={d.recentBookings} />
+      </div>
     </div>
   );
 }
 
-function PropertySelectorBar(props: SelectorProps): React.JSX.Element {
+function DashboardSummarySection({ d }: { d: ReturnType<typeof useTenantDashboardData> }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white rounded-xl border border-gray-200 mb-6 shadow-xs">
-      <PropertySelectorDropdown {...props} />
-      <Link to={`/tenant/properties/${props.selectedId}/edit`}>
-        <Button variant="outline" size="sm" leftIcon={<Edit className="w-3.5 h-3.5" />}>
-          Kelola Properti Ini
-        </Button>
-      </Link>
-    </div>
+    <DashboardPropertySummaryGrid
+      currentMonthRevenue={d.currentMonthRevenue}
+      revenueDiffText={d.revenueDiffText}
+      currentMonthBookings={d.currentMonthBookings}
+      bookingsDiffText={d.bookingsDiffText}
+      occupancyRate={d.occupancyRate}
+      totalDays={d.totalDays}
+      averageRating={d.averageRating}
+      totalReviews={d.totalReviews}
+    />
   );
 }
 
-function CalendarDisplay({ propertyId }: { propertyId: string }): React.JSX.Element {
-  const { data: prop, isLoading, error } = usePropertyDetail(propertyId);
-  if (isLoading) return <div className="flex justify-center py-12"><Spinner size="md" /></div>;
-  if (error || !prop) return <Alert variant="error">Gagal memuat detail kamar properti.</Alert>;
-  return <TenantRoomStatusCalendar propertyId={propertyId} rooms={prop.rooms || []} />;
+function DashboardMainLayout({ d }: { d: ReturnType<typeof useTenantDashboardData> }): React.JSX.Element {
+  return (
+    <div>
+      <DashboardPendingActionAlert pendingCount={d.pendingConfirmations} />
+      <DashboardSummarySection d={d} />
+      <DashboardMiddleSection d={d} />
+      <DashboardActiveProperties properties={d.properties} />
+    </div>
+  );
 }
 
 export function TenantDashboardPage(): React.JSX.Element {
-  const { data: properties, isLoading, isError, error } = useTenantProperties();
-  const [selectedPropId, setSelectedPropId] = useState<string>('');
+  const data = useTenantDashboardData();
 
-  useEffect(() => {
-    if (properties && properties.length > 0 && !selectedPropId) {
-      setSelectedPropId(properties[0].id);
-    }
-  }, [properties, selectedPropId]);
+  if (data.isLoading) {
+    return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  }
 
-  if (isLoading) return <div className="flex justify-center py-16"><Spinner size="lg" /></div>;
-  if (isError) return <Alert variant="error">{error?.message || 'Gagal memuat properti'}</Alert>;
-  if (!properties || properties.length === 0) return <EmptyDashboard />;
-
-  const activeId = selectedPropId || properties[0].id;
   return (
-    <div className="max-w-7xl mx-auto py-2">
-      <DashboardHeader />
-      <PropertySelectorBar properties={properties} selectedId={activeId} onChange={setSelectedPropId} />
-      <CalendarDisplay propertyId={activeId} />
+    <div className="max-w-7xl mx-auto py-3">
+      <DashboardGreetingHeader />
+      {!data.hasProperties ? <EmptyDashboard /> : <DashboardMainLayout d={data} />}
     </div>
   );
 }
+
+export default TenantDashboardPage;

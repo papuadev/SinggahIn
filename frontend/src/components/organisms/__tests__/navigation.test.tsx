@@ -58,7 +58,7 @@ describe('Navigation Components', () => {
     expect(screen.getByText('Pak Budi')).toBeInTheDocument();
     expect(screen.getByText('tenant@singgahin.com')).toBeInTheDocument();
     expect(screen.getByText('Pemilik (Tenant)')).toBeInTheDocument();
-    expect(screen.getByText('Dasbor Properti')).toBeInTheDocument();
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.queryByText('Cari Penginapan')).not.toBeInTheDocument();
     expect(screen.getByText('Profil Saya')).toBeInTheDocument();
 
@@ -73,7 +73,8 @@ describe('Navigation Components', () => {
         <TenantSidebar />
       </MemoryRouter>
     );
-    expect(screen.getByText('Daftar Properti')).toBeInTheDocument();
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Kelola Properti')).toBeInTheDocument();
     expect(screen.getByText('Tambah Properti')).toBeInTheDocument();
     expect(screen.getByText('Profil Saya')).toBeInTheDocument();
     expect(screen.queryByText('Mode Tamu (Eksplor)')).not.toBeInTheDocument();

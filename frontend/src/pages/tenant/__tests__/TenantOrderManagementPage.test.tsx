@@ -35,11 +35,11 @@ const mockTenantBookings = [
   },
 ];
 
-function renderTenantOrders() {
+function renderTenantOrders(initialRoute = '/tenant/orders') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initialRoute]}>
         <TenantOrderManagementPage />
       </MemoryRouter>
     </QueryClientProvider>
@@ -58,9 +58,9 @@ describe('TenantOrderManagementPage', () => {
     renderTenantOrders();
     await waitFor(() => {
       expect(screen.getByText('Kelola Pesanan Masuk')).toBeInTheDocument();
-      expect(screen.getByText('SGH-20261015-TNT1')).toBeInTheDocument();
+      expect(screen.getAllByText('SGH-20261015-TNT1')[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/Villa Sentosa/i)[0]).toBeInTheDocument();
       expect(screen.getByText('Andi Pratama')).toBeInTheDocument();
-      expect(screen.getByText('Villa Sentosa')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Tinjau/i })).toBeInTheDocument();
     });
   });
@@ -116,7 +116,7 @@ describe('TenantOrderManagementPage', () => {
     });
     renderTenantOrders();
     await waitFor(() => {
-      expect(screen.getByText('SGH-20261015-TNT1')).toBeInTheDocument();
+      expect(screen.getAllByText('SGH-20261015-TNT1')[0]).toBeInTheDocument();
     });
 
     const searchInput = screen.getByPlaceholderText(/Cari kode pesanan, nama tamu/i);
@@ -136,5 +136,19 @@ describe('TenantOrderManagementPage', () => {
         expect.objectContaining({ sortBy: 'price_desc' })
       );
     });
+  });
+
+  it('reads status filter from URL search params on mount', async () => {
+    vi.mocked(bookingApi.getTenantBookings).mockResolvedValue({
+      success: true, message: 'OK', data: [] as any,
+    });
+    renderTenantOrders('/tenant/orders?status=WAITING_CONFIRMATION');
+    await waitFor(() => {
+      expect(bookingApi.getTenantBookings).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'WAITING_CONFIRMATION' })
+      );
+    });
+    const confirmTab = screen.getByRole('button', { name: 'Perlu Konfirmasi' });
+    expect(confirmTab).toHaveClass('bg-primary-600');
   });
 });
