@@ -129,6 +129,7 @@ model Property {
 model PropertyImage {
   id         String   @id @default(cuid())
   propertyId String
+  roomId     String?
   imageUrl   String
   publicId   String
   isCover    Boolean  @default(false)
@@ -136,8 +137,10 @@ model PropertyImage {
   createdAt  DateTime @default(now())
 
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  room       Room?    @relation(fields: [roomId], references: [id], onDelete: SetNull)
 
   @@index([propertyId])
+  @@index([roomId])
   @@map("property_images")
 }
 
@@ -155,6 +158,7 @@ model Room {
   updatedAt        DateTime             @updatedAt
 
   property         Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  images           PropertyImage[]
   modifiers        RoomPriceModifier[]
   unavailabilities RoomUnavailability[]
   bookings         Booking[]

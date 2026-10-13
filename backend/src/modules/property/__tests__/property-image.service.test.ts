@@ -2,12 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { prisma } from '../../../shared/services/prisma.service';
 import * as cloudinaryService from '../../../shared/services/cloudinary.service';
 import {
-  uploadPropertyImages, deletePropertyImage, setCoverImage, reorderPropertyImages,
+  uploadPropertyImages, deletePropertyImage, setCoverImage, reorderPropertyImages, assignImageToRoom,
 } from '../property-image.service';
 
 vi.mock('../../../shared/services/prisma.service', () => ({
   prisma: {
     property: { findUnique: vi.fn() },
+    room: { findUnique: vi.fn() },
     propertyImage: {
       count: vi.fn(), create: vi.fn(), findFirst: vi.fn(),
       findUnique: vi.fn(), delete: vi.fn(), update: vi.fn(),
@@ -109,4 +110,36 @@ describe('Property Image Service', () => {
       await expect(reorderPropertyImages('prop-1', 'tenant-1', ['img-1', 'img-unknown'])).rejects.toThrow('ID gambar tidak valid');
     });
   });
+
+  describe('assignImageToRoom', () => {
+    it('assigns image to room successfully', async () => {
+      vi.mocked(prisma.property.findUnique).mockResolvedValueOnce({ id: 'prop-1', tenantId: 'tenant-1' } as any);
+      vi.mocked(prisma.propertyImage.findUnique).mockResolvedValueOnce({ id: 'img-1', propertyId: 'prop-1' } as any);
+      vi.mocked(prisma.room.findUnique).mockResolvedValueOnce({ id: 'room-1', propertyId: 'prop-1' } as any);
+      vi.mocked(prisma.propertyImage.update).mockResolvedValueOnce({ id: 'img-1', roomId: 'room-1' } as any);
+
+      const res = await assignImageToRoom('prop-1', 'img-1', 'tenant-1', 'room-1');
+      expect(prisma.propertyImage.update).toHaveBeenCalledWith({ where: { id: 'img-1' }, data: { roomId: 'room-1' } });
+      expect(res.roomId).toBe('room-1');
+    });
+
+    it('clears room assignment when roomId is null', async () => {
+      vi.mocked(prisma.property.findUnique).mockResolvedValueOnce({ id: 'prop-1', tenantId: 'tenant-1' } as any);
+      vi.mocked(prisma.propertyImage.findUnique).mockResolvedValueOnce({ id: 'img-1', propertyId: 'prop-1' } as any);
+      vi.mocked(prisma.propertyImage.update).mockResolvedValueOnce({ id: 'img-1', roomId: null } as any);
+
+      const res = await assignImageToRoom('prop-1', 'img-1', 'tenant-1', null);
+      expect(prisma.propertyImage.update).toHaveBeenCalledWith({ where: { id: 'img-1' }, data: { roomId: null } });
+      expect(res.roomId).toBeNull();
+    });
+
+    it('rejects assignment if room belongs to another property', async () => {
+      vi.mocked(prisma.property.findUnique).mockResolvedValueOnce({ id: 'prop-1', tenantId: 'tenant-1' } as any);
+      vi.mocked(prisma.propertyImage.findUnique).mockResolvedValueOnce({ id: 'img-1', propertyId: 'prop-1' } as any);
+      vi.mocked(prisma.room.findUnique).mockResolvedValueOnce({ id: 'room-other', propertyId: 'prop-other' } as any);
+
+      await expect(assignImageToRoom('prop-1', 'img-1', 'tenant-1', 'room-other')).rejects.toThrow('Tipe kamar tidak valid');
+    });
+  });
 });
+

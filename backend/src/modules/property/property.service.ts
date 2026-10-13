@@ -90,7 +90,10 @@ export async function getPropertyById(id: string): Promise<PropertyResponseDto> 
     include: {
       category: true,
       images: { orderBy: [{ order: 'asc' as const }, { createdAt: 'asc' as const }] },
-      rooms: { orderBy: { basePrice: 'asc' as const } },
+      rooms: {
+        orderBy: { basePrice: 'asc' as const },
+        include: { images: { orderBy: [{ order: 'asc' as const }, { createdAt: 'asc' as const }] } },
+      },
       reviews: { select: { rating: true } },
     },
   };

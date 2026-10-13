@@ -121,3 +121,16 @@ export function useDeleteProperty() {
     },
   });
 }
+
+export function useAssignImageRoom(propertyId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ imageId, roomId }: { imageId: string; roomId: string | null }) =>
+      propertyApi.assignImageToRoom(propertyId, imageId, roomId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PROPERTY_KEYS.detail(propertyId) });
+      queryClient.invalidateQueries({ queryKey: PROPERTY_KEYS.myProperties });
+    },
+  });
+}
+

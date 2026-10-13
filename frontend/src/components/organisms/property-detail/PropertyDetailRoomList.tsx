@@ -13,6 +13,7 @@ export interface PropertyDetailRoomListProps {
   rooms?: PropertyRoomSummary[];
   checkIn?: string;
   checkOut?: string;
+  coverImage?: string;
   onBookRoom?: (roomId: string) => void;
   onOpenCalendar?: (roomId: string) => void;
 }
@@ -22,6 +23,7 @@ interface RoomItemsProps {
   propId: string;
   inDate?: string;
   outDate?: string;
+  coverImage?: string;
   onBook?: (id: string) => void;
   onCalendar?: (id: string) => void;
 }
@@ -64,26 +66,26 @@ function RoomListHeader({ checkIn, checkOut }: { checkIn?: string; checkOut?: st
   );
 }
 
-function RoomItems({ rooms, propId, inDate, outDate, onBook, onCalendar }: RoomItemsProps): React.JSX.Element {
+function RoomItems({ rooms, propId, inDate, outDate, coverImage, onBook, onCalendar }: RoomItemsProps): React.JSX.Element {
   return (
     <div className="flex flex-col gap-3">
       {rooms.map((r) => (
         <PropertyDetailRoomCard
           key={r.id} room={r} propertyId={propId} checkIn={inDate}
-          checkOut={outDate} onBook={onBook} onOpenCalendar={onCalendar}
+          checkOut={outDate} coverImage={coverImage} onBook={onBook} onOpenCalendar={onCalendar}
         />
       ))}
     </div>
   );
 }
 
-function RoomListBody({ filter, propId, inDate, outDate, onBook, onCalendar }: RoomViewProps): React.JSX.Element {
+function RoomListBody({ filter, propId, inDate, outDate, coverImage, onBook, onCalendar }: RoomViewProps): React.JSX.Element {
   if (filter.totalFiltered === 0) {
     return <RoomListEmptySearch query={filter.searchQuery} onReset={filter.resetFilters} />;
   }
   return (
     <div className="flex flex-col gap-4">
-      <RoomItems rooms={filter.paginatedRooms} propId={propId} inDate={inDate} outDate={outDate} onBook={onBook} onCalendar={onCalendar} />
+      <RoomItems rooms={filter.paginatedRooms} propId={propId} inDate={inDate} outDate={outDate} coverImage={coverImage} onBook={onBook} onCalendar={onCalendar} />
       <RoomPagination
         page={filter.currentPage} totalPages={filter.totalPages}
         totalItems={filter.totalFiltered} pageSize={filter.pageSize} onPageChange={filter.setCurrentPage}
@@ -106,9 +108,9 @@ function RoomListActiveView(props: RoomViewProps): React.JSX.Element {
 }
 
 export function PropertyDetailRoomList(p: PropertyDetailRoomListProps): React.JSX.Element {
-  const { propertyId, rooms = [], checkIn, checkOut, onBookRoom, onOpenCalendar } = p;
+  const { propertyId, rooms = [], checkIn, checkOut, coverImage, onBookRoom, onOpenCalendar } = p;
   const filter = useServerRoomListFilter<PropertyRoomSummary>(propertyId, { pageSize: 5, initialRooms: rooms });
-  const activeProps = { propId: propertyId, inDate: checkIn, outDate: checkOut, onBook: onBookRoom, onCalendar: onOpenCalendar };
+  const activeProps = { propId: propertyId, inDate: checkIn, outDate: checkOut, coverImage, onBook: onBookRoom, onCalendar: onOpenCalendar };
   const hasNoRooms = rooms.length === 0 && filter.paginatedRooms.length === 0;
 
   return (

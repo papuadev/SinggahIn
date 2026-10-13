@@ -8,6 +8,7 @@ export interface RoomResponseDto {
   capacity: number;
   totalUnits: number;
   description: string | null;
+  images?: any[];
   createdAt: Date;
   updatedAt: Date;
 }

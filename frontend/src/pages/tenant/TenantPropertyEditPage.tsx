@@ -35,22 +35,19 @@ interface TabBtnProps {
   onClick: () => void;
 }
 
+function TabBadge({ count, isActive }: { count?: number; isActive: boolean }) {
+  if (typeof count !== 'number') return null;
+  const cls = isActive ? 'bg-primary-700 text-white' : 'bg-gray-200 text-gray-700';
+  return <span className={`text-xs px-1.5 py-0.5 rounded-full ${cls}`}>{count}</span>;
+}
+
 function TabButton({ label, icon, isActive, count, onClick }: TabBtnProps): React.JSX.Element {
-  const activeClass = 'bg-primary-600 text-white shadow-xs';
-  const inactiveClass = 'text-gray-600 hover:text-gray-900 hover:bg-gray-100';
+  const cls = isActive ? 'bg-primary-600 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100';
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all ${isActive ? activeClass : inactiveClass}`}
-    >
+    <button type="button" onClick={onClick} className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all ${cls}`}>
       {icon}
       <span>{label}</span>
-      {typeof count === 'number' && (
-        <span className={`text-xs px-1.5 py-0.5 rounded-full ${isActive ? 'bg-primary-700 text-white' : 'bg-gray-200 text-gray-700'}`}>
-          {count}
-        </span>
-      )}
+      <TabBadge count={count} isActive={isActive} />
     </button>
   );
 }
@@ -83,51 +80,48 @@ function toInitialData(property: Property): PropertyFormData {
   };
 }
 
-function EditInfoSection({ property, id }: { property: Property; id: string }): React.JSX.Element {
+function useUpdatePropertyAction(id: string) {
   const navigate = useNavigate();
   const updateMutation = useUpdateProperty(id);
   const handleSubmit = async (data: PropertyFormData) => {
     await updateMutation.mutateAsync(data);
     navigate('/tenant/properties');
   };
+  return { updateMutation, handleSubmit };
+}
 
+function EditInfoSection({ property, id }: { property: Property; id: string }): React.JSX.Element {
+  const { updateMutation, handleSubmit } = useUpdatePropertyAction(id);
+  const err = (updateMutation.error as Error)?.message || 'Gagal memperbarui properti.';
   return (
     <>
-      {updateMutation.isError && (
-        <Alert variant="error" className="mb-6">{(updateMutation.error as Error).message || 'Gagal memperbarui properti.'}</Alert>
-      )}
-      <PropertyForm
-        initialData={toInitialData(property)}
-        onSubmit={handleSubmit}
-        isLoading={updateMutation.isPending}
-        submitText="Simpan Perubahan Properti"
-      />
+      {updateMutation.isError && <Alert variant="error" className="mb-6">{err}</Alert>}
+      <PropertyForm initialData={toInitialData(property)} onSubmit={handleSubmit} isLoading={updateMutation.isPending} submitText="Simpan Perubahan Properti" />
     </>
   );
+}
+
+function EditTabContent({ tab, property, id, onRefetch }: {
+  tab: EditTab; property: Property; id: string; onRefetch: () => void;
+}) {
+  if (tab === 'info') return <EditInfoSection property={property} id={id} />;
+  if (tab === 'gallery') return <PropertyGalleryManager propertyId={id} images={property.images || []} rooms={property.rooms || []} onImagesUpdated={onRefetch} />;
+  if (tab === 'rooms') return <RoomListSection propertyId={id} />;
+  return <TenantRoomStatusCalendar propertyId={id} rooms={property.rooms || []} />;
 }
 
 export function TenantPropertyEditPage(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<EditTab>('info');
   const { data: property, isLoading, isError, error, refetch } = usePropertyDetail(id);
-
   if (isLoading) return <div className="flex justify-center py-16"><Spinner size="lg" /></div>;
-  if (isError || !property || !id) {
-    return <Alert variant="error">{(error as Error)?.message || 'Properti tidak ditemukan.'}</Alert>;
-  }
+  if (isError || !property || !id) return <Alert variant="error">{(error as Error)?.message || 'Properti tidak ditemukan.'}</Alert>;
 
   return (
     <div className="max-w-4xl mx-auto py-4">
       <EditPageHeader propertyTitle={property.title} />
       <EditPageTabs activeTab={activeTab} setActiveTab={setActiveTab} imageCount={property.images?.length ?? 0} />
-      {activeTab === 'info' && <EditInfoSection property={property} id={id} />}
-      {activeTab === 'gallery' && (
-        <PropertyGalleryManager propertyId={id} images={property.images || []} onImagesUpdated={() => refetch()} />
-      )}
-      {activeTab === 'rooms' && <RoomListSection propertyId={id} />}
-      {activeTab === 'calendar' && (
-        <TenantRoomStatusCalendar propertyId={id} rooms={property.rooms || []} />
-      )}
+      <EditTabContent tab={activeTab} property={property} id={id} onRefetch={() => refetch()} />
     </div>
   );
 }

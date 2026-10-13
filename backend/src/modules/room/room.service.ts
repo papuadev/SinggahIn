@@ -80,6 +80,7 @@ export async function getRoomsByProperty(
         orderBy,
         skip,
         take: limit,
+        include: { images: { orderBy: [{ order: 'asc' }, { createdAt: 'asc' }] } },
       }),
     ]);
 
@@ -98,6 +99,7 @@ export async function getRoomsByProperty(
   const data = await prisma.room.findMany({
     where,
     orderBy,
+    include: { images: { orderBy: [{ order: 'asc' }, { createdAt: 'asc' }] } },
   });
   return { data };
 }

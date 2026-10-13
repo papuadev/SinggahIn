@@ -42,3 +42,18 @@ export async function reorderImages(req: Request, res: Response, next: NextFunct
     next(error);
   }
 }
+
+export async function assignImageToRoom(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const image = await propertyImageService.assignImageToRoom(
+      req.params.id,
+      req.params.imageId,
+      req.user!.userId,
+      req.body.roomId ?? null
+    );
+    sendSuccess(res, image, 'Foto berhasil ditautkan ke kamar.');
+  } catch (error) {
+    next(error);
+  }
+}
+

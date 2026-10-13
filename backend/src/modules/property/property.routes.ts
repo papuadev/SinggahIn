@@ -1,10 +1,7 @@
 import { Router } from 'express';
 import { Role } from '@prisma/client';
 import * as propertyController from './property.controller';
-import {
-  authenticate,
-  requireRole,
-} from '../../shared/middleware/auth.middleware';
+import { authenticate, requireRole } from '../../shared/middleware/auth.middleware';
 import { validateRequest } from '../../shared/middleware/validate.middleware';
 import { uploadMultipleImages } from '../../shared/middleware/upload.middleware';
 import { propertyRoomRoutes } from '../room/room.routes';
@@ -12,22 +9,14 @@ import * as catalogController from './catalog.controller';
 import * as calendarController from './calendar.controller';
 import * as categoryController from './category.controller';
 import {
-  CreatePropertySchema,
-  UpdatePropertySchema,
-  PropertyIdParamSchema,
-  PropertyImageParamSchema,
-  ReorderPropertyImagesSchema,
-  ReverseGeocodeQuerySchema,
-  SearchGeocodeQuerySchema,
-  GetTenantPropertiesQuerySchema,
+  CreatePropertySchema, UpdatePropertySchema, PropertyIdParamSchema,
+  PropertyImageParamSchema, ReorderPropertyImagesSchema, ReverseGeocodeQuerySchema,
+  SearchGeocodeQuerySchema, GetTenantPropertiesQuerySchema, AssignImageRoomSchema,
 } from './property.schema';
 import { CatalogQuerySchema } from './catalog.schema';
 import { CalendarQuerySchema } from './calendar.schema';
 import {
-  CreateCategorySchema,
-  UpdateCategorySchema,
-  CategoryIdParamSchema,
-  GetCategoriesQuerySchema,
+  CreateCategorySchema, UpdateCategorySchema, CategoryIdParamSchema, GetCategoriesQuerySchema,
 } from './category.schema';
 
 const router = Router();
@@ -181,6 +170,15 @@ router.patch(
   requireRole(Role.TENANT),
   validateRequest({ params: PropertyImageParamSchema }),
   propertyController.setCover
+);
+
+// Tenant-Only: Tag Image to Room
+router.patch(
+  '/:id/images/:imageId/room',
+  authenticate,
+  requireRole(Role.TENANT),
+  validateRequest({ params: PropertyImageParamSchema, body: AssignImageRoomSchema }),
+  propertyController.assignImageToRoom
 );
 
 // Nested Sub-resource: Property Rooms

@@ -8,6 +8,7 @@ export interface PropertyCategoryDto {
 export interface PropertyImageDto {
   id: string;
   propertyId: string;
+  roomId?: string | null;
   imageUrl: string;
   publicId: string;
   isCover: boolean;

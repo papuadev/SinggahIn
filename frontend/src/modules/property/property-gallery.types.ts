@@ -9,5 +9,6 @@ export interface StagedImage {
 export interface PropertyGalleryManagerProps {
   propertyId: string;
   images?: PropertyImage[];
+  rooms?: Array<{ id: string; name: string }>;
   onImagesUpdated?: () => void;
 }

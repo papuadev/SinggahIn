@@ -7,7 +7,10 @@ import { propertyApi } from '../services/property.api';
 import { PropertyImage } from '../property.types';
 
 vi.mock('../services/property.api', () => ({
-  propertyApi: { uploadImages: vi.fn(), deleteImage: vi.fn(), setCoverImage: vi.fn(), reorderImages: vi.fn() },
+  propertyApi: {
+    uploadImages: vi.fn(), deleteImage: vi.fn(), setCoverImage: vi.fn(),
+    reorderImages: vi.fn(), assignImageToRoom: vi.fn(),
+  },
 }));
 
 function renderWithClient(ui: React.ReactElement) {
@@ -127,5 +130,19 @@ describe('PropertyGalleryManager Component', () => {
     }));
     renderWithClient(<PropertyGalleryManager propertyId="prop-123" images={full} />);
     expect(screen.getByText('Batas maksimal 6 foto telah tercapai.')).toBeInTheDocument();
+  });
+
+  it('triggers assignImageToRoom when tenant selects a room from dropdown', async () => {
+    vi.mocked(propertyApi.assignImageToRoom).mockResolvedValueOnce({
+      success: true, message: 'Room assigned', data: { ...mockImages[0], roomId: 'room-1' },
+    });
+    const mockRooms = [{ id: 'room-1', name: 'Deluxe Suite' }];
+    renderWithClient(<PropertyGalleryManager propertyId="prop-123" images={mockImages} rooms={mockRooms} />);
+    const selects = screen.getAllByRole('combobox', { name: /Tautkan ke Kamar/i });
+    expect(selects.length).toBe(2);
+    fireEvent.change(selects[0], { target: { value: 'room-1' } });
+    await waitFor(() => {
+      expect(propertyApi.assignImageToRoom).toHaveBeenCalledWith('prop-123', 'img-1', 'room-1');
+    });
   });
 });

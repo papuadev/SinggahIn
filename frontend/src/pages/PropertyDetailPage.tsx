@@ -58,11 +58,12 @@ function PropertyDetailSEO({ property: p, lowestPrice }: { property: NonNullable
 }
 
 function PropertyMainCol({ property, rooms, checkIn, checkOut, onBook }: MainColProps) {
+  const coverImage = property.coverImage || property.images?.[0]?.imageUrl;
   return (
     <div className="flex flex-col">
       <PropertyDetailDescription description={property.description} />
       <PropertyDetailFacilities facilities={property.facilities} />
-      <PropertyDetailRoomList propertyId={property.id} rooms={rooms} checkIn={checkIn} checkOut={checkOut} onBookRoom={onBook} />
+      <PropertyDetailRoomList propertyId={property.id} rooms={rooms} checkIn={checkIn} checkOut={checkOut} onBookRoom={onBook} coverImage={coverImage} />
       <PropertyDetailMap latitude={property.latitude} longitude={property.longitude} address={property.address} city={property.city} />
       <ReviewList propertyId={property.id} />
     </div>
