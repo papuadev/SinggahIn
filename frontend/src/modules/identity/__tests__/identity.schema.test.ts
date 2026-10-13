@@ -152,56 +152,35 @@ describe('Identity Zod Schemas', () => {
 
   describe('changePasswordSchema', () => {
     it('should validate valid password change', () => {
-      const result = changePasswordSchema.safeParse({
-        currentPassword: 'oldPassword123',
-        newPassword: 'newPassword123',
-        confirmPassword: 'newPassword123',
-      });
-      expect(result.success).toBe(true);
+      const res = changePasswordSchema.safeParse({ currentPassword: 'oldPassword123', newPassword: 'newPassword123', confirmPassword: 'newPassword123' });
+      expect(res.success).toBe(true);
     });
 
     it('should reject same new password as current password', () => {
-      const result = changePasswordSchema.safeParse({
-        currentPassword: 'samePassword123',
-        newPassword: 'samePassword123',
-        confirmPassword: 'samePassword123',
-      });
-      expect(result.success).toBe(false);
+      const res = changePasswordSchema.safeParse({ currentPassword: 'samePassword123', newPassword: 'samePassword123', confirmPassword: 'samePassword123' });
+      expect(res.success).toBe(false);
     });
 
     it('should reject mismatched new password confirmation', () => {
-      const result = changePasswordSchema.safeParse({
-        currentPassword: 'oldPassword123',
-        newPassword: 'newPassword123',
-        confirmPassword: 'wrongPassword123',
-      });
-      expect(result.success).toBe(false);
+      const res = changePasswordSchema.safeParse({ currentPassword: 'oldPassword123', newPassword: 'newPassword123', confirmPassword: 'wrongPassword123' });
+      expect(res.success).toBe(false);
     });
   });
 
   describe('requestEmailChangeSchema', () => {
     it('should validate valid email change request', () => {
-      const result = requestEmailChangeSchema.safeParse({
-        newEmail: 'newemail@example.com',
-        password: 'currentPassword123',
-      });
-      expect(result.success).toBe(true);
+      const res = requestEmailChangeSchema.safeParse({ newEmail: 'newemail@example.com', password: 'currentPassword123' });
+      expect(res.success).toBe(true);
     });
 
     it('should reject invalid new email format', () => {
-      const result = requestEmailChangeSchema.safeParse({
-        newEmail: 'invalid-email',
-        password: 'currentPassword123',
-      });
-      expect(result.success).toBe(false);
+      const res = requestEmailChangeSchema.safeParse({ newEmail: 'invalid-email', password: 'currentPassword123' });
+      expect(res.success).toBe(false);
     });
 
     it('should reject empty password', () => {
-      const result = requestEmailChangeSchema.safeParse({
-        newEmail: 'newemail@example.com',
-        password: '',
-      });
-      expect(result.success).toBe(false);
+      const res = requestEmailChangeSchema.safeParse({ newEmail: 'newemail@example.com', password: '' });
+      expect(res.success).toBe(false);
     });
   });
 });

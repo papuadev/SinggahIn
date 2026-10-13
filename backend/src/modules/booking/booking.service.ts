@@ -5,7 +5,11 @@ import { calculateStayPricing } from '../room/pricing.service';
 import { generateBookingCode, calculateBookingExpiry, parseAndValidateBookingDates } from './booking.helper';
 import { CreateBookingInput, BookingResponseDto, BookingListQuery } from './booking.types';
 import { syncMidtransTransactionStatus } from '../payment/midtrans.service';
-import { generateInvoicePdf, InvoicePdfData } from '../../shared/services/invoice-pdf.service';
+import { generateInvoicePdf } from '../../shared/services/invoice-pdf.service';
+import {
+  BOOKING_SELECT, TENANT_BOOKING_SELECT, buildBookingOrderBy,
+  buildUserBookingWhere, buildTenantBookingWhere, assertInvoiceEligible, buildInvoiceData,
+} from './booking-query.helper';
 
 async function validateUserEligibility(tx: Prisma.TransactionClient, userId: string) {
   const user = await tx.user.findUnique({ where: { id: userId } });
@@ -146,160 +150,45 @@ export async function getBookingById(userId: string, bookingId: string, role?: R
   return syncBookingIfGateway(b);
 }
 
-const BOOKING_SELECT = {
-  property: { select: { id: true, title: true, city: true, address: true } },
-  room: { select: { id: true, name: true, basePrice: true } },
-  payment: true,
-  review: { select: { id: true, rating: true, comment: true } },
-};
-
 export async function getUserBookings(userId: string, query: BookingListQuery) {
   const page = query.page || 1;
   const limit = query.limit || 10;
-  const where: Prisma.BookingWhereInput = {
-    userId,
-    ...(query.status && { status: query.status }),
-  };
-
-  if (query.search?.trim()) {
-    const s = query.search.trim();
-    where.OR = [
-      { bookingCode: { contains: s, mode: 'insensitive' } },
-      { property: { title: { contains: s, mode: 'insensitive' } } },
-      { property: { city: { contains: s, mode: 'insensitive' } } },
-      { room: { name: { contains: s, mode: 'insensitive' } } },
-    ];
-  }
-
-  let orderBy: Prisma.BookingOrderByWithRelationInput = { createdAt: 'desc' };
-  switch (query.sortBy) {
-    case 'createdAt_asc':
-      orderBy = { createdAt: 'asc' };
-      break;
-    case 'checkIn_asc':
-      orderBy = { checkInDate: 'asc' };
-      break;
-    case 'checkIn_desc':
-      orderBy = { checkInDate: 'desc' };
-      break;
-    case 'price_desc':
-      orderBy = { totalPrice: 'desc' };
-      break;
-    case 'price_asc':
-      orderBy = { totalPrice: 'asc' };
-      break;
-    case 'createdAt_desc':
-    default:
-      orderBy = { createdAt: 'desc' };
-      break;
-  }
-
+  const where = buildUserBookingWhere(userId, query);
+  const orderBy = buildBookingOrderBy(query.sortBy);
   const [data, totalItems] = await Promise.all([
-    prisma.booking.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy,
-      include: BOOKING_SELECT,
-    }),
+    prisma.booking.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy, include: BOOKING_SELECT }),
     prisma.booking.count({ where }),
   ]);
   return { data, meta: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) } };
 }
-
-const TENANT_BOOKING_SELECT = {
-  property: { select: { id: true, title: true, city: true, address: true } },
-  room: { select: { id: true, name: true, basePrice: true } },
-  user: { select: { id: true, name: true, email: true, phoneNumber: true } },
-  payment: true,
-};
 
 export async function getTenantBookings(tenantId: string, query: BookingListQuery) {
   const page = query.page || 1;
   const limit = query.limit || 10;
-  const where: Prisma.BookingWhereInput = {
-    property: { tenantId },
-    ...(query.status && { status: query.status }),
-  };
-
-  if (query.search?.trim()) {
-    const s = query.search.trim();
-    where.OR = [
-      { bookingCode: { contains: s, mode: 'insensitive' } },
-      { property: { title: { contains: s, mode: 'insensitive' } } },
-      { room: { name: { contains: s, mode: 'insensitive' } } },
-      { user: { name: { contains: s, mode: 'insensitive' } } },
-      { user: { email: { contains: s, mode: 'insensitive' } } },
-    ];
-  }
-
-  let orderBy: Prisma.BookingOrderByWithRelationInput = { createdAt: 'desc' };
-  switch (query.sortBy) {
-    case 'createdAt_asc':
-      orderBy = { createdAt: 'asc' };
-      break;
-    case 'checkIn_asc':
-      orderBy = { checkInDate: 'asc' };
-      break;
-    case 'checkIn_desc':
-      orderBy = { checkInDate: 'desc' };
-      break;
-    case 'price_desc':
-      orderBy = { totalPrice: 'desc' };
-      break;
-    case 'price_asc':
-      orderBy = { totalPrice: 'asc' };
-      break;
-    case 'createdAt_desc':
-    default:
-      orderBy = { createdAt: 'desc' };
-      break;
-  }
-
+  const where = buildTenantBookingWhere(tenantId, query);
+  const orderBy = buildBookingOrderBy(query.sortBy);
   const [data, totalItems] = await Promise.all([
-    prisma.booking.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy,
-      include: TENANT_BOOKING_SELECT,
-    }),
+    prisma.booking.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy, include: TENANT_BOOKING_SELECT }),
     prisma.booking.count({ where }),
   ]);
   return { data, meta: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) } };
 }
 
-export async function getBookingInvoicePdf(userId: string, bookingId: string, role?: Role): Promise<{ buffer: Buffer; filename: string }> {
-  const b = await prisma.booking.findUnique({
+function fetchBookingForInvoice(bookingId: string) {
+  return prisma.booking.findUnique({
     where: { id: bookingId },
     include: {
       property: { select: { id: true, title: true, city: true, address: true, tenantId: true } },
-      room: { select: { id: true, name: true, basePrice: true } },
-      payment: true,
+      room: { select: { id: true, name: true, basePrice: true } }, payment: true,
       user: { select: { id: true, name: true, email: true } },
     },
   });
-  assertBookingAccess(b, userId, role);
-  if (b.status !== BookingStatus.PROCESSED && b.status !== BookingStatus.COMPLETED) {
-    throw AppError.badRequest('Invoice hanya tersedia untuk pesanan yang telah dikonfirmasi atau selesai.');
-  }
-
-  const invoiceData: InvoicePdfData = {
-    bookingCode: b.bookingCode,
-    propertyName: b.property.title,
-    roomName: b.room.name,
-    checkInDate: b.checkInDate.toISOString().split('T')[0],
-    checkOutDate: b.checkOutDate.toISOString().split('T')[0],
-    totalGuests: b.guestCount,
-    totalPrice: b.totalPrice,
-    guestName: b.user?.name || undefined,
-    guestEmail: b.user?.email || undefined,
-    paymentMethod: b.payment?.paymentMethod === 'MANUAL_TRANSFER' ? 'Transfer Bank Manual' : (b.payment?.paymentMethod || 'Online Payment'),
-    paidAt: b.payment?.updatedAt ? b.payment.updatedAt.toISOString().split('T')[0] : b.updatedAt.toISOString().split('T')[0],
-  };
-
-  const buffer = await generateInvoicePdf(invoiceData);
-  return { buffer, filename: `Invoice-${b.bookingCode}.pdf` };
 }
 
-
+export async function getBookingInvoicePdf(userId: string, bookingId: string, role?: Role): Promise<{ buffer: Buffer; filename: string }> {
+  const b = await fetchBookingForInvoice(bookingId);
+  assertBookingAccess(b, userId, role);
+  assertInvoiceEligible(b.status);
+  const buffer = await generateInvoicePdf(buildInvoiceData(b));
+  return { buffer, filename: `Invoice-${b.bookingCode}.pdf` };
+}

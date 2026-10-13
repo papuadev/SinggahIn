@@ -1,13 +1,6 @@
 import { create } from 'zustand';
 import { identityApi } from '../modules/identity/services/identity.api';
-import {
-  User,
-  LoginInput,
-  RegisterInput,
-  VerifyInput,
-  Role,
-  UpdateProfileInput,
-} from '../types/auth.types';
+import { User, LoginInput, RegisterInput, VerifyInput, Role, UpdateProfileInput } from '../types/auth.types';
 
 export interface ConflictState {
   currentRole: Role;
@@ -43,6 +36,18 @@ function extractErrorMessage(err: unknown): string {
   return 'Terjadi kesalahan pada sistem.';
 }
 
+async function runAuthAction<T>(set: any, fn: () => Promise<T>): Promise<T> {
+  set({ isLoading: true, error: null });
+  try {
+    const res = await fn();
+    set({ isLoading: false });
+    return res;
+  } catch (err) {
+    set({ error: extractErrorMessage(err), isLoading: false });
+    throw err;
+  }
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
@@ -55,50 +60,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setConflict: (conflict) => set({ conflict }),
 
   login: async (input) => {
-    set({ isLoading: true, error: null });
-    try {
+    return runAuthAction(set, async () => {
       const res = await identityApi.login(input);
-      set({ user: res.data.user, isAuthenticated: true, isLoading: false });
+      set({ user: res.data.user, isAuthenticated: true });
       return res.data.user;
-    } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
-      throw err;
-    }
+    });
   },
 
   register: async (input) => {
-    set({ isLoading: true, error: null });
-    try {
+    return runAuthAction(set, async () => {
       const res = await identityApi.register(input);
-      set({ isLoading: false });
       return res.data;
-    } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
-      throw err;
-    }
+    });
   },
 
   verify: async (input) => {
-    set({ isLoading: true, error: null });
-    try {
+    return runAuthAction(set, async () => {
       const res = await identityApi.verify(input);
-      set({ user: res.data.user, isAuthenticated: true, isLoading: false });
+      set({ user: res.data.user, isAuthenticated: true });
       return res.data.user;
-    } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
-      throw err;
-    }
+    });
   },
 
   logout: async () => {
     set({ isLoading: true });
     try {
       await identityApi.logout();
-    } catch {
-      // Silently catch network errors during logout to allow client session cleanup
     } finally {
       set({ user: null, isAuthenticated: false, isLoading: false, conflict: null });
     }
@@ -120,93 +107,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const res = await identityApi.uploadAvatar(file);
       const currentUser = get().user;
-      if (currentUser) {
-        set({ user: { ...currentUser, avatarUrl: res.data.avatarUrl } });
-      }
+      if (currentUser) set({ user: { ...currentUser, avatarUrl: res.data.avatarUrl } });
       return res.data.avatarUrl;
     } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message });
+      set({ error: extractErrorMessage(err) });
       throw err;
     }
   },
 
   updateProfile: async (input: UpdateProfileInput) => {
-    set({ isLoading: true, error: null });
-    try {
+    return runAuthAction(set, async () => {
       const res = await identityApi.updateProfile(input);
-      set({ user: res.data.user, isLoading: false });
+      set({ user: res.data.user });
       return res.data.user;
-    } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
-      throw err;
-    }
+    });
   },
 
-  forgotPassword: async (email: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      const res = await identityApi.forgotPassword({ email });
-      set({ isLoading: false });
-      return res.message;
-    } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
-      throw err;
-    }
-  },
-
-  resetPassword: async (input) => {
-    set({ isLoading: true, error: null });
-    try {
-      const res = await identityApi.resetPassword(input);
-      set({ isLoading: false });
-      return res.message;
-    } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
-      throw err;
-    }
-  },
-
-  changePassword: async (input) => {
-    set({ isLoading: true, error: null });
-    try {
-      const res = await identityApi.changePassword(input);
-      set({ isLoading: false });
-      return res.message;
-    } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
-      throw err;
-    }
-  },
-
-  requestEmailChange: async (input) => {
-    set({ isLoading: true, error: null });
-    try {
-      const res = await identityApi.requestEmailChange(input);
-      set({ isLoading: false });
-      return res.message;
-    } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
-      throw err;
-    }
-  },
+  forgotPassword: (email) => runAuthAction(set, () => identityApi.forgotPassword({ email }).then(r => r.message)),
+  resetPassword: (input) => runAuthAction(set, () => identityApi.resetPassword(input).then(r => r.message)),
+  changePassword: (input) => runAuthAction(set, () => identityApi.changePassword(input).then(r => r.message)),
+  requestEmailChange: (input) => runAuthAction(set, () => identityApi.requestEmailChange(input).then(r => r.message)),
 
   verifyEmailChange: async (token: string) => {
-    set({ isLoading: true, error: null });
-    try {
+    return runAuthAction(set, async () => {
       const res = await identityApi.verifyEmailChange(token);
-      set({ user: res.data.user, isAuthenticated: true, isLoading: false });
+      set({ user: res.data.user, isAuthenticated: true });
       return res.data.user;
-    } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
-      throw err;
-    }
+    });
   },
 }));
-

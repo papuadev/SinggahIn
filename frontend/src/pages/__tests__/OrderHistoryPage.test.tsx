@@ -39,19 +39,11 @@ describe('OrderHistoryPage', () => {
   });
 
   it('renders booking cards when bookings exist', async () => {
-    const mockBookings = [
-      {
-        id: 'bk-1',
-        bookingCode: 'SGH-20261015-AAAA',
-        status: 'WAITING_PAYMENT',
-        checkInDate: '2026-10-15',
-        checkOutDate: '2026-10-17',
-        guestCount: 2,
-        totalPrice: 1000000,
-        property: { title: 'Villa Indah' },
-        room: { name: 'Deluxe' },
-      },
-    ];
+    const mockBookings = [{
+      id: 'bk-1', bookingCode: 'SGH-20261015-AAAA', status: 'WAITING_PAYMENT',
+      checkInDate: '2026-10-15', checkOutDate: '2026-10-17', guestCount: 2,
+      totalPrice: 1000000, property: { title: 'Villa Indah' }, room: { name: 'Deluxe' },
+    }];
     vi.mocked(bookingApi.getUserBookings).mockResolvedValueOnce({
       success: true, message: 'OK', data: mockBookings as any,
     });
@@ -65,20 +57,11 @@ describe('OrderHistoryPage', () => {
   });
 
   it('renders Beri Ulasan button for completed booking and opens review modal', async () => {
-    const mockBookings = [
-      {
-        id: 'bk-comp',
-        bookingCode: 'SGH-20261010-COMP',
-        status: 'COMPLETED',
-        checkInDate: '2026-10-01',
-        checkOutDate: '2026-10-03',
-        guestCount: 2,
-        totalPrice: 1500000,
-        property: { title: 'Hotel Grand Bandung' },
-        room: { name: 'Executive Suite' },
-        review: null,
-      },
-    ];
+    const mockBookings = [{
+      id: 'bk-comp', bookingCode: 'SGH-20261010-COMP', status: 'COMPLETED',
+      checkInDate: '2026-10-01', checkOutDate: '2026-10-03', guestCount: 2,
+      totalPrice: 1500000, property: { title: 'Hotel Grand Bandung' }, room: { name: 'Executive Suite' }, review: null,
+    }];
     vi.mocked(bookingApi.getUserBookings).mockResolvedValueOnce({
       success: true, message: 'OK', data: mockBookings as any,
     });
@@ -94,20 +77,12 @@ describe('OrderHistoryPage', () => {
   });
 
   it('renders Sudah Diulas badge when completed booking already has a review', async () => {
-    const mockBookings = [
-      {
-        id: 'bk-comp-reviewed',
-        bookingCode: 'SGH-20261010-DONE',
-        status: 'COMPLETED',
-        checkInDate: '2026-10-01',
-        checkOutDate: '2026-10-03',
-        guestCount: 2,
-        totalPrice: 1500000,
-        property: { title: 'Hotel Grand Bandung' },
-        room: { name: 'Executive Suite' },
-        review: { id: 'rev-99', rating: 5, comment: 'Mantap' },
-      },
-    ];
+    const mockBookings = [{
+      id: 'bk-comp-reviewed', bookingCode: 'SGH-20261010-DONE', status: 'COMPLETED',
+      checkInDate: '2026-10-01', checkOutDate: '2026-10-03', guestCount: 2,
+      totalPrice: 1500000, property: { title: 'Hotel Grand Bandung' }, room: { name: 'Executive Suite' },
+      review: { id: 'rev-99', rating: 5, comment: 'Mantap' },
+    }];
     vi.mocked(bookingApi.getUserBookings).mockResolvedValueOnce({
       success: true, message: 'OK', data: mockBookings as any,
     });
@@ -119,19 +94,11 @@ describe('OrderHistoryPage', () => {
   });
 
   it('renders Ditolak tab and filters orders by REJECTED status', async () => {
-    const mockBookings = [
-      {
-        id: 'bk-rej',
-        bookingCode: 'SGH-20261010-REJ',
-        status: 'REJECTED',
-        checkInDate: '2026-10-01',
-        checkOutDate: '2026-10-03',
-        guestCount: 2,
-        totalPrice: 1500000,
-        property: { title: 'Hotel Grand Bandung' },
-        room: { name: 'Executive Suite' },
-      },
-    ];
+    const mockBookings = [{
+      id: 'bk-rej', bookingCode: 'SGH-20261010-REJ', status: 'REJECTED',
+      checkInDate: '2026-10-01', checkOutDate: '2026-10-03', guestCount: 1,
+      totalPrice: 500000, property: { title: 'Hotel Grand Bandung' }, room: { name: 'Standard' },
+    }];
     vi.mocked(bookingApi.getUserBookings).mockResolvedValue({
       success: true, message: 'OK', data: mockBookings as any,
     });
@@ -198,19 +165,11 @@ describe('OrderHistoryPage', () => {
 
   it('scrolls to top smoothly when changing page', async () => {
     const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
-    const mockBookings = [
-      {
-        id: 'bk-1',
-        bookingCode: 'SGH-20261015-AAAA',
-        status: 'WAITING_PAYMENT',
-        checkInDate: '2026-10-15',
-        checkOutDate: '2026-10-17',
-        guestCount: 2,
-        totalPrice: 1000000,
-        property: { title: 'Villa Indah' },
-        room: { name: 'Deluxe' },
-      },
-    ];
+    const mockBookings = [{
+      id: 'bk-1', bookingCode: 'SGH-20261015-AAAA', status: 'WAITING_PAYMENT',
+      checkInDate: '2026-10-15', checkOutDate: '2026-10-17', guestCount: 2,
+      totalPrice: 1000000, property: { title: 'Villa Indah' }, room: { name: 'Deluxe' },
+    }];
     vi.mocked(bookingApi.getUserBookings).mockResolvedValue({
       success: true,
       message: 'OK',

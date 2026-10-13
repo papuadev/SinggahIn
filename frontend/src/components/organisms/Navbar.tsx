@@ -1,133 +1,9 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, User as UserIcon, LayoutDashboard, Compass, ClipboardList, MapPin, Info, Phone, Sparkles } from 'lucide-react';
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { User as UserIcon, MapPin, Info, Phone, Sparkles } from 'lucide-react';
 import { useAuthStore } from '../../stores/auth.store';
-import { RoleBadge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
-
-function UserAvatarVisual({ user }: { user: { avatarUrl?: string | null; name?: string | null } }): React.JSX.Element {
-  if (user.avatarUrl) {
-    return <img src={user.avatarUrl} alt={user.name || 'Avatar'} className="w-full h-full object-cover" />;
-  }
-  return <span>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</span>;
-}
-
-function AccountInfoHeader({ user }: { user: NonNullable<ReturnType<typeof useAuthStore.getState>['user']> }): React.JSX.Element {
-  return (
-    <div className="px-4 py-3 border-b border-gray-100">
-      <p className="text-sm font-semibold text-gray-900 truncate">{user.name || 'Pengguna'}</p>
-      <p className="text-xs text-gray-500 truncate mb-2">{user.email}</p>
-      <RoleBadge role={user.role} />
-    </div>
-  );
-}
-
-function TenantLinks({ onSelect }: { onSelect: () => void }) {
-  return (
-    <>
-      <Link to="/tenant/orders" onClick={onSelect} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 hover:text-primary-600 transition-colors">
-        <ClipboardList className="w-4 h-4 text-primary-600 shrink-0" /> Kelola Pesanan
-      </Link>
-      <Link to="/tenant/properties" onClick={onSelect} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 hover:text-primary-600 transition-colors">
-        <LayoutDashboard className="w-4 h-4 text-primary-600 shrink-0" /> Dasbor Properti
-      </Link>
-    </>
-  );
-}
-
-function UserOrderLink({ onSelect }: { onSelect: () => void }) {
-  return (
-    <Link to="/orders" onClick={onSelect} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 hover:text-primary-600 transition-colors">
-      <ClipboardList className="w-4 h-4 text-primary-600 shrink-0" /> Pesanan Saya
-    </Link>
-  );
-}
-
-function CommonLinks({ onSelect, isTenant }: { onSelect: () => void; isTenant: boolean }) {
-  return (
-    <>
-      {!isTenant && <UserOrderLink onSelect={onSelect} />}
-      {!isTenant && (
-        <Link to="/" onClick={onSelect} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 hover:text-primary-600 transition-colors">
-          <Compass className="w-4 h-4 text-primary-600 shrink-0" /> Cari Penginapan
-        </Link>
-      )}
-      <Link to="/profile" onClick={onSelect} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 hover:text-primary-600 transition-colors">
-        <UserIcon className="w-4 h-4 text-primary-600 shrink-0" /> Profil Saya
-      </Link>
-    </>
-  );
-}
-
-
-function DropdownLinks({ isTenant, onSelect }: { isTenant: boolean; onSelect: () => void }): React.JSX.Element {
-  return (
-    <div className="py-1 text-sm text-gray-700">
-      {isTenant && <TenantLinks onSelect={onSelect} />}
-      <CommonLinks onSelect={onSelect} isTenant={isTenant} />
-    </div>
-  );
-}
-
-
-function LogoutItem({ onLogout }: { onLogout: () => void }): React.JSX.Element {
-  return (
-    <div className="py-1 border-t border-gray-100">
-      <button type="button" onClick={onLogout} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition-colors text-left cursor-pointer">
-        <LogOut className="w-4 h-4 text-rose-600 shrink-0" /> Keluar
-      </button>
-    </div>
-  );
-}
-
-interface DropdownProps {
-  user: NonNullable<ReturnType<typeof useAuthStore.getState>['user']>;
-  isOpen: boolean;
-  onClose: () => void;
-  onLogout: () => void;
-}
-
-function UserDropdownMenu({ user, isOpen, onClose, onLogout }: DropdownProps): React.JSX.Element | null {
-  if (!isOpen) return null;
-  return (
-    <>
-      <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden="true" />
-      <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 z-50 py-1 divide-y divide-gray-100">
-        <AccountInfoHeader user={user} />
-        <DropdownLinks isTenant={user.role === 'TENANT'} onSelect={onClose} />
-        <LogoutItem onLogout={onLogout} />
-      </div>
-    </>
-  );
-}
-
-function AvatarTrigger({ user, isOpen, onClick }: { user: NonNullable<ReturnType<typeof useAuthStore.getState>['user']>; isOpen: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-expanded={isOpen}
-      aria-label="Menu Akun"
-      className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 hover:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-700 transition-all cursor-pointer shadow-xs"
-    >
-      <UserAvatarVisual user={user} />
-    </button>
-  );
-}
-
-function UserMenu(): React.JSX.Element {
-  const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(false);
-  const handleLogout = async () => { setIsOpen(false); await logout(); navigate('/login'); };
-  if (!user) return <div />;
-  return (
-    <div className="relative">
-      <AvatarTrigger user={user} isOpen={isOpen} onClick={() => setIsOpen((prev) => !prev)} />
-      <UserDropdownMenu user={user} isOpen={isOpen} onClose={() => setIsOpen(false)} onLogout={handleLogout} />
-    </div>
-  );
-}
+import { UserMenu } from './navbar/UserMenu';
 
 function GuestButtons(): React.JSX.Element {
   return (
@@ -142,9 +18,7 @@ function BrandLogo({ isTenant }: { isTenant: boolean }): React.JSX.Element {
   return (
     <Link to={isTenant ? "/tenant/orders" : "/"} className="flex items-center gap-2.5">
       <img src="/logo.webp" alt="SinggahIn" className="h-8 w-auto object-contain" />
-      <span className="text-2xl font-black tracking-tight text-primary-600 sr-only">
-        SinggahIn
-      </span>
+      <span className="text-2xl font-black tracking-tight text-primary-600 sr-only">SinggahIn</span>
       {isTenant && (
         <span className="hidden sm:inline-block px-2 py-0.5 text-xs font-semibold bg-primary-50 text-primary-700 rounded-md border border-primary-100">
           Tenant
@@ -154,101 +28,64 @@ function BrandLogo({ isTenant }: { isTenant: boolean }): React.JSX.Element {
   );
 }
 
+function handleScrollTo(e: React.MouseEvent<HTMLAnchorElement>, id: string) {
+  e.preventDefault();
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth' });
+    window.history.pushState(null, '', `#${id}`);
+  }
+}
+
+function DesktopLandingNav(): React.JSX.Element {
+  return (
+    <nav aria-label="Navigasi Halaman Utama" className="hidden md:flex items-center gap-6 lg:gap-8">
+      <a href="#rekomendasi" onClick={(e) => handleScrollTo(e, 'rekomendasi')} className="group inline-flex items-center gap-1.5 text-sm font-semibold text-gray-700 hover:text-primary-600 transition-colors">
+        <Sparkles className="w-4 h-4 text-amber-500 fill-amber-400 animate-blink" />
+        <span>Rekomendasi Penginapan</span>
+      </a>
+      <a href="#terdekat" onClick={(e) => handleScrollTo(e, 'terdekat')} className="text-sm font-semibold text-gray-600 hover:text-primary-600 transition-colors">Penginapan Terdekat</a>
+      <a href="#about-us" onClick={(e) => handleScrollTo(e, 'about-us')} className="text-sm font-semibold text-gray-600 hover:text-primary-600 transition-colors">About Us</a>
+      <a href="#contact-us" onClick={(e) => handleScrollTo(e, 'contact-us')} className="text-sm font-semibold text-gray-600 hover:text-primary-600 transition-colors">Contact Us</a>
+    </nav>
+  );
+}
+
+function MobileLandingNav(): React.JSX.Element {
+  return (
+    <nav aria-label="Navigasi Cepat Penginapan" className="md:hidden border-t border-gray-100 bg-white/95 backdrop-blur-xs px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth">
+      <a href="#rekomendasi" onClick={(e) => handleScrollTo(e, 'rekomendasi')} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50/90 border border-amber-200 text-amber-900 hover:bg-amber-100 whitespace-nowrap transition-colors shrink-0 active:scale-95">
+        <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400 animate-blink" /> Rekomendasi Penginapan
+      </a>
+      <a href="#terdekat" onClick={(e) => handleScrollTo(e, 'terdekat')} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100/90 hover:bg-primary-50 text-gray-700 hover:text-primary-700 whitespace-nowrap transition-colors shrink-0 active:scale-95">
+        <MapPin className="w-3.5 h-3.5 text-primary-500" /> Penginapan Terdekat
+      </a>
+      <a href="#about-us" onClick={(e) => handleScrollTo(e, 'about-us')} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100/90 hover:bg-primary-50 text-gray-700 hover:text-primary-700 whitespace-nowrap transition-colors shrink-0 active:scale-95">
+        <Info className="w-3.5 h-3.5 text-sky-500" /> About Us
+      </a>
+      <a href="#contact-us" onClick={(e) => handleScrollTo(e, 'contact-us')} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100/90 hover:bg-primary-50 text-gray-700 hover:text-primary-700 whitespace-nowrap transition-colors shrink-0 active:scale-95">
+        <Phone className="w-3.5 h-3.5 text-emerald-500" /> Contact Us
+      </a>
+    </nav>
+  );
+}
+
 export function Navbar(): React.JSX.Element {
   const location = useLocation();
   const { isAuthenticated, user } = useAuthStore();
   const isTenant = user?.role === 'TENANT';
   const isLandingPage = location.pathname === '/' && !isTenant;
 
-  const handleScrollTo = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
-    e.preventDefault();
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-      window.history.pushState(null, '', `#${id}`);
-    }
-  };
-
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <BrandLogo isTenant={isTenant} />
-
-        {isLandingPage && (
-          <nav aria-label="Navigasi Halaman Utama" className="hidden md:flex items-center gap-6 lg:gap-8">
-            <a
-              href="#rekomendasi"
-              onClick={(e) => handleScrollTo(e, 'rekomendasi')}
-              className="group inline-flex items-center gap-1.5 text-sm font-semibold text-gray-700 hover:text-primary-600 transition-colors"
-            >
-              <Sparkles className="w-4 h-4 text-amber-500 fill-amber-400 animate-blink" />
-              <span>Rekomendasi Penginapan</span>
-            </a>
-            <a
-              href="#terdekat"
-              onClick={(e) => handleScrollTo(e, 'terdekat')}
-              className="text-sm font-semibold text-gray-600 hover:text-primary-600 transition-colors"
-            >
-              Penginapan Terdekat
-            </a>
-            <a
-              href="#about-us"
-              onClick={(e) => handleScrollTo(e, 'about-us')}
-              className="text-sm font-semibold text-gray-600 hover:text-primary-600 transition-colors"
-            >
-              About Us
-            </a>
-            <a
-              href="#contact-us"
-              onClick={(e) => handleScrollTo(e, 'contact-us')}
-              className="text-sm font-semibold text-gray-600 hover:text-primary-600 transition-colors"
-            >
-              Contact Us
-            </a>
-          </nav>
-        )}
-
+        {isLandingPage && <DesktopLandingNav />}
         <div className="flex items-center gap-2">
           {isAuthenticated ? <UserMenu /> : <GuestButtons />}
         </div>
       </div>
-
-      {isLandingPage && (
-        <nav aria-label="Navigasi Cepat Penginapan" className="md:hidden border-t border-gray-100 bg-white/95 backdrop-blur-xs px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth">
-          <a
-            href="#rekomendasi"
-            onClick={(e) => handleScrollTo(e, 'rekomendasi')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50/90 border border-amber-200 text-amber-900 hover:bg-amber-100 whitespace-nowrap transition-colors shrink-0 active:scale-95"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400 animate-blink" />
-            Rekomendasi Penginapan
-          </a>
-          <a
-            href="#terdekat"
-            onClick={(e) => handleScrollTo(e, 'terdekat')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100/90 hover:bg-primary-50 text-gray-700 hover:text-primary-700 whitespace-nowrap transition-colors shrink-0 active:scale-95"
-          >
-            <MapPin className="w-3.5 h-3.5 text-primary-500" />
-            Penginapan Terdekat
-          </a>
-          <a
-            href="#about-us"
-            onClick={(e) => handleScrollTo(e, 'about-us')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100/90 hover:bg-primary-50 text-gray-700 hover:text-primary-700 whitespace-nowrap transition-colors shrink-0 active:scale-95"
-          >
-            <Info className="w-3.5 h-3.5 text-sky-500" />
-            About Us
-          </a>
-          <a
-            href="#contact-us"
-            onClick={(e) => handleScrollTo(e, 'contact-us')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100/90 hover:bg-primary-50 text-gray-700 hover:text-primary-700 whitespace-nowrap transition-colors shrink-0 active:scale-95"
-          >
-            <Phone className="w-3.5 h-3.5 text-emerald-500" />
-            Contact Us
-          </a>
-        </nav>
-      )}
+      {isLandingPage && <MobileLandingNav />}
     </header>
   );
 }

@@ -180,13 +180,7 @@ describe('Profile Service', () => {
 
   describe('verifyEmailChange', () => {
     it('updates user email and marks token used', async () => {
-      const tokenRecord = {
-        id: 'tok-1',
-        userId: 'usr-123',
-        email: 'newverified@example.com',
-        expiresAt: new Date(Date.now() + 100000),
-        isUsed: false,
-      };
+      const tokenRecord = { id: 'tok-1', userId: 'usr-123', email: 'newverified@example.com', expiresAt: new Date(Date.now() + 100000), isUsed: false };
       vi.mocked(prisma.verificationToken.findFirst).mockResolvedValueOnce(tokenRecord as any);
       vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(null);
       vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) =>
