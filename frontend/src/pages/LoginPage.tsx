@@ -31,9 +31,21 @@ function useLoginRedirect(isAuthenticated: boolean, role?: Role) {
   const navigate = useNavigate();
   useEffect(() => {
     if (isAuthenticated && role) {
-      navigate(role === 'TENANT' ? '/tenant/orders' : '/');
+      navigate(role === 'TENANT' ? '/tenant/dashboard' : '/');
     }
   }, [isAuthenticated, role, navigate]);
+}
+
+function LoginCard({ roleParam, onSubmit, isLoading, error }: any): React.JSX.Element {
+  return (
+    <div className="max-w-md mx-auto py-8">
+      <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+        <LoginHeader />
+        <LoginForm initialRole={roleParam as Role} onSubmit={onSubmit} isLoading={isLoading} serverError={error} />
+        <RegisterPrompt role={roleParam} />
+      </div>
+    </div>
+  );
 }
 
 export function LoginPage(): React.JSX.Element {
@@ -46,16 +58,8 @@ export function LoginPage(): React.JSX.Element {
   useLoginRedirect(isAuthenticated, user?.role);
   const onSubmit = async (d: LoginFormData) => {
     const u = await login(d);
-    navigate(u.role === 'TENANT' ? '/tenant/orders' : '/');
+    navigate(u.role === 'TENANT' ? '/tenant/dashboard' : '/');
   };
 
-  return (
-    <div className="max-w-md mx-auto py-8">
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
-        <LoginHeader />
-        <LoginForm initialRole={roleParam as Role} onSubmit={onSubmit} isLoading={isLoading} serverError={error} />
-        <RegisterPrompt role={roleParam} />
-      </div>
-    </div>
-  );
+  return <LoginCard roleParam={roleParam} onSubmit={onSubmit} isLoading={isLoading} error={error} />;
 }

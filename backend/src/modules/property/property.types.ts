@@ -42,4 +42,6 @@ export interface PropertyListItemDto {
   category: PropertyCategoryDto;
   coverImage: string | null;
   createdAt: Date;
+  averageRating?: number;
+  totalReviews?: number;
 }

@@ -58,9 +58,23 @@ describe('Navigation Components', () => {
     expect(screen.getByText('Pak Budi')).toBeInTheDocument();
     expect(screen.getByText('tenant@singgahin.com')).toBeInTheDocument();
     expect(screen.getByText('Pemilik (Tenant)')).toBeInTheDocument();
-    expect(screen.getByText('Dasbor Properti')).toBeInTheDocument();
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Kelola Pesanan')).toBeInTheDocument();
+    expect(screen.getByText('Manajemen Properti')).toBeInTheDocument();
+    expect(screen.getByText('Laporan / Analytic')).toBeInTheDocument();
     expect(screen.queryByText('Cari Penginapan')).not.toBeInTheDocument();
     expect(screen.getByText('Profil Saya')).toBeInTheDocument();
+
+    // Expand Manajemen Properti
+    fireEvent.click(screen.getByText('Manajemen Properti'));
+    expect(screen.getByText('Tambah Properti')).toBeInTheDocument();
+    expect(screen.getByText('Kelola Properti')).toBeInTheDocument();
+    expect(screen.getByText('Kategori Properti')).toBeInTheDocument();
+
+    // Expand Laporan / Analytic
+    fireEvent.click(screen.getByText('Laporan / Analytic'));
+    expect(screen.getByText('Laporan Penjualan')).toBeInTheDocument();
+    expect(screen.getByText('Matriks Okupansi')).toBeInTheDocument();
 
     const logoutBtn = screen.getByRole('button', { name: /Keluar/i });
     fireEvent.click(logoutBtn);
@@ -73,7 +87,8 @@ describe('Navigation Components', () => {
         <TenantSidebar />
       </MemoryRouter>
     );
-    expect(screen.getByText('Daftar Properti')).toBeInTheDocument();
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Kelola Properti')).toBeInTheDocument();
     expect(screen.getByText('Tambah Properti')).toBeInTheDocument();
     expect(screen.getByText('Profil Saya')).toBeInTheDocument();
     expect(screen.queryByText('Mode Tamu (Eksplor)')).not.toBeInTheDocument();
@@ -89,19 +104,22 @@ describe('Navigation Components', () => {
     expect(screen.getByText('Masuk')).toBeInTheDocument();
   });
 
-  it('renders MobileBottomNav for tenant with Dasbor and Properti tab without Jelajah', () => {
+  it('renders MobileBottomNav for tenant with Dashboard, Pesanan, Properti, Laporan, and Profil', () => {
     useAuthStore.setState({ user: mockTenant, isAuthenticated: true });
     render(
       <MemoryRouter initialEntries={['/tenant/properties']}>
         <MobileBottomNav />
       </MemoryRouter>
     );
-    expect(screen.getByText('Dasbor')).toBeInTheDocument();
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Pesanan')).toBeInTheDocument();
     expect(screen.getByText('Properti')).toBeInTheDocument();
+    expect(screen.getByText('Laporan')).toBeInTheDocument();
+    expect(screen.getByText('Profil')).toBeInTheDocument();
     expect(screen.queryByText('Jelajah')).not.toBeInTheDocument();
   });
 
-  it('renders MobileBottomNav for normal user without Properti tab', () => {
+  it('renders MobileBottomNav for normal user with Jelajah, Pesanan, and Profil', () => {
     useAuthStore.setState({ user: mockUser, isAuthenticated: true });
     render(
       <MemoryRouter initialEntries={['/']}>
@@ -109,6 +127,8 @@ describe('Navigation Components', () => {
       </MemoryRouter>
     );
     expect(screen.getByText('Jelajah')).toBeInTheDocument();
+    expect(screen.getByText('Pesanan')).toBeInTheDocument();
+    expect(screen.getByText('Profil')).toBeInTheDocument();
     expect(screen.queryByText('Properti')).not.toBeInTheDocument();
   });
 
