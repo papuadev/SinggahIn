@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
+import { ReceiptText, Maximize2, ZoomIn, ImageOff, AlertTriangle, Check, X, ShieldCheck, Zap, Clock } from 'lucide-react';
 import { Modal } from '../../../components/molecules/Modal';
 import { Button } from '../../../components/atoms/Button';
 import { Booking } from '../../booking/booking.types';
 import { EmergencyCancelPayload } from '../payment.types';
-import { formatRupiah, formatDateID } from '../../../libs/formatters';
-
-import { getStatusBadge } from '../../booking/components/OrderHistoryCard';
+import { GuestInfoRow } from './TenantOrderGuestCard';
+import { TenantOrderPropertyCard } from './TenantOrderPropertyCard';
+import { RejectView, EmergencyView } from './TenantOrderEmergencyViews';
+import { ProofImageLightbox } from './ProofImageLightbox';
 
 export interface TenantOrderApprovalModalProps {
   isOpen: boolean;
@@ -17,108 +19,123 @@ export interface TenantOrderApprovalModalProps {
   isLoading: boolean;
 }
 
-function GuestInfoRow({ b }: { b: Booking }) {
-  const badge = getStatusBadge(b.status);
+function ProofEmptyState() {
   return (
-    <div className="bg-gray-50 p-3 rounded-lg border text-xs space-y-1">
-      <div className="flex justify-between items-center">
-        <p className="font-semibold text-gray-800">Tamu: {b.user?.name || 'Tamu'} ({b.user?.email})</p>
-        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${badge.style}`}>{badge.label}</span>
+    <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 p-6 flex flex-col items-center justify-center text-center gap-2">
+      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+        <ImageOff className="w-5 h-5" />
       </div>
-      <p className="text-gray-500">No. HP: {b.user?.phoneNumber || '-'}</p>
-      <p className="text-gray-600 font-medium">{formatDateID(b.checkInDate, 'dd MMM yyyy')} - {formatDateID(b.checkOutDate, 'dd MMM yyyy')}</p>
-      <p className="text-primary-700 font-bold">{formatRupiah(b.totalPrice)} • {b.payment?.paymentMethod}</p>
-      {b.status === 'REJECTED' && b.cancellationReason && (
-        <p className="text-rose-700 bg-rose-50 p-1.5 rounded border border-rose-200 mt-1">Alasan Penolakan: {b.cancellationReason}</p>
-      )}
+      <p className="text-xs font-semibold text-gray-700">Bukti transfer belum diunggah</p>
+      <p className="text-[11px] text-gray-400">Tamu belum melampirkan foto bukti pembayaran.</p>
     </div>
   );
 }
 
-function ProofImage({ url }: { url?: string | null }) {
-  if (!url) return <p className="text-xs text-gray-400 italic">Bukti transfer belum diunggah tamu.</p>;
+function ProofFullLink({ onOpen }: { onOpen: () => void }) {
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-100 max-h-56 flex items-center justify-center">
-      <img src={url} alt="Bukti Pembayaran" className="object-contain max-h-56 w-full cursor-pointer" onClick={() => window.open(url, '_blank')} />
+    <button
+      type="button" onClick={onOpen}
+      className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary-600 hover:text-primary-700 hover:underline cursor-pointer"
+    >
+      <Maximize2 className="w-3 h-3" />
+      <span>Lihat Ukuran Penuh</span>
+    </button>
+  );
+}
+
+function ProofImageHeader({ url, onOpen }: { url?: string | null; onOpen: () => void }) {
+  return (
+    <div className="flex items-center justify-between pb-1 text-xs">
+      <span className="font-bold text-gray-800 flex items-center gap-1.5">
+        <ReceiptText className="w-4 h-4 text-primary-600" />
+        <span>Bukti Transfer Pembayaran</span>
+      </span>
+      {url && <ProofFullLink onOpen={onOpen} />}
     </div>
   );
 }
 
-function useRejectAction(onConfirm: (r: string) => Promise<void>) {
-  const [r, setR] = useState('Bukti transfer tidak jelas atau nominal tidak sesuai');
-  const [err, setErr] = useState<string | null>(null);
-  const handleConfirm = async () => {
-    try { setErr(null); await onConfirm(r); }
-    catch (e: any) { setErr(e.message || 'Gagal menolak bukti pembayaran.'); }
-  };
-  return { r, setR, err, handleConfirm };
-}
-
-function RejectView({ onConfirm, onBack, loading }: any) {
-  const { r, setR, err, handleConfirm } = useRejectAction(onConfirm);
+function ProofZoomBadge() {
   return (
-    <div className="space-y-3">
-      <label className="text-xs font-semibold text-gray-700">Alasan Penolakan</label>
-      <textarea value={r} onChange={(e) => setR(e.target.value)} rows={2} className="w-full border border-gray-300 p-2 rounded-lg text-xs" />
-      {err && <p className="text-xs text-rose-600 font-medium">{err}</p>}
-      <div className="flex justify-end gap-2">
-        <Button variant="ghost" size="sm" onClick={onBack} disabled={loading}>Kembali</Button>
-        <Button variant="danger" size="sm" isLoading={loading} onClick={handleConfirm}>Tolak Bukti</Button>
-      </div>
+    <div className="absolute bottom-3 px-3 py-1 bg-gray-900/80 text-white text-[11px] font-medium rounded-full backdrop-blur-xs flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
+      <ZoomIn className="w-3.5 h-3.5" />
+      <span>Klik untuk perbesar</span>
     </div>
   );
 }
 
-function ForceMajeureCheckbox({ force, setForce }: { force: boolean; setForce: (b: boolean) => void }) {
+function ProofImageViewer({ url, onOpen }: { url: string; onOpen: () => void }) {
   return (
-    <label className="flex items-center gap-2 pt-1 cursor-pointer">
-      <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />
-      <span className="font-medium text-gray-700">Force Majeure (Bencana Alam / Keadaan Darurat)</span>
-    </label>
+    <div
+      onClick={onOpen}
+      className="relative group rounded-2xl border border-gray-200 bg-gray-950/5 p-2 overflow-hidden flex items-center justify-center min-h-[220px] max-h-72 transition-all hover:border-primary-300 cursor-pointer"
+    >
+      <img src={url} alt="Bukti Pembayaran" className="object-contain max-h-64 w-full rounded-xl transition-transform duration-200 group-hover:scale-[1.01]" />
+      <ProofZoomBadge />
+    </div>
   );
 }
 
-function EmergencyInputs({ form }: { form: any }) {
+function ProofSection({ url, onOpen }: { url?: string | null; onOpen: () => void }) {
   return (
-    <>
-      <div>
-        <label className="font-semibold block text-gray-700 mb-1">Alasan Pembatalan</label>
-        <input value={form.reason} onChange={(e) => form.setReason(e.target.value)} className="w-full border border-gray-300 p-1.5 rounded text-xs" placeholder="Alasan pembatalan (min. 5 karakter)" />
-      </div>
-      <div>
-        <label className="font-semibold block text-gray-700 mb-1">Kontak Refund</label>
-        <input value={form.contact} onChange={(e) => form.setContact(e.target.value)} className="w-full border border-gray-300 p-1.5 rounded text-xs" placeholder="Nomor kontak refund (min. 8 karakter)" />
-      </div>
-      <ForceMajeureCheckbox force={form.force} setForce={form.setForce} />
-    </>
+    <div className="space-y-1.5">
+      <ProofImageHeader url={url} onOpen={onOpen} />
+      {url ? <ProofImageViewer url={url} onOpen={onOpen} /> : <ProofEmptyState />}
+    </div>
   );
 }
 
-function useEmergencyForm(onConfirm: (p: any) => Promise<void>) {
-  const [reason, setReason] = useState('Kondisi darurat properti');
-  const [contact, setContact] = useState('081234567890');
-  const [force, setForce] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const submit = async () => {
-    if (!reason || reason.trim().length < 5) return setErr('Alasan pembatalan minimal 5 karakter.');
-    if (!contact || contact.trim().length < 8) return setErr('Nomor kontak refund minimal 8 karakter.');
-    setErr(null);
-    try {
-      await onConfirm({ cancellationReason: reason.trim(), reason: reason.trim(), refundContact: contact.trim(), isForceMajeure: force });
-    } catch (e: any) { setErr(e.message || 'Gagal membatalkan pesanan secara darurat.'); }
-  };
-  return { reason, setReason, contact, setContact, force, setForce, err, submit };
+function GatewayPendingCard({ bookingCode }: { bookingCode: string }) {
+  return (
+    <div className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-4 space-y-2">
+      <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+        <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+        <span>Menunggu Pembayaran (Payment Gateway)</span>
+      </div>
+      <p className="text-xs text-amber-800 leading-relaxed">
+        Pesanan <span className="font-mono font-bold text-amber-950">{bookingCode}</span> sedang menunggu pembayaran oleh tamu via Midtrans. Status akan otomatis diperbarui begitu transaksi berhasil.
+      </p>
+      <p className="flex items-center gap-1.5 text-[11px] text-amber-700 font-medium pt-0.5"><Zap className="w-3.5 h-3.5 text-amber-600 shrink-0" /><span>Verifikasi otomatis aktif secara real-time</span></p>
+    </div>
+  );
 }
 
-function EmergencyView({ onConfirm, onBack, loading }: any) {
-  const form = useEmergencyForm(onConfirm);
+function GatewaySuccessCard({ bookingCode }: { bookingCode: string }) {
   return (
-    <div className="space-y-3 text-xs">
-      <EmergencyInputs form={form} />
-      {form.err && <p className="text-xs text-rose-600 font-medium">{form.err}</p>}
-      <div className="flex justify-end gap-2 pt-2">
-        <Button variant="ghost" size="sm" onClick={onBack} disabled={loading}>Kembali</Button>
-        <Button variant="danger" size="sm" isLoading={loading} onClick={form.submit}>Batalkan Darurat</Button>
+    <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-4 space-y-2">
+      <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs">
+        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+        <span>Pembayaran Berhasil (Payment Gateway)</span>
+      </div>
+      <p className="text-xs text-emerald-700/90 leading-relaxed">
+        Pesanan <span className="font-mono font-bold text-emerald-900">{bookingCode}</span> telah diverifikasi otomatis melalui Midtrans. Bukti transfer manual tidak diperlukan.
+      </p>
+      <p className="flex items-center gap-1.5 text-[11px] text-emerald-600 font-medium pt-0.5"><Zap className="w-3.5 h-3.5 text-emerald-500 shrink-0" /><span>Verifikasi instan tersinkronisasi sistem</span></p>
+    </div>
+  );
+}
+
+function GatewayInfoCard({ bookingCode, status }: { bookingCode: string; status: Booking['status'] }) {
+  if (status === 'WAITING_PAYMENT') return <GatewayPendingCard bookingCode={bookingCode} />;
+  return <GatewaySuccessCard bookingCode={bookingCode} />;
+}
+
+function RightColumnPayment({ b, onOpenLightbox }: { b: Booking; onOpenLightbox: () => void }) {
+  const isGateway = b.payment?.paymentMethod === 'PAYMENT_GATEWAY';
+  const proofUrl = b.payment?.proofImageUrl || b.payment?.paymentProofUrl;
+  if (isGateway) return <GatewayInfoCard bookingCode={b.bookingCode} status={b.status} />;
+  return <ProofSection url={proofUrl} onOpen={onOpenLightbox} />;
+}
+
+function TwoColumnModalLayout({ b, onOpenLightbox }: { b: Booking; onOpenLightbox: () => void }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+      <div className="space-y-3">
+        <TenantOrderPropertyCard b={b} />
+        <GuestInfoRow b={b} />
+      </div>
+      <div className="space-y-3">
+        <RightColumnPayment b={b} onOpenLightbox={onOpenLightbox} />
       </div>
     </div>
   );
@@ -129,36 +146,36 @@ function ActionButtons({ b, onApprove, onReject, onEmer, loading }: any) {
   const canEmergency = b.status === 'PROCESSED';
   if (!canApprove && !canEmergency) return null;
   return (
-    <div className="flex flex-wrap justify-end gap-2 pt-2 border-t">
-      {canEmergency && <Button variant="danger" size="sm" onClick={onEmer} disabled={loading}>Batal Darurat</Button>}
-      {canApprove && <Button variant="outline" size="sm" onClick={onReject} disabled={loading}>Tolak</Button>}
-      {canApprove && <Button variant="primary" size="sm" isLoading={loading} onClick={() => onApprove(b.id)}>Setujui Bukti</Button>}
+    <div className="flex flex-wrap justify-end gap-2.5 pt-3 border-t border-gray-100">
+      {canEmergency && <Button variant="danger" size="sm" onClick={onEmer} disabled={loading} leftIcon={<AlertTriangle className="w-3.5 h-3.5" />}>Batal Darurat</Button>}
+      {canApprove && <Button variant="outline" size="sm" onClick={onReject} disabled={loading} leftIcon={<X className="w-3.5 h-3.5" />}>Tolak</Button>}
+      {canApprove && <Button variant="primary" size="sm" isLoading={loading} onClick={() => onApprove(b.id)} leftIcon={<Check className="w-3.5 h-3.5" />}>Setujui Bukti</Button>}
     </div>
   );
 }
 
-function ModalBody({ mode, b, props, setMode }: any) {
+function ModalBody({ mode, b, props, setMode, onOpenLightbox }: any) {
   if (mode === 'reject') return <RejectView onConfirm={(r: string) => props.onReject(b.id, r)} onBack={() => setMode('detail')} loading={props.isLoading} />;
   if (mode === 'emergency') return <EmergencyView onConfirm={(p: any) => props.onEmergency(b.id, p)} onBack={() => setMode('detail')} loading={props.isLoading} />;
-  const proofUrl = b.payment?.proofImageUrl || b.payment?.paymentProofUrl;
   return (
-    <>
-      <GuestInfoRow b={b} />
-      <ProofImage url={proofUrl} />
+    <div className="space-y-4">
+      <TwoColumnModalLayout b={b} onOpenLightbox={onOpenLightbox} />
       <ActionButtons b={b} onApprove={props.onApprove} onReject={() => setMode('reject')} onEmer={() => setMode('emergency')} loading={props.isLoading} />
-    </>
+    </div>
   );
 }
 
 export function TenantOrderApprovalModal(props: TenantOrderApprovalModalProps): React.JSX.Element | null {
   const [mode, setMode] = useState<'detail' | 'reject' | 'emergency'>('detail');
+  const [isLight, setIsLight] = useState(false);
   if (!props.booking) return null;
-  const resetClose = () => { setMode('detail'); props.onClose(); };
+  const proofUrl = props.booking.payment?.proofImageUrl || props.booking.payment?.paymentProofUrl;
   return (
-    <Modal isOpen={props.isOpen} onClose={resetClose} title={`Pesanan ${props.booking.bookingCode}`}>
-      <div className="space-y-4">
-        <ModalBody mode={mode} b={props.booking} props={props} setMode={setMode} />
-      </div>
-    </Modal>
+    <>
+      <Modal isOpen={props.isOpen} onClose={() => { setMode('detail'); props.onClose(); }} title={`Pesanan ${props.booking.bookingCode}`} maxWidth="max-w-3xl">
+        <ModalBody mode={mode} b={props.booking} props={props} setMode={setMode} onOpenLightbox={() => setIsLight(true)} />
+      </Modal>
+      <ProofImageLightbox isOpen={isLight} onClose={() => setIsLight(false)} src={proofUrl} />
+    </>
   );
 }

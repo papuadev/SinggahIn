@@ -37,12 +37,14 @@ export interface BookingProperty {
   city: string;
   address: string;
   tenantId?: string;
+  images?: { imageUrl: string; isCover?: boolean }[];
 }
 
 export interface BookingRoom {
   id: string;
   name: string;
   basePrice: number;
+  images?: { imageUrl: string }[];
 }
 
 export interface BookingUser {

@@ -43,6 +43,11 @@ export const identityApi = {
     return res.data;
   },
 
+  async refreshToken(): Promise<ApiResponse<LoginResponseData>> {
+    const res = await apiClient.post<ApiResponse<LoginResponseData>>('/identity/refresh');
+    return res.data;
+  },
+
   async getMe(): Promise<ApiResponse<LoginResponseData>> {
     const res = await apiClient.get<ApiResponse<LoginResponseData>>('/identity/me');
     return res.data;

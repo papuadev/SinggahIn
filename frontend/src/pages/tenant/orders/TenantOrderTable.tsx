@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Calendar, Building2 } from 'lucide-react';
+import { ArrowRight, Calendar, Building2 } from 'lucide-react';
 import { Booking } from '../../../modules/booking/booking.types';
 import { getStatusBadge } from '../../../modules/booking/components/OrderHistoryCard';
 import { formatRupiah, formatDateID } from '../../../libs/formatters';
@@ -47,11 +47,13 @@ function StatusPill({ status }: { status: Booking['status'] }) {
 function ReviewButton({ onClick, ariaLabel }: { onClick: () => void; ariaLabel?: string }) {
   return (
     <button
-      type="button" aria-label={ariaLabel} onClick={onClick}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200/60 transition-colors cursor-pointer"
+      type="button"
+      aria-label={ariaLabel}
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 active:scale-95 shadow-xs hover:shadow transition-all cursor-pointer group"
     >
-      <Eye className="w-3.5 h-3.5" />
       <span>Tinjau</span>
+      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
     </button>
   );
 }

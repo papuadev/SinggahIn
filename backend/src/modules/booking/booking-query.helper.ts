@@ -11,8 +11,23 @@ export const BOOKING_SELECT = {
 };
 
 export const TENANT_BOOKING_SELECT = {
-  property: { select: { id: true, title: true, city: true, address: true } },
-  room: { select: { id: true, name: true, basePrice: true } },
+  property: {
+    select: {
+      id: true,
+      title: true,
+      city: true,
+      address: true,
+      images: { select: { imageUrl: true, isCover: true }, take: 1, orderBy: { isCover: 'desc' as const } },
+    },
+  },
+  room: {
+    select: {
+      id: true,
+      name: true,
+      basePrice: true,
+      images: { select: { imageUrl: true }, take: 1 },
+    },
+  },
   user: { select: { id: true, name: true, email: true, phoneNumber: true } },
   payment: true,
 };
@@ -65,18 +80,11 @@ export function assertInvoiceEligible(status: BookingStatus): void {
 
 export function buildInvoiceData(b: any): InvoicePdfData {
   const method = b.payment?.paymentMethod === 'MANUAL_TRANSFER' ? 'Transfer Bank Manual' : (b.payment?.paymentMethod || 'Online Payment');
-  const paidAt = b.payment?.updatedAt ? b.payment.updatedAt.toISOString().split('T')[0] : b.updatedAt.toISOString().split('T')[0];
+  const paidAt = (b.payment?.updatedAt || b.updatedAt).toISOString().split('T')[0];
   return {
-    bookingCode: b.bookingCode,
-    propertyName: b.property.title,
-    roomName: b.room.name,
-    checkInDate: b.checkInDate.toISOString().split('T')[0],
-    checkOutDate: b.checkOutDate.toISOString().split('T')[0],
-    totalGuests: b.guestCount,
-    totalPrice: b.totalPrice,
-    guestName: b.user?.name || undefined,
-    guestEmail: b.user?.email || undefined,
-    paymentMethod: method,
-    paidAt,
+    bookingCode: b.bookingCode, propertyName: b.property.title, roomName: b.room.name,
+    checkInDate: b.checkInDate.toISOString().split('T')[0], checkOutDate: b.checkOutDate.toISOString().split('T')[0],
+    totalGuests: b.guestCount, totalPrice: b.totalPrice, guestName: b.user?.name || undefined,
+    guestEmail: b.user?.email || undefined, paymentMethod: method, paidAt,
   };
 }
