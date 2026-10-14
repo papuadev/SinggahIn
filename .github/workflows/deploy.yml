@@ -3,6 +3,7 @@ name: Build and Deploy to VPS
 on:
   push:
     branches:
+      - main
       - develop
   workflow_dispatch:
 
@@ -18,9 +19,16 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set Lowercase Repository Name
+      - name: Determine Environment and Tags
         run: |
           echo "REGISTRY_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "DEPLOY_ENV=prod" >> $GITHUB_ENV
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          else
+            echo "DEPLOY_ENV=stage" >> $GITHUB_ENV
+            echo "IMAGE_TAG=stage" >> $GITHUB_ENV
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -39,8 +47,8 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ env.REGISTRY_OWNER }}/singgahin-backend:latest
-            ghcr.io/${{ env.REGISTRY_OWNER }}/singgahin-backend:${{ github.sha }}
+            ghcr.io/${{ env.REGISTRY_OWNER }}/singgahin-backend:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ env.REGISTRY_OWNER }}/singgahin-backend:${{ env.IMAGE_TAG }}-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -51,8 +59,8 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ env.REGISTRY_OWNER }}/singgahin-frontend:latest
-            ghcr.io/${{ env.REGISTRY_OWNER }}/singgahin-frontend:${{ github.sha }}
+            ghcr.io/${{ env.REGISTRY_OWNER }}/singgahin-frontend:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ env.REGISTRY_OWNER }}/singgahin-frontend:${{ env.IMAGE_TAG }}-${{ github.sha }}
           build-args: |
             VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL || '/api/v1' }}
             VITE_MIDTRANS_CLIENT_KEY=${{ secrets.VITE_MIDTRANS_CLIENT_KEY }}
@@ -69,6 +77,18 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Determine Target Services
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "TARGET_BACKEND=backend-prod" >> $GITHUB_ENV
+            echo "TARGET_FRONTEND=frontend-prod" >> $GITHUB_ENV
+            echo "TARGET_DB=singgahin_db" >> $GITHUB_ENV
+          else
+            echo "TARGET_BACKEND=backend-stage" >> $GITHUB_ENV
+            echo "TARGET_FRONTEND=frontend-stage" >> $GITHUB_ENV
+            echo "TARGET_DB=singgahin_stage" >> $GITHUB_ENV
+          fi
+
       - name: Copy Deployment Configs to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -81,11 +101,16 @@ jobs:
 
       - name: Run Deployment Commands on VPS
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          TARGET_BACKEND: ${{ env.TARGET_BACKEND }}
+          TARGET_FRONTEND: ${{ env.TARGET_FRONTEND }}
+          TARGET_DB: ${{ env.TARGET_DB }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
+          envs: TARGET_BACKEND,TARGET_FRONTEND,TARGET_DB
           script: |
             set -e
             cd ${{ secrets.TARGET_DIR }}
@@ -96,14 +121,22 @@ jobs:
             # Log in to GHCR on VPS
             echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Pull latest prebuilt images
-            docker compose -f docker-compose.prod.yml pull
+            # Ensure PostgreSQL container is running
+            docker compose -f docker-compose.prod.yml up -d postgres
 
-            # Re-create and restart updated containers
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            # Auto-create database in PostgreSQL if it does not exist yet
+            docker compose -f docker-compose.prod.yml exec -T postgres psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$TARGET_DB'" | grep -q 1 || \
+            docker compose -f docker-compose.prod.yml exec -T postgres psql -U postgres -c "CREATE DATABASE $TARGET_DB;"
 
-            # Apply pending database schema changes
-            docker compose -f docker-compose.prod.yml exec -T backend npx prisma db push
+            # Pull updated images for target environment
+            docker compose -f docker-compose.prod.yml pull $TARGET_BACKEND $TARGET_FRONTEND
 
-            # Clean up old unused Docker images to save VPS SSD storage
+            # Re-create and restart target environment containers without affecting the other environment
+            docker compose -f docker-compose.prod.yml up -d --no-deps $TARGET_BACKEND $TARGET_FRONTEND
+            docker compose -f docker-compose.prod.yml up -d nginx-proxy
+
+            # Apply pending database schema changes for this specific environment
+            docker compose -f docker-compose.prod.yml exec -T $TARGET_BACKEND npx prisma db push
+
+            # Clean up old unused Docker images to save VPS storage
             docker image prune -af

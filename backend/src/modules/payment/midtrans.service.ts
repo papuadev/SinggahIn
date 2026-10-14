@@ -157,7 +157,7 @@ export async function handleMidtransWebhook(payload: MidtransWebhookPayload) {
     where: { bookingCode: baseCode },
     include: { payment: true, user: true, property: true, room: true },
   });
-  if (!b) throw AppError.notFound('Pesanan tidak ditemukan.');
+  if (!b) return { orderId: payload.order_id, status: payload.transaction_status, ignored: true };
   await applyMidtransNotification(b, payload);
   return { orderId: payload.order_id, status: payload.transaction_status };
 }
