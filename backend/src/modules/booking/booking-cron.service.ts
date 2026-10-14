@@ -1,0 +1,63 @@
+import cron from 'node-cron';
+import { BookingStatus, PaymentStatus, Prisma } from '@prisma/client';
+import { prisma } from '../../shared/services/prisma.service';
+
+async function expireSingleBooking(tx: Prisma.TransactionClient, bookingId: string) {
+  const current = await tx.booking.findUnique({ where: { id: bookingId }, select: { status: true } });
+  if (current?.status !== BookingStatus.WAITING_PAYMENT) return null;
+  return tx.booking.update({
+    where: { id: bookingId },
+    data: {
+      status: BookingStatus.CANCELLED,
+      cancellationReason: 'Batas waktu pembayaran telah berakhir (Sistem Otomatis)',
+      payment: { update: { status: PaymentStatus.EXPIRED } },
+    },
+  });
+}
+
+export async function cancelExpiredBookings(now = new Date()) {
+  const expired = await prisma.booking.findMany({
+    where: { status: BookingStatus.WAITING_PAYMENT, expiresAt: { lt: now } },
+    select: { id: true },
+  });
+  let count = 0;
+  for (const b of expired) {
+    const res = await prisma.$transaction((tx) => expireSingleBooking(tx, b.id));
+    if (res) count++;
+  }
+  return { cancelledCount: count };
+}
+
+async function markBookingsCompleted(ids: string[]) {
+  return prisma.booking.updateMany({
+    where: { id: { in: ids } },
+    data: { status: BookingStatus.COMPLETED },
+  });
+}
+
+export async function autoCompleteFinishedBookings(now = new Date()) {
+  const finished = await prisma.booking.findMany({
+    where: { status: BookingStatus.PROCESSED, checkOutDate: { lte: now } },
+    select: { id: true },
+  });
+  if (finished.length === 0) return { completedCount: 0 };
+  await markBookingsCompleted(finished.map((b) => b.id));
+  return { completedCount: finished.length };
+}
+
+export function initAutoCancelCron() {
+  return cron.schedule('*/1 * * * *', async () => {
+    try { await cancelExpiredBookings(); } catch {}
+  });
+}
+
+export function initAutoCompleteCron() {
+  return cron.schedule('0 12 * * *', async () => {
+    try { await autoCompleteFinishedBookings(); } catch {}
+  }, { timezone: 'Asia/Jakarta' });
+}
+
+export function initBookingCrons() {
+  initAutoCancelCron();
+  initAutoCompleteCron();
+}

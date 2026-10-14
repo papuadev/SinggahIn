@@ -1,0 +1,18 @@
+# robots.txt for SinggahIn Property Renting App
+User-agent: *
+Allow: /
+Allow: /search
+Allow: /properties/
+Allow: /login
+Allow: /register
+
+# Disallow private user and tenant routes
+Disallow: /tenant/
+Disallow: /orders/
+Disallow: /profile/
+Disallow: /verify/
+
+# Allow crawler API access for SPA client-side rendering
+Allow: /api/
+
+Sitemap: https://singgahin.biz.id/sitemap.xml

@@ -1,13 +1,6 @@
 import { create } from 'zustand';
 import { identityApi } from '../modules/identity/services/identity.api';
-import {
-  User,
-  LoginInput,
-  RegisterInput,
-  VerifyInput,
-  Role,
-  UpdateProfileInput,
-} from '../types/auth.types';
+import { User, LoginInput, RegisterInput, VerifyInput, Role, UpdateProfileInput } from '../types/auth.types';
 
 export interface ConflictState {
   currentRole: Role;
@@ -29,6 +22,11 @@ interface AuthState {
   checkAuth: () => Promise<void>;
   uploadAvatar: (file: File) => Promise<string>;
   updateProfile: (input: UpdateProfileInput) => Promise<User>;
+  forgotPassword: (email: string) => Promise<string>;
+  resetPassword: (input: { token: string; password: string; confirmPassword: string }) => Promise<string>;
+  changePassword: (input: { currentPassword: string; newPassword: string; confirmPassword: string }) => Promise<string>;
+  requestEmailChange: (input: { newEmail: string; password: string }) => Promise<string>;
+  verifyEmailChange: (token: string) => Promise<User>;
   setConflict: (conflict: ConflictState | null) => void;
   clearError: () => void;
 }
@@ -36,6 +34,18 @@ interface AuthState {
 function extractErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   return 'Terjadi kesalahan pada sistem.';
+}
+
+async function runAuthAction<T>(set: any, fn: () => Promise<T>): Promise<T> {
+  set({ isLoading: true, error: null });
+  try {
+    const res = await fn();
+    set({ isLoading: false });
+    return res;
+  } catch (err) {
+    set({ error: extractErrorMessage(err), isLoading: false });
+    throw err;
+  }
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -50,50 +60,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setConflict: (conflict) => set({ conflict }),
 
   login: async (input) => {
-    set({ isLoading: true, error: null });
-    try {
+    return runAuthAction(set, async () => {
       const res = await identityApi.login(input);
-      set({ user: res.data.user, isAuthenticated: true, isLoading: false });
+      set({ user: res.data.user, isAuthenticated: true });
       return res.data.user;
-    } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
-      throw err;
-    }
+    });
   },
 
   register: async (input) => {
-    set({ isLoading: true, error: null });
-    try {
+    return runAuthAction(set, async () => {
       const res = await identityApi.register(input);
-      set({ isLoading: false });
       return res.data;
-    } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
-      throw err;
-    }
+    });
   },
 
   verify: async (input) => {
-    set({ isLoading: true, error: null });
-    try {
+    return runAuthAction(set, async () => {
       const res = await identityApi.verify(input);
-      set({ user: res.data.user, isAuthenticated: true, isLoading: false });
+      set({ user: res.data.user, isAuthenticated: true });
       return res.data.user;
-    } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
-      throw err;
-    }
+    });
   },
 
   logout: async () => {
     set({ isLoading: true });
     try {
       await identityApi.logout();
-    } catch {
-      // Silently catch network errors during logout to allow client session cleanup
     } finally {
       set({ user: null, isAuthenticated: false, isLoading: false, conflict: null });
     }
@@ -111,33 +103,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   uploadAvatar: async (file: File) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       const res = await identityApi.uploadAvatar(file);
       const currentUser = get().user;
-      if (currentUser) {
-        set({ user: { ...currentUser, avatarUrl: res.data.avatarUrl }, isLoading: false });
-      } else {
-        set({ isLoading: false });
-      }
+      if (currentUser) set({ user: { ...currentUser, avatarUrl: res.data.avatarUrl } });
       return res.data.avatarUrl;
     } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
+      set({ error: extractErrorMessage(err) });
       throw err;
     }
   },
 
   updateProfile: async (input: UpdateProfileInput) => {
-    set({ isLoading: true, error: null });
-    try {
+    return runAuthAction(set, async () => {
       const res = await identityApi.updateProfile(input);
-      set({ user: res.data.user, isLoading: false });
+      set({ user: res.data.user });
       return res.data.user;
-    } catch (err) {
-      const message = extractErrorMessage(err);
-      set({ error: message, isLoading: false });
-      throw err;
-    }
+    });
+  },
+
+  forgotPassword: (email) => runAuthAction(set, () => identityApi.forgotPassword({ email }).then(r => r.message)),
+  resetPassword: (input) => runAuthAction(set, () => identityApi.resetPassword(input).then(r => r.message)),
+  changePassword: (input) => runAuthAction(set, () => identityApi.changePassword(input).then(r => r.message)),
+  requestEmailChange: (input) => runAuthAction(set, () => identityApi.requestEmailChange(input).then(r => r.message)),
+
+  verifyEmailChange: async (token: string) => {
+    return runAuthAction(set, async () => {
+      const res = await identityApi.verifyEmailChange(token);
+      set({ user: res.data.user, isAuthenticated: true });
+      return res.data.user;
+    });
   },
 }));

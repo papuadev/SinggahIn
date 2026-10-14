@@ -1,12 +1,16 @@
 import { v2 as cloudinary, UploadApiOptions, UploadApiResponse } from 'cloudinary';
 import { Readable } from 'stream';
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true,
-});
+function configureCloudinary(): void {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+}
+
+configureCloudinary();
 
 export interface UploadResult {
   secureUrl: string;
@@ -31,6 +35,7 @@ export function uploadToCloudinary(
   folder = 'singgahin/avatars',
   customOptions: UploadApiOptions = {}
 ): Promise<UploadResult> {
+  configureCloudinary();
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       { folder, format: 'webp', resource_type: 'image', ...customOptions },
@@ -42,6 +47,7 @@ export function uploadToCloudinary(
 
 export async function deleteFromCloudinary(publicId: string): Promise<void> {
   if (!publicId) return;
+  configureCloudinary();
   try {
     await cloudinary.uploader.destroy(publicId);
   } catch {

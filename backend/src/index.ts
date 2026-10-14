@@ -1,15 +1,21 @@
+import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
 import { sendSuccess } from './shared/utils/response.util';
 import { notFoundHandler } from './shared/middleware/not-found.middleware';
 import { errorHandler } from './shared/middleware/error.middleware';
 import { identityRoutes } from './modules/identity/identity.routes';
-
-dotenv.config();
+import { propertyRoutes } from './modules/property/property.routes';
+import { roomRoutes } from './modules/room/room.routes';
+import { bookingRoutes } from './modules/booking/booking.routes';
+import paymentRoutes from './modules/payment/payment.routes';
+import reportRoutes from './modules/report/report.routes';
+import { reviewRoutes } from './modules/review/review.routes';
+import { initBookingCrons } from './modules/booking/booking-cron.service';
 
 export const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 
@@ -32,6 +38,12 @@ app.get('/api/v1/health', (_req: Request, res: Response) => {
 
 // Domain Module Routes
 app.use('/api/v1/identity', identityRoutes);
+app.use('/api/v1/properties', propertyRoutes);
+app.use('/api/v1/rooms', roomRoutes);
+app.use('/api/v1/bookings', bookingRoutes);
+app.use('/api/v1/payments', paymentRoutes);
+app.use('/api/v1/reports', reportRoutes);
+app.use('/api/v1/reviews', reviewRoutes);
 
 // 404 Handler for undefined routes
 app.use(notFoundHandler);
@@ -40,6 +52,7 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
+  initBookingCrons();
   app.listen(PORT, () => {
     // Server running on configured PORT
   });

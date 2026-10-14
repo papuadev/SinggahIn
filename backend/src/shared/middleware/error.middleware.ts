@@ -34,5 +34,10 @@ export function errorHandler(
     handleAppError(res, err);
     return;
   }
+  if ((err as any).code === 'P2003') {
+    sendError(res, 'Operasi gagal karena data masih terikat dengan transaksi atau relasi lain.', 400);
+    return;
+  }
+  console.error('Unhandled error caught by errorHandler:', err);
   sendError(res, 'Terjadi kesalahan internal pada server.', 500);
 }

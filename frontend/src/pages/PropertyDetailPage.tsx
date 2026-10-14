@@ -1,0 +1,123 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Building, ArrowLeft } from 'lucide-react';
+import { PropertyDetailBreadcrumb } from '../components/organisms/property-detail/PropertyDetailBreadcrumb';
+import { PropertyDetailHeader } from '../components/organisms/property-detail/PropertyDetailHeader';
+import { PropertyDetailGallery } from '../components/organisms/property-detail/PropertyDetailGallery';
+import { PropertyDetailDescription } from '../components/organisms/property-detail/PropertyDetailDescription';
+import { PropertyDetailFacilities } from '../components/organisms/property-detail/PropertyDetailFacilities';
+import { PropertyDetailRoomList } from '../components/organisms/property-detail/PropertyDetailRoomList';
+import { PropertyDetailMap } from '../components/organisms/property-detail/PropertyDetailMap';
+import { PropertyDetailSidebar } from '../components/organisms/property-detail/PropertyDetailSidebar';
+import { PropertyDetailMobileBar } from '../components/organisms/property-detail/PropertyDetailMobileBar';
+import { PropertyDetailSkeleton } from '../components/organisms/property-detail/PropertyDetailSkeleton';
+import { Button } from '../components/atoms/Button';
+import { MissingDatesModal } from '../components/organisms/property-detail/MissingDatesModal';
+import { ReviewList } from '../modules/review/components/ReviewList';
+import { SEOHead } from '../components/atoms/SEOHead';
+import { createLodgingBusinessSchema } from '../libs/seo';
+import { usePropertyDetailPage } from './usePropertyDetailPage';
+
+interface MainColProps {
+  property: NonNullable<ReturnType<typeof usePropertyDetailPage>['property']>;
+  rooms: ReturnType<typeof usePropertyDetailPage>['rooms'];
+  checkIn?: string;
+  checkOut?: string;
+  onBook: (roomId: string) => void;
+}
+
+function PropertyNotFound() {
+  return (
+    <div className="py-20 text-center max-w-md mx-auto flex flex-col items-center gap-3">
+      <SEOHead title="Properti Tidak Ditemukan" noIndex />
+      <Building className="w-12 h-12 text-gray-300" />
+      <h2 className="text-xl font-bold text-gray-900">Properti Tidak Ditemukan</h2>
+      <p className="text-sm text-gray-500">Properti yang Anda cari tidak tersedia atau mungkin telah dihapus.</p>
+      <Link to="/search">
+        <Button variant="primary" size="md" leftIcon={<ArrowLeft className="w-4 h-4" />}>Kembali ke Katalog</Button>
+      </Link>
+    </div>
+  );
+}
+
+function PropertyDetailSEO({ property: p, lowestPrice }: { property: NonNullable<ReturnType<typeof usePropertyDetailPage>['property']>; lowestPrice?: number }) {
+  const jsonLd = createLodgingBusinessSchema({
+    title: p.title, description: p.description, images: p.images, address: p.address,
+    city: p.city, latitude: p.latitude, longitude: p.longitude, lowestPrice,
+    averageRating: p.averageRating, totalReviews: p.totalReviews,
+  });
+  return (
+    <SEOHead
+      title={`${p.title} - Sewa Penginapan Murah di ${p.city}`}
+      description={p.description.slice(0, 160)}
+      canonicalUrl={`https://singgahin.biz.id/properties/${p.id}`}
+      ogImage={p.coverImage || p.images?.[0]?.imageUrl} ogType="hotel"
+      ogPriceAmount={lowestPrice} jsonLd={jsonLd}
+    />
+  );
+}
+
+function PropertyMainCol({ property, rooms, checkIn, checkOut, onBook }: MainColProps) {
+  const coverImage = property.coverImage || property.images?.[0]?.imageUrl;
+  return (
+    <div className="flex flex-col">
+      <PropertyDetailDescription description={property.description} />
+      <PropertyDetailFacilities facilities={property.facilities} />
+      <PropertyDetailRoomList propertyId={property.id} rooms={rooms} checkIn={checkIn} checkOut={checkOut} onBookRoom={onBook} coverImage={coverImage} />
+      <PropertyDetailMap latitude={property.latitude} longitude={property.longitude} address={property.address} city={property.city} />
+      <ReviewList propertyId={property.id} />
+    </div>
+  );
+}
+
+function PropertyDetailHero({ property }: { property: NonNullable<ReturnType<typeof usePropertyDetailPage>['property']> }) {
+  const { title, category, address, city, averageRating, totalReviews, images } = property;
+  return (
+    <>
+      <PropertyDetailBreadcrumb title={title} city={city} />
+      <PropertyDetailHeader title={title} categoryName={category?.name} address={address} city={city} averageRating={averageRating} totalReviews={totalReviews} />
+      <PropertyDetailGallery images={images} title={title} />
+    </>
+  );
+}
+
+function PropertySidebarCol({ state }: { state: ReturnType<typeof usePropertyDetailPage> }) {
+  return (
+    <div className="w-full lg:col-span-4 order-1 lg:order-2">
+      <PropertyDetailSidebar
+        propertyId={state.id!} rooms={state.rooms} selectedRoomId={state.selectedRoomId}
+        onRoomChange={state.setSelectedRoomId} checkIn={state.checkIn} checkOut={state.checkOut}
+        lowestPrice={state.lowestPrice} onSelectDates={state.handleSelectDates}
+        onBookRoom={state.handleBookRoom} isCalendarOpen={state.isCalendarOpen}
+        onCalendarOpenChange={state.setIsCalendarOpen}
+      />
+    </div>
+  );
+}
+
+function PropertyDetailGrid({ state }: { state: ReturnType<typeof usePropertyDetailPage> }) {
+  const { property, rooms, checkIn, checkOut, handleSelectRoomFromCard } = state;
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="w-full lg:col-span-8 order-2 lg:order-1">
+        <PropertyMainCol property={property!} rooms={rooms} checkIn={checkIn} checkOut={checkOut} onBook={handleSelectRoomFromCard} />
+      </div>
+      <PropertySidebarCol state={state} />
+    </div>
+  );
+}
+
+export function PropertyDetailPage(): React.JSX.Element {
+  const state = usePropertyDetailPage();
+  if (state.isLoading) return <PropertyDetailSkeleton />;
+  if (state.isError || !state.property) return <PropertyNotFound />;
+  return (
+    <article className="pb-16 flex flex-col gap-6 max-w-7xl mx-auto">
+      <PropertyDetailSEO property={state.property} lowestPrice={state.lowestPrice} />
+      <PropertyDetailHero property={state.property} />
+      <MissingDatesModal isOpen={state.isDateModalOpen} onClose={state.closeDateModal} onPickDates={state.handlePickDates} />
+      <PropertyDetailGrid state={state} />
+      <PropertyDetailMobileBar lowestPrice={state.lowestPrice} onScrollToRooms={state.scrollToRooms} />
+    </article>
+  );
+}

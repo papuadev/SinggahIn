@@ -1,27 +1,34 @@
 import { Request, Response, NextFunction } from 'express';
 import multer, { MulterError } from 'multer';
 import { AppError } from '../utils/app-error';
+import {
+  ALLOWED_MIME_TYPES,
+  validateFilename,
+  validateFileSecurity,
+} from '../utils/image-security.util';
 
 export const MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024; // 1MB (CON-004)
-
-const ALLOWED_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-]);
+export { ALLOWED_MIME_TYPES };
 
 function fileFilter(
   _req: Request,
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ): void {
-  if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
-    cb(null, true);
+  const filenameErr = validateFilename(file.originalname);
+  if (filenameErr) {
+    cb(AppError.badRequest(filenameErr));
     return;
   }
-  cb(AppError.badRequest('Hanya file gambar (.jpg, .jpeg, .png, .gif, .webp) yang diperbolehkan.'));
+  if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
+    cb(
+      AppError.badRequest(
+        'Hanya file gambar (.jpg, .jpeg, .png, .gif, .webp) yang diperbolehkan.'
+      )
+    );
+    return;
+  }
+  cb(null, true);
 }
 
 const uploader = multer({
@@ -30,27 +37,65 @@ const uploader = multer({
   fileFilter,
 });
 
-function handleMulterError(err: unknown, next: NextFunction): void {
-  if (err instanceof MulterError && err.code === 'LIMIT_FILE_SIZE') {
-    next(AppError.badRequest('Ukuran file maksimal 1MB.'));
-    return;
+function handleMulterError(
+  err: unknown,
+  next: NextFunction,
+  maxCount?: number
+): void {
+  if (!(err instanceof MulterError)) return next(err);
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return next(AppError.badRequest('Ukuran file maksimal 1MB.'));
+  }
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+    const msg = maxCount
+      ? `Maksimal ${maxCount} file gambar yang dapat diunggah.`
+      : 'Jumlah file melebihi batas.';
+    return next(AppError.badRequest(msg));
   }
   next(err);
+}
+
+function checkSingleFile(file: Express.Multer.File | undefined, fieldName: string) {
+  if (!file) throw AppError.badRequest(`File '${fieldName}' wajib diunggah.`);
+  validateFileSecurity(file);
 }
 
 export function uploadSingleImage(fieldName: string) {
   const upload = uploader.single(fieldName);
   return (req: Request, res: Response, next: NextFunction): void => {
     upload(req, res, (err) => {
-      if (err) {
-        handleMulterError(err, next);
-        return;
-      }
-      if (!req.file) {
-        next(AppError.badRequest(`File '${fieldName}' wajib diunggah.`));
-        return;
-      }
-      next();
+      if (err) return handleMulterError(err, next);
+      try { checkSingleFile(req.file, fieldName); next(); }
+      catch (secErr) { next(secErr); }
+    });
+  };
+}
+
+function validateFilesList(
+  files: unknown,
+  field: string,
+  next: NextFunction
+): boolean {
+  const list = files as Express.Multer.File[] | undefined;
+  if (!list || list.length === 0) {
+    next(AppError.badRequest(`Minimal 1 file gambar '${field}' wajib diunggah.`));
+    return false;
+  }
+  return true;
+}
+
+function checkMultipleFiles(files: Express.Multer.File[]) {
+  for (const file of files) validateFileSecurity(file);
+}
+
+export function uploadMultipleImages(fieldName: string, maxCount = 6) {
+  const upload = uploader.array(fieldName, maxCount);
+  return (req: Request, res: Response, next: NextFunction): void => {
+    upload(req, res, (err) => {
+      if (err) return handleMulterError(err, next, maxCount);
+      if (!validateFilesList(req.files, fieldName, next)) return;
+      try { checkMultipleFiles(req.files as Express.Multer.File[]); next(); }
+      catch (secErr) { next(secErr); }
     });
   };
 }

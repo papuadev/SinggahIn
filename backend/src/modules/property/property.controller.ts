@@ -1,0 +1,84 @@
+import { Request, Response, NextFunction } from 'express';
+import * as propertyService from './property.service';
+import * as opencageService from '../../shared/services/opencage.service';
+import { sendSuccess } from '../../shared/utils/response.util';
+
+export * from './property-image.controller';
+
+export async function getCategories(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const categories = await propertyService.getPropertyCategories();
+    sendSuccess(res, categories, 'Daftar kategori properti berhasil diambil.');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function create(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const property = await propertyService.createProperty(req.user!.userId, req.body);
+    sendSuccess(res, property, 'Properti berhasil didaftarkan.', 201);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getMyProperties(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await propertyService.getTenantProperties(req.user!.userId, req.query as any);
+    if ('meta' in result && 'data' in result) {
+      sendSuccess(res, result.data, 'Daftar properti tenant berhasil diambil.', 200, result.meta);
+    } else {
+      sendSuccess(res, result, 'Daftar properti tenant berhasil diambil.');
+    }
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getById(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const property = await propertyService.getPropertyById(req.params.id);
+    sendSuccess(res, property, 'Detail properti berhasil diambil.');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const property = await propertyService.updateProperty(req.params.id, req.user!.userId, req.body);
+    sendSuccess(res, property, 'Data properti berhasil diperbarui.');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function remove(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await propertyService.deleteProperty(req.params.id, req.user!.userId);
+    sendSuccess(res, null, 'Properti berhasil dihapus.');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function reverseGeocode(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { latitude, longitude } = req.query as { latitude?: string; longitude?: string };
+    const result = await opencageService.reverseGeocode(Number(latitude), Number(longitude));
+    sendSuccess(res, result, 'Hasil geocoding lokasi berhasil diambil.');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function searchGeocode(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { query, limit } = req.query as { query: string; limit?: string };
+    const results = await opencageService.searchAddress(query, limit ? Number(limit) : 5);
+    sendSuccess(res, results, 'Daftar saran alamat berhasil diambil.');
+  } catch (error) {
+    next(error);
+  }
+}

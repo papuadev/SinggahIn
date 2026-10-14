@@ -5,60 +5,39 @@ import { prisma } from "../../shared/services/prisma.service";
 import { sendVerificationEmail } from "../../shared/services/mail.service";
 import { signToken } from "../../shared/services/token.service";
 import { AppError } from "../../shared/utils/app-error";
-import {
-  RegisterInput,
-  VerifyInput,
-  LoginInput,
-  UserResponseDto,
-} from "./identity.types";
+import { RegisterInput, VerifyInput, LoginInput, UserResponseDto } from "./identity.types";
+import { requestPasswordReset, resetPassword } from "./password-reset.service";
+
+export { requestPasswordReset, resetPassword };
 
 function toUserDto(user: User): UserResponseDto {
   return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    avatarUrl: user.avatarUrl,
-    phoneNumber: user.phoneNumber,
+    id: user.id, email: user.email, name: user.name,
+    role: user.role, avatarUrl: user.avatarUrl, phoneNumber: user.phoneNumber,
   };
 }
 
+async function upsertUnverifiedUser(existingId: string, role: any) {
+  return prisma.user.update({ where: { id: existingId }, data: { role } });
+}
+
 async function findOrCreateUser(input: RegisterInput): Promise<User> {
-  const existing = await prisma.user.findUnique({
-    where: { email: input.email },
-  });
-  if (existing?.isVerified) {
-    throw AppError.conflict("Email sudah terdaftar. Silakan login.");
-  }
-  if (existing) {
-    return prisma.user.update({
-      where: { id: existing.id },
-      data: { role: input.role },
-    });
-  }
-  return prisma.user.create({
-    data: { email: input.email, role: input.role, isVerified: false },
-  });
+  const existing = await prisma.user.findUnique({ where: { email: input.email } });
+  if (existing?.isVerified) throw AppError.conflict("Email sudah terdaftar. Silakan login.");
+  if (existing) return upsertUnverifiedUser(existing.id, input.role);
+  return prisma.user.create({ data: { email: input.email, role: input.role, isVerified: false } });
 }
 
 async function createToken(userId: string, email: string): Promise<string> {
   const token = crypto.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
   await prisma.verificationToken.create({
-    data: {
-      userId,
-      email,
-      token,
-      type: TokenType.ACCOUNT_VERIFICATION,
-      expiresAt,
-    },
+    data: { userId, email, token, type: TokenType.ACCOUNT_VERIFICATION, expiresAt },
   });
   return token;
 }
 
-export async function register(
-  input: RegisterInput,
-): Promise<{ email: string; role: string }> {
+export async function register(input: RegisterInput): Promise<{ email: string; role: string }> {
   const user = await findOrCreateUser(input);
   const token = await createToken(user.id, user.email);
   await sendVerificationEmail(user.email, token);
@@ -70,96 +49,50 @@ async function fetchValidToken(token: string) {
     where: { token, type: TokenType.ACCOUNT_VERIFICATION, isUsed: false },
   });
   if (!record || record.expiresAt < new Date()) {
-    throw AppError.badRequest(
-      "Token verifikasi tidak valid atau telah kedaluwarsa.",
-    );
+    throw AppError.badRequest("Token verifikasi tidak valid atau telah kedaluwarsa.");
   }
   return record;
 }
 
-async function executeVerification(
-  tokenId: string,
-  userId: string,
-  name: string,
-  hash: string,
-): Promise<User> {
+async function executeVerification(tokenId: string, userId: string, name: string, hash: string): Promise<User> {
   return prisma.$transaction(async (tx) => {
-    await tx.verificationToken.update({
-      where: { id: tokenId },
-      data: { isUsed: true },
-    });
-    return tx.user.update({
-      where: { id: userId },
-      data: { name, passwordHash: hash, isVerified: true },
-    });
+    await tx.verificationToken.update({ where: { id: tokenId }, data: { isUsed: true } });
+    return tx.user.update({ where: { id: userId }, data: { name, passwordHash: hash, isVerified: true } });
   });
 }
 
-export async function verifyAccount(
-  input: VerifyInput,
-): Promise<{ user: UserResponseDto; token: string }> {
+export async function verifyAccount(input: VerifyInput): Promise<{ user: UserResponseDto; token: string }> {
   const tokenRecord = await fetchValidToken(input.token);
   const hash = await bcrypt.hash(input.password, 10);
-  const user = await executeVerification(
-    tokenRecord.id,
-    tokenRecord.userId,
-    input.name,
-    hash,
-  );
-  const jwt = signToken({
-    userId: user.id,
-    email: user.email,
-    role: user.role,
-  });
-  return { user: toUserDto(user), token: jwt };
+  const user = await executeVerification(tokenRecord.id, tokenRecord.userId, input.name, hash);
+  const token = signToken({ userId: user.id, email: user.email, role: user.role });
+  return { user: toUserDto(user), token };
 }
 
 function checkUserStatus(user: User | null, role: string): void {
-  if (!user || !user.passwordHash) {
-    throw AppError.unauthorized("Kombinasi email dan password salah.");
-  }
-  if (!user.isVerified) {
-    throw AppError.badRequest(
-      "Akun belum diverifikasi. Silakan periksa email Anda.",
-    );
-  }
+  if (!user || !user.passwordHash) throw AppError.unauthorized("Kombinasi email dan password salah.");
+  if (!user.isVerified) throw AppError.badRequest("Akun belum diverifikasi. Silakan periksa email Anda.");
   if (user.role !== role) {
-    throw AppError.badRequest(
-      `Akun ini terdaftar sebagai ${user.role}. Silakan beralih ke form login ${user.role.toLowerCase()}.`,
-    );
+    throw AppError.badRequest(`Akun ini terdaftar sebagai ${user.role}. Silakan beralih ke form login ${user.role.toLowerCase()}.`);
   }
 }
 
 async function verifyPassword(plain: string, hash: string): Promise<void> {
   const match = await bcrypt.compare(plain, hash);
-  if (!match) {
-    throw AppError.unauthorized("Kombinasi email dan password salah.");
-  }
+  if (!match) throw AppError.unauthorized("Kombinasi email dan password salah.");
 }
 
-export async function login(
-  input: LoginInput,
-): Promise<{ user: UserResponseDto; token: string }> {
-  const user = await prisma.user.findUnique({
-    where: { email: input.email },
-  });
+export async function login(input: LoginInput): Promise<{ user: UserResponseDto; token: string }> {
+  const user = await prisma.user.findUnique({ where: { email: input.email } });
   checkUserStatus(user, input.role);
   const validUser = user as User;
   await verifyPassword(input.password, validUser.passwordHash as string);
-  const jwt = signToken({
-    userId: validUser.id,
-    email: validUser.email,
-    role: validUser.role,
-  });
-  return { user: toUserDto(validUser), token: jwt };
+  const token = signToken({ userId: validUser.id, email: validUser.email, role: validUser.role });
+  return { user: toUserDto(validUser), token };
 }
 
 export async function getProfile(userId: string): Promise<UserResponseDto> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-  });
-  if (!user) {
-    throw AppError.notFound("Pengguna tidak ditemukan.");
-  }
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw AppError.notFound("Pengguna tidak ditemukan.");
   return toUserDto(user);
 }

@@ -4,7 +4,8 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 enum Role {
@@ -23,6 +24,7 @@ enum BookingStatus {
   PROCESSED
   CANCELLED
   COMPLETED
+  REJECTED
 }
 
 enum PaymentMethod {
@@ -58,7 +60,9 @@ model User {
   updatedAt      DateTime            @updatedAt
 
   tokens         VerificationToken[]
+  refreshTokens  RefreshToken[]
   properties     Property[]          @relation("TenantProperties")
+  categories     PropertyCategory[]  @relation("TenantCategories")
   bookings       Booking[]           @relation("UserBookings")
   reviews        Review[]            @relation("UserReviews")
 
@@ -81,16 +85,35 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
 model PropertyCategory {
   id          String     @id @default(cuid())
+  tenantId    String?
   name        String     @unique
   slug        String     @unique
   description String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
+  tenant      User?      @relation("TenantCategories", fields: [tenantId], references: [id], onDelete: SetNull)
   properties  Property[]
 
+  @@index([tenantId])
   @@map("property_categories")
 }
 
@@ -104,6 +127,7 @@ model Property {
   city        String
   latitude    Float
   longitude   Float
+  facilities  String[]         @default([])
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
@@ -122,14 +146,18 @@ model Property {
 model PropertyImage {
   id         String   @id @default(cuid())
   propertyId String
+  roomId     String?
   imageUrl   String
   publicId   String
   isCover    Boolean  @default(false)
+  order      Int      @default(0)
   createdAt  DateTime @default(now())
 
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  room       Room?    @relation(fields: [roomId], references: [id], onDelete: SetNull)
 
   @@index([propertyId])
+  @@index([roomId])
   @@map("property_images")
 }
 
@@ -138,6 +166,8 @@ model Room {
   propertyId       String
   name             String
   basePrice        Int
+  weekendRatePercent Int?               @default(0)
+  holidayRatePercent Int?               @default(0)
   capacity         Int
   totalUnits       Int                  @default(1)
   description      String?              @db.Text
@@ -145,6 +175,7 @@ model Room {
   updatedAt        DateTime             @updatedAt
 
   property         Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  images           PropertyImage[]
   modifiers        RoomPriceModifier[]
   unavailabilities RoomUnavailability[]
   bookings         Booking[]
@@ -197,6 +228,7 @@ model Booking {
   status             BookingStatus @default(WAITING_PAYMENT)
   cancellationReason String?
   refundContact      String?
+  isForceMajeure     Boolean       @default(false)
   expiresAt          DateTime
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
