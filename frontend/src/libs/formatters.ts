@@ -63,3 +63,11 @@ export function parseCurrencyInput(
   const num = parseInt(digits, 10);
   return isNeg ? -num : num;
 }
+
+export function formatPaymentMethodLabel(method?: string | null): string {
+  if (!method) return 'Transfer Manual';
+  if (method === 'PAYMENT_GATEWAY') return 'Payment Gateway';
+  if (method === 'MANUAL_TRANSFER') return 'Transfer Manual';
+  return method.replace(/_/g, ' ');
+}
+
