@@ -36,10 +36,21 @@ export interface UserSalesBreakdown {
   earliestTransactionDate?: string;
 }
 
+export interface MonthRevenueDto {
+  month: string;
+  amount: number;
+  isCurrent: boolean;
+}
+
 export interface SalesReportResponseDto {
   totalRevenue: number;
   totalBookings: number;
   breakdown: (PropertySalesBreakdown | TransactionSalesBreakdown | UserSalesBreakdown)[];
+  previousRevenue?: number;
+  previousBookings?: number;
+  revenueDiffText?: string;
+  bookingsDiffText?: string;
+  monthlyRevenue?: MonthRevenueDto[];
 }
 
 export interface SalesReportParams {

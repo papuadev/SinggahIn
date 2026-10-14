@@ -34,17 +34,18 @@ function WelcomeTitle({ name }: { name?: string | null }) {
   );
 }
 
-function MonthYearFilter({
-  month,
-  year,
-  onMonthChange,
-  onYearChange,
-}: {
+interface MonthFilterProps {
   month: number;
   year: number;
   onMonthChange?: (m: number) => void;
   onYearChange?: (y: number) => void;
-}) {
+}
+
+interface HeaderTopRowProps extends MonthFilterProps {
+  name?: string | null;
+}
+
+function MonthYearFilter({ month, year, onMonthChange, onYearChange }: MonthFilterProps) {
   return (
     <div className="flex items-center gap-2.5">
       <Select size="md" wrapperClassName="w-40 sm:w-44" value={month} onChange={(e) => onMonthChange?.(Number(e.target.value))} aria-label="Pilih Bulan">
@@ -57,19 +58,7 @@ function MonthYearFilter({
   );
 }
 
-function HeaderTopRow({
-  name,
-  month,
-  year,
-  onMonthChange,
-  onYearChange,
-}: {
-  name?: string | null;
-  month: number;
-  year: number;
-  onMonthChange?: (m: number) => void;
-  onYearChange?: (y: number) => void;
-}) {
+function HeaderTopRow({ name, month, year, onMonthChange, onYearChange }: HeaderTopRowProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
       <div>
@@ -98,22 +87,12 @@ function SectionAction() {
   );
 }
 
-export function DashboardGreetingHeader({
-  month = new Date().getMonth() + 1,
-  year = new Date().getFullYear(),
-  onMonthChange,
-  onYearChange,
-}: DashboardGreetingHeaderProps = {}): React.JSX.Element {
+export function DashboardGreetingHeader(p: DashboardGreetingHeaderProps = {}): React.JSX.Element {
+  const { month = new Date().getMonth() + 1, year = new Date().getFullYear(), onMonthChange, onYearChange } = p;
   const { user } = useAuthStore();
   return (
     <div>
-      <HeaderTopRow
-        name={user?.name}
-        month={month}
-        year={year}
-        onMonthChange={onMonthChange}
-        onYearChange={onYearChange}
-      />
+      <HeaderTopRow name={user?.name} month={month} year={year} onMonthChange={onMonthChange} onYearChange={onYearChange} />
       <SectionAction />
     </div>
   );

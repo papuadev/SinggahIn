@@ -5,8 +5,6 @@ import { useTenantProperties } from '../../../modules/property/hooks/useProperti
 import { useTenantOrders } from '../../../modules/booking/hooks/useTenantOrders';
 import { bookingApi } from '../../../modules/booking/services/booking.api';
 import { MonthBarData } from './DashboardRevenueBarChart';
-import { TransactionSalesBreakdown } from '../../../modules/report/report.types';
-import { formatDateID } from '../../../libs/formatters';
 
 function usePendingConfirmationCount() {
   return useQuery({
@@ -19,44 +17,8 @@ function usePendingConfirmationCount() {
   });
 }
 
-function buildActualMonthlyData(txs: TransactionSalesBreakdown[], month: number, year: number): MonthBarData[] {
-  const result: MonthBarData[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(year, month - 1 - i, 1);
-    const label = formatDateID(d, 'LLL');
-    const matched = txs.filter((t) => {
-      const dt = new Date(t.createdAt);
-      return dt.getFullYear() === d.getFullYear() && dt.getMonth() === d.getMonth();
-    });
-    const amount = matched.reduce((sum, t) => sum + (t.totalPrice || 0), 0);
-    result.push({ month: label, amount, isCurrent: i === 0 });
-  }
-  return result;
-}
-
-function calcDiffText(curr: number, prev: number): string {
-  if (prev === 0) {
-    return curr > 0 ? '+100% dari bulan lalu' : '0% dari bulan lalu';
-  }
-  const diff = Math.round(((curr - prev) / prev) * 100);
-  return `${diff >= 0 ? '+' : ''}${diff}% dari bulan lalu`;
-}
-
-function filterMonthTransactions(txs: TransactionSalesBreakdown[], month: number, year: number) {
-  const prevDate = new Date(year, month - 2, 1);
-  const curr = txs.filter((t) => {
-    const d = new Date(t.createdAt);
-    return d.getFullYear() === year && d.getMonth() === month - 1;
-  });
-  const prev = txs.filter((t) => {
-    const d = new Date(t.createdAt);
-    return d.getFullYear() === prevDate.getFullYear() && d.getMonth() === prevDate.getMonth();
-  });
-  return { curr, prev };
-}
-
 function useDashboardRawQueries(month: number, year: number) {
-  const sales = useSalesReport({ allData: true, groupBy: 'TRANSACTION' });
+  const sales = useSalesReport({ month, year, groupBy: 'TRANSACTION' });
   const occupancy = useOccupancyReport({ month, year });
   const props = useTenantProperties();
   const orders = useTenantOrders(5);
@@ -78,18 +40,6 @@ function computeRatingStats(properties: any[]) {
   return { averageRating: 0, totalReviews: 0 };
 }
 
-function calcMonthMetrics(txs: TransactionSalesBreakdown[], month: number, year: number) {
-  const { curr, prev } = filterMonthTransactions(txs, month, year);
-  const currentMonthRevenue = curr.reduce((sum, t) => sum + (t.totalPrice || 0), 0);
-  const prevRev = prev.reduce((sum, t) => sum + (t.totalPrice || 0), 0);
-  return {
-    currentMonthRevenue,
-    revenueDiffText: calcDiffText(currentMonthRevenue, prevRev),
-    currentMonthBookings: curr.length,
-    bookingsDiffText: calcDiffText(curr.length, prev.length),
-  };
-}
-
 function computeOccupancyMetrics(occ?: any) {
   if (!occ?.matrix) return { occupancyRate: 0, totalDays: 30, bookedUnits: 0, totalCapacity: 0 };
   const days = occ.totalDays || 30;
@@ -103,14 +53,27 @@ function computeOccupancyMetrics(occ?: any) {
   return { occupancyRate: occ.occupancyRate ?? 0, totalDays: days, bookedUnits, totalCapacity };
 }
 
+function resolveMonthlyData(salesMonthly?: MonthBarData[], month = 10, year = 2026): MonthBarData[] {
+  if (salesMonthly && salesMonthly.length > 0) return salesMonthly;
+  const names = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  return Array.from({ length: 6 }, (_, idx) => {
+    const i = 5 - idx;
+    const d = new Date(year, month - 1 - i, 1);
+    return { month: names[d.getMonth()], amount: 0, isCurrent: i === 0 };
+  });
+}
+
 function extractDashboardData(q: ReturnType<typeof useDashboardRawQueries>, month: number, year: number) {
   const properties = q.props.data || [];
-  const txs = (q.sales.data?.breakdown || []) as TransactionSalesBreakdown[];
+  const sData = q.sales.data;
   return {
     properties,
-    ...calcMonthMetrics(txs, month, year),
+    currentMonthRevenue: sData?.totalRevenue ?? 0,
+    currentMonthBookings: sData?.totalBookings ?? 0,
+    revenueDiffText: sData?.revenueDiffText ?? '0% dari bulan lalu',
+    bookingsDiffText: sData?.bookingsDiffText ?? '0% dari bulan lalu',
+    monthlyData: resolveMonthlyData(sData?.monthlyRevenue as MonthBarData[], month, year),
     ...computeRatingStats(properties),
-    monthlyData: buildActualMonthlyData(txs, month, year),
   };
 }
 

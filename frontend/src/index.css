@@ -17,8 +17,8 @@
 
 .rdp {
   --rdp-cell-size: 36px;
-  --rdp-accent-color: #2563eb;
-  --rdp-background-color: #eff6ff;
+  --rdp-accent-color: #0284c7;
+  --rdp-background-color: #f0f9ff;
   margin: 0;
 }
 .rdp-full-width,
@@ -30,19 +30,42 @@
 .rdp-full-width .rdp-table {
   width: 100% !important;
   max-width: none !important;
+  border-collapse: collapse !important;
 }
 .rdp-full-width .rdp-cell {
   width: auto !important;
   height: auto !important;
+  padding: 0 !important;
 }
 .rdp-day_selected,
 .rdp-day_selected:hover {
-  background-color: #2563eb !important;
+  background-color: #0284c7 !important;
   color: #ffffff !important;
 }
 .rdp-day_range_middle {
-  background-color: #eff6ff !important;
-  color: #1d4ed8 !important;
+  background-color: #f0f9ff !important;
+  color: #0369a1 !important;
+  border-radius: 0 !important;
+  border-color: transparent !important;
+}
+.rdp-day_range_middle:hover {
+  background-color: #e0f2fe !important;
+  color: #0369a1 !important;
+}
+.rdp-day_range_start {
+  border-top-left-radius: 0.75rem !important;
+  border-bottom-left-radius: 0.75rem !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+.rdp-day_range_end {
+  border-top-right-radius: 0.75rem !important;
+  border-bottom-right-radius: 0.75rem !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+.rdp-day_range_start.rdp-day_range_end {
+  border-radius: 0.75rem !important;
 }
 
 @keyframes fadeIn {

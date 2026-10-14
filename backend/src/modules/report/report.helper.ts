@@ -113,3 +113,38 @@ export function calculateOccupancyRate(matrix: RoomOccupancyDto[], totalDays: nu
   if (totalSlots === 0) return 0;
   return Number(((totalBookedSlots / totalSlots) * 100).toFixed(1));
 }
+
+export function calcDiffText(curr: number, prev: number): string {
+  if (prev === 0) return curr > 0 ? '+100% dari bulan lalu' : '0% dari bulan lalu';
+  const diff = Math.round(((curr - prev) / prev) * 100);
+  return `${diff >= 0 ? '+' : ''}${diff}% dari bulan lalu`;
+}
+
+export function buildSixMonthWindows(year: number, month: number) {
+  const months: { label: string; year: number; month: number; start: Date; end: Date; isCurrent: boolean; amount: number; bookings: number }[] = [];
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(year, month - 1 - i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const mm = String(m).padStart(2, '0');
+    const lastDay = new Date(y, m, 0).getDate();
+    const start = new Date(`${y}-${mm}-01T00:00:00+07:00`);
+    const end = new Date(`${y}-${mm}-${String(lastDay).padStart(2, '0')}T23:59:59.999+07:00`);
+    months.push({ label: monthNames[m - 1], year: y, month: m, start, end, isCurrent: i === 0, amount: 0, bookings: 0 });
+  }
+  return months;
+}
+
+export function aggregateMonthlyWindows(bookings: any[], windows: ReturnType<typeof buildSixMonthWindows>) {
+  for (const b of (bookings || [])) {
+    for (const w of windows) {
+      if (b.createdAt >= w.start && b.createdAt <= w.end) {
+        w.amount += b.totalPrice;
+        w.bookings += 1;
+        break;
+      }
+    }
+  }
+  return windows;
+}

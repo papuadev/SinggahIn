@@ -42,16 +42,11 @@ function DashboardMiddleSection({ d }: { d: ReturnType<typeof useTenantDashboard
 function DashboardSummarySection({ d }: { d: ReturnType<typeof useTenantDashboardData> }) {
   return (
     <DashboardPropertySummaryGrid
-      currentMonthRevenue={d.currentMonthRevenue}
-      revenueDiffText={d.revenueDiffText}
-      currentMonthBookings={d.currentMonthBookings}
-      bookingsDiffText={d.bookingsDiffText}
-      occupancyRate={d.occupancyRate}
-      totalDays={d.totalDays}
-      bookedUnits={d.bookedUnits}
-      totalCapacity={d.totalCapacity}
-      averageRating={d.averageRating}
-      totalReviews={d.totalReviews}
+      currentMonthRevenue={d.currentMonthRevenue} revenueDiffText={d.revenueDiffText}
+      currentMonthBookings={d.currentMonthBookings} bookingsDiffText={d.bookingsDiffText}
+      occupancyRate={d.occupancyRate} totalDays={d.totalDays}
+      bookedUnits={d.bookedUnits} totalCapacity={d.totalCapacity}
+      averageRating={d.averageRating} totalReviews={d.totalReviews}
     />
   );
 }
@@ -77,19 +72,11 @@ function useDashboardFilter() {
 export function TenantDashboardPage(): React.JSX.Element {
   const { month, year, setMonth, setYear } = useDashboardFilter();
   const data = useTenantDashboardData(month, year);
-
-  if (data.isLoading) {
-    return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
-  }
+  if (data.isLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
 
   return (
     <div className="max-w-7xl mx-auto py-3">
-      <DashboardGreetingHeader
-        month={month}
-        year={year}
-        onMonthChange={setMonth}
-        onYearChange={setYear}
-      />
+      <DashboardGreetingHeader month={month} year={year} onMonthChange={setMonth} onYearChange={setYear} />
       {!data.hasProperties ? <EmptyDashboard /> : <DashboardMainLayout d={data} />}
     </div>
   );
