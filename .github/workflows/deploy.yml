@@ -124,9 +124,20 @@ jobs:
             # Ensure PostgreSQL container is running
             docker compose -f docker-compose.prod.yml up -d postgres
 
+            # Wait until PostgreSQL is fully accepting connections
+            echo "Waiting for PostgreSQL to become ready..."
+            for i in {1..30}; do
+              if docker compose -f docker-compose.prod.yml exec -T postgres pg_isready -U postgres -h 127.0.0.1; then
+                echo "PostgreSQL is ready!"
+                break
+              fi
+              echo "PostgreSQL is starting up, waiting 2s..."
+              sleep 2
+            done
+
             # Auto-create database in PostgreSQL if it does not exist yet
-            docker compose -f docker-compose.prod.yml exec -T postgres psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$TARGET_DB'" | grep -q 1 || \
-            docker compose -f docker-compose.prod.yml exec -T postgres psql -U postgres -c "CREATE DATABASE $TARGET_DB;"
+            docker compose -f docker-compose.prod.yml exec -T postgres psql -U postgres -h 127.0.0.1 -tc "SELECT 1 FROM pg_database WHERE datname = '$TARGET_DB'" | grep -q 1 || \
+            docker compose -f docker-compose.prod.yml exec -T postgres psql -U postgres -h 127.0.0.1 -c "CREATE DATABASE $TARGET_DB;"
 
             # Pull updated images for target environment
             docker compose -f docker-compose.prod.yml pull $TARGET_BACKEND $TARGET_FRONTEND
