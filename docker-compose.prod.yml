@@ -3,6 +3,7 @@ services:
     image: postgres:16-alpine
     container_name: singgahin-postgres
     restart: unless-stopped
+    mem_limit: 200m
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -13,22 +14,23 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-singgahin_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - singgahin-network
 
-  backend:
-    container_name: singgahin-backend
-    image: ghcr.io/papuadev/singgahin-backend:latest
+  backend-prod:
+    container_name: singgahin-backend-prod
+    image: ghcr.io/${REGISTRY_OWNER:-papuadev}/singgahin-backend:latest
     restart: unless-stopped
+    mem_limit: 220m
     environment:
       NODE_ENV: production
       PORT: 5000
-      CLIENT_URL: ${CLIENT_URL:-http://localhost}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-singgahin_db}?schema=public
+      CLIENT_URL: ${PROD_CLIENT_URL:-https://singgahin.biz.id}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_PROD_DB:-singgahin_db}?schema=public
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
@@ -49,10 +51,49 @@ services:
     networks:
       - singgahin-network
 
-  frontend:
-    container_name: singgahin-frontend
-    image: ghcr.io/papuadev/singgahin-frontend:latest
+  frontend-prod:
+    container_name: singgahin-frontend-prod
+    image: ghcr.io/${REGISTRY_OWNER:-papuadev}/singgahin-frontend:latest
     restart: unless-stopped
+    mem_limit: 50m
+    networks:
+      - singgahin-network
+
+  backend-stage:
+    container_name: singgahin-backend-stage
+    image: ghcr.io/${REGISTRY_OWNER:-papuadev}/singgahin-backend:stage
+    restart: unless-stopped
+    mem_limit: 220m
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      CLIENT_URL: ${STAGE_CLIENT_URL:-https://stage.singgahin.biz.id}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_STAGE_DB:-singgahin_stage}?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      OPENCAGE_API_KEY: ${OPENCAGE_API_KEY}
+      MIDTRANS_SERVER_KEY: ${MIDTRANS_SERVER_KEY}
+      MIDTRANS_CLIENT_KEY: ${MIDTRANS_CLIENT_KEY}
+      MIDTRANS_IS_PRODUCTION: ${MIDTRANS_IS_PRODUCTION:-false}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - singgahin-network
+
+  frontend-stage:
+    container_name: singgahin-frontend-stage
+    image: ghcr.io/${REGISTRY_OWNER:-papuadev}/singgahin-frontend:stage
+    restart: unless-stopped
+    mem_limit: 50m
     networks:
       - singgahin-network
 
@@ -60,6 +101,7 @@ services:
     image: nginx:alpine
     container_name: singgahin-nginx-proxy
     restart: unless-stopped
+    mem_limit: 60m
     ports:
       - "80:80"
       - "443:443"
@@ -69,8 +111,10 @@ services:
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
     depends_on:
-      - frontend
-      - backend
+      - frontend-prod
+      - backend-prod
+      - frontend-stage
+      - backend-stage
     networks:
       - singgahin-network
 
