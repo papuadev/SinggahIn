@@ -95,11 +95,32 @@ async function uploadBatch(urls, prefix) {
     }
     return results;
 }
-async function ensureSeedImages() {
+function getPresetSeedImages(count, prefix) {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME || 'jtxmsxhl';
+    return Array.from({ length: count }, (_, idx) => {
+        const padIndex = String(idx + 1).padStart(2, '0');
+        const publicId = `singgahin/seed/${prefix}_${padIndex}`;
+        return {
+            publicId,
+            secureUrl: `https://res.cloudinary.com/${cloudName}/image/upload/singgahin/seed/${prefix}_${padIndex}.webp`
+        };
+    });
+}
+async function uploadFreshImages() {
     initCloudinary();
-    console.log('Syncing seed images to Cloudinary account...');
+    console.log('Syncing seed images to Cloudinary account (forced)...');
     const properties = await uploadBatch(PROPERTY_URLS, 'prop');
     const rooms = await uploadBatch(ROOM_URLS, 'room');
     console.log(`Cloudinary sync complete: ${properties.length} properties, ${rooms.length} rooms.`);
+    return { properties, rooms };
+}
+async function ensureSeedImages() {
+    if (process.env.FORCE_CLOUDINARY_SEED_UPLOAD === 'true') {
+        return uploadFreshImages();
+    }
+    console.log('Using pre-existing Cloudinary seed images...');
+    const properties = getPresetSeedImages(PROPERTY_URLS.length, 'prop');
+    const rooms = getPresetSeedImages(ROOM_URLS.length, 'room');
+    console.log(`Loaded ${properties.length} property images and ${rooms.length} room images.`);
     return { properties, rooms };
 }
