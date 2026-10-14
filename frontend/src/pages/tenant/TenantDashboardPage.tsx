@@ -42,14 +42,11 @@ function DashboardMiddleSection({ d }: { d: ReturnType<typeof useTenantDashboard
 function DashboardSummarySection({ d }: { d: ReturnType<typeof useTenantDashboardData> }) {
   return (
     <DashboardPropertySummaryGrid
-      currentMonthRevenue={d.currentMonthRevenue}
-      revenueDiffText={d.revenueDiffText}
-      currentMonthBookings={d.currentMonthBookings}
-      bookingsDiffText={d.bookingsDiffText}
-      occupancyRate={d.occupancyRate}
-      totalDays={d.totalDays}
-      averageRating={d.averageRating}
-      totalReviews={d.totalReviews}
+      currentMonthRevenue={d.currentMonthRevenue} revenueDiffText={d.revenueDiffText}
+      currentMonthBookings={d.currentMonthBookings} bookingsDiffText={d.bookingsDiffText}
+      occupancyRate={d.occupancyRate} totalDays={d.totalDays}
+      bookedUnits={d.bookedUnits} totalCapacity={d.totalCapacity}
+      averageRating={d.averageRating} totalReviews={d.totalReviews}
     />
   );
 }
@@ -65,16 +62,21 @@ function DashboardMainLayout({ d }: { d: ReturnType<typeof useTenantDashboardDat
   );
 }
 
-export function TenantDashboardPage(): React.JSX.Element {
-  const data = useTenantDashboardData();
+function useDashboardFilter() {
+  const now = new Date();
+  const [month, setMonth] = React.useState(now.getMonth() + 1);
+  const [year, setYear] = React.useState(now.getFullYear());
+  return { month, year, setMonth, setYear };
+}
 
-  if (data.isLoading) {
-    return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
-  }
+export function TenantDashboardPage(): React.JSX.Element {
+  const { month, year, setMonth, setYear } = useDashboardFilter();
+  const data = useTenantDashboardData(month, year);
+  if (data.isLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
 
   return (
     <div className="max-w-7xl mx-auto py-3">
-      <DashboardGreetingHeader />
+      <DashboardGreetingHeader month={month} year={year} onMonthChange={setMonth} onYearChange={setYear} />
       {!data.hasProperties ? <EmptyDashboard /> : <DashboardMainLayout d={data} />}
     </div>
   );

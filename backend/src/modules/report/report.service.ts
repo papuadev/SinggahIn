@@ -11,12 +11,17 @@ import {
   buildDaysArray,
   resolveDayOccupancy,
   calculateOccupancyRate,
+  buildSixMonthWindows,
+  aggregateMonthlyWindows,
+  calcDiffText,
 } from './report.helper';
 
 function resolveMonthFilter(year?: number, month?: number) {
   if (!year || !month) return {};
-  const s = new Date(Date.UTC(year, month - 1, 1));
-  const e = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+  const mm = String(month).padStart(2, '0');
+  const lastDay = new Date(year, month, 0).getDate();
+  const s = new Date(`${year}-${mm}-01T00:00:00+07:00`);
+  const e = new Date(`${year}-${mm}-${String(lastDay).padStart(2, '0')}T23:59:59.999+07:00`);
   return { createdAt: { gte: s, lte: e } };
 }
 
@@ -24,8 +29,8 @@ function resolveDateFilter(q: SalesReportQueryInput) {
   if (q.allData) return {};
   if (q.startDate || q.endDate) {
     const filter: any = {};
-    if (q.startDate) filter.gte = new Date(`${q.startDate}T00:00:00.000Z`);
-    if (q.endDate) filter.lte = new Date(`${q.endDate}T23:59:59.999Z`);
+    if (q.startDate) filter.gte = new Date(`${q.startDate}T00:00:00+07:00`);
+    if (q.endDate) filter.lte = new Date(`${q.endDate}T23:59:59.999+07:00`);
     return Object.keys(filter).length > 0 ? { createdAt: filter } : {};
   }
   return resolveMonthFilter(q.year, q.month);
@@ -62,12 +67,41 @@ async function fetchSalesBookings(propertyIds: string[], query: SalesReportQuery
   });
 }
 
+function fetchSixMonthBookings(propertyIds: string[], start: Date, end: Date) {
+  const status = [BookingStatus.PROCESSED, BookingStatus.COMPLETED];
+  return prisma.booking.findMany({
+    where: { propertyId: { in: propertyIds }, status: { in: status }, createdAt: { gte: start, lte: end } },
+    select: { totalPrice: true, createdAt: true },
+  });
+}
+
+function formatDashboardMetrics(windows: any[]) {
+  const [prev, curr] = [windows[4], windows[5]];
+  return {
+    previousRevenue: prev.amount, previousBookings: prev.bookings,
+    revenueDiffText: calcDiffText(curr.amount, prev.amount),
+    bookingsDiffText: calcDiffText(curr.bookings, prev.bookings),
+    monthlyRevenue: windows.map((w) => ({ month: w.label, amount: w.amount, isCurrent: w.isCurrent })),
+  };
+}
+
+async function computeDashboardMetrics(propertyIds: string[], year: number, month: number) {
+  const windows = buildSixMonthWindows(year, month);
+  const bookings = await fetchSixMonthBookings(propertyIds, windows[0].start, windows[5].end);
+  aggregateMonthlyWindows(bookings || [], windows);
+  return formatDashboardMetrics(windows);
+}
+
 export async function getSalesReport(tenantId: string, query: SalesReportQueryInput): Promise<SalesReportResponseDto> {
   const propertyIds = await getTenantPropertyIds(tenantId, query.propertyId);
   const bookings = await fetchSalesBookings(propertyIds, query);
   const totalRevenue = bookings.reduce((sum, b) => sum + b.totalPrice, 0);
   const breakdown = processSalesBreakdown(bookings, query.groupBy, query.sortBy, query.sortOrder);
-  return { totalRevenue, totalBookings: bookings.length, breakdown };
+  let metrics = {};
+  if (query.month && query.year) {
+    metrics = await computeDashboardMetrics(propertyIds, query.year, query.month);
+  }
+  return { totalRevenue, totalBookings: bookings.length, breakdown, ...metrics };
 }
 
 function buildRoomDays(room: any, days: { date: string; day: number }[], bookings: any[]): DayOccupancyDto[] {

@@ -63,12 +63,28 @@ function buildPastDates(offsetDays: number) {
   return { checkIn, checkOut };
 }
 
+function generateSeedBookingCode(date: Date, idx: number): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  const rand = (Math.random().toString(36).substring(2, 5) + (idx % 10)).toUpperCase();
+  return `SGH-${y}${m}${d}-${rand.padEnd(4, 'X')}`;
+}
+
 function buildBookingPayload(prop: SeedPropertyRef, userId: string, code: string, daysAgo: number) {
   const room = prop.rooms[0];
   const { checkIn, checkOut } = buildPastDates(daysAgo);
   const totalPrice = room.basePrice * 2;
   const payment = {
-    create: { paymentMethod: PaymentMethod.PAYMENT_GATEWAY, amount: totalPrice, status: PaymentStatus.SETTLEMENT, paidAt: checkIn, confirmedAt: checkIn, createdAt: checkIn }
+    create: {
+      paymentMethod: PaymentMethod.PAYMENT_GATEWAY,
+      amount: totalPrice,
+      status: PaymentStatus.SETTLEMENT,
+      paidAt: checkIn,
+      confirmedAt: checkIn,
+      createdAt: checkIn,
+      gatewayOrderId: code,
+    }
   };
   return {
     bookingCode: code, userId, propertyId: prop.id, roomId: room.id,
@@ -102,7 +118,9 @@ export async function seedPropertyReviews(
     if (p.propIndex >= properties.length) continue;
     const prop = properties[p.propIndex];
     const userId = userIds[p.userIndex] || userIds[0];
-    await seedSingleReviewPlan(prisma, p, prop, userId, `BK-RV-${p.propIndex + 1}-${i + 1}`);
+    const { checkIn } = buildPastDates(p.daysAgo);
+    const code = generateSeedBookingCode(checkIn, i + 1);
+    await seedSingleReviewPlan(prisma, p, prop, userId, code);
   }
   console.log(`Reviews seeded: ${REVIEW_PLANS.length} reviews created for 25 properties.`);
 }

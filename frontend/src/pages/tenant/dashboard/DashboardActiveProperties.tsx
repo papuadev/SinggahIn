@@ -71,8 +71,8 @@ function SectionHeader() {
   return (
     <div className="flex items-center justify-between mb-4">
       <div>
-        <h3 className="text-base sm:text-lg font-bold text-gray-800">Properti aktif</h3>
-        <p className="text-xs text-gray-400 mt-0.5">Performa properti terbaikmu</p>
+        <h3 className="text-base sm:text-lg font-bold text-gray-800">Properti Anda</h3>
+        <p className="text-xs text-gray-400 mt-0.5">Lihat dan kelola properti Anda</p>
       </div>
       <Link to="/tenant/properties" className="text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors">
         Kelola

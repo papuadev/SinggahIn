@@ -38,10 +38,21 @@ export interface UserSalesBreakdown {
 
 export type SalesBreakdownItem = PropertySalesBreakdown | TransactionSalesBreakdown | UserSalesBreakdown;
 
+export interface MonthRevenueDto {
+  month: string;
+  amount: number;
+  isCurrent: boolean;
+}
+
 export interface SalesReportResponseDto {
   totalRevenue: number;
   totalBookings: number;
   breakdown: SalesBreakdownItem[];
+  previousRevenue?: number;
+  previousBookings?: number;
+  revenueDiffText?: string;
+  bookingsDiffText?: string;
+  monthlyRevenue?: MonthRevenueDto[];
 }
 
 export type DayOccupancyStatus = 'AVAILABLE' | 'BOOKED' | 'BLOCKED';

@@ -83,10 +83,12 @@ const RDP_CLASSES = {
   head_row: 'flex w-full justify-between pb-2 mb-1 border-b border-gray-100',
   head_cell: 'text-gray-500 font-bold text-xs sm:text-sm flex-1 text-center py-1 sm:py-1.5',
   row: 'flex w-full justify-between mt-1 sm:mt-1.5',
-  cell: 'text-center p-0.5 sm:p-1 relative flex-1 min-h-[48px] sm:min-h-[54px] md:min-h-[58px] !w-auto !h-auto flex items-center justify-center',
-  day: 'h-full w-full min-h-[48px] sm:min-h-[54px] md:min-h-[58px] p-1 sm:p-1.5 font-normal rounded-xl hover:bg-primary-50 transition-all flex items-center justify-center border border-transparent hover:border-primary-200',
-  day_range_middle: '!bg-primary-50 !text-primary-700 !rounded-none !border-transparent',
-  day_selected: '!bg-primary-600 !text-white font-bold !rounded-xl shadow-md shadow-primary-500/25',
+  cell: 'rdp-cell text-center !p-0 relative flex-1 min-h-[48px] sm:min-h-[54px] md:min-h-[58px] !w-auto !h-auto flex items-center justify-center',
+  day: 'h-full w-full min-h-[48px] sm:min-h-[54px] md:min-h-[58px] p-1 sm:p-1.5 font-normal rounded-none hover:bg-primary-50 transition-all flex items-center justify-center border border-transparent hover:border-primary-200',
+  day_range_start: 'rdp-day_range_start',
+  day_range_middle: 'rdp-day_range_middle !bg-primary-50 !text-primary-700 !rounded-none !border-transparent',
+  day_range_end: 'rdp-day_range_end',
+  day_selected: 'rdp-day_selected !bg-primary-600 !text-white font-bold shadow-md shadow-primary-500/25',
   day_disabled: 'opacity-40 cursor-not-allowed hover:bg-transparent hover:border-transparent text-gray-300',
 };
 
@@ -99,10 +101,12 @@ const RDP_SIDEBAR_CLASSES = {
   head_row: 'flex w-full justify-between pb-1 mb-0.5 border-b border-gray-100',
   head_cell: 'text-gray-500 font-bold text-xs flex-1 text-center py-0.5',
   row: 'flex w-full justify-between mt-0.5',
-  cell: 'text-center p-0.5 relative flex-1 min-h-[32px] sm:min-h-[35px] !w-auto !h-auto flex items-center justify-center',
-  day: 'h-full w-full min-h-[32px] sm:min-h-[35px] py-0.5 px-0.5 font-normal rounded-lg hover:bg-primary-50 transition-all flex items-center justify-center border border-transparent hover:border-primary-200',
-  day_range_middle: '!bg-primary-50 !text-primary-700 !rounded-none !border-transparent',
-  day_selected: '!bg-primary-600 !text-white font-bold !rounded-lg shadow-sm shadow-primary-500/25',
+  cell: 'rdp-cell text-center !p-0 relative flex-1 min-h-[34px] sm:min-h-[36px] !w-auto !h-auto flex items-center justify-center',
+  day: 'h-full w-full min-h-[34px] sm:min-h-[36px] py-0.5 px-0.5 font-normal rounded-none hover:bg-primary-50 transition-all flex items-center justify-center border border-transparent hover:border-primary-200',
+  day_range_start: 'rdp-day_range_start',
+  day_range_middle: 'rdp-day_range_middle !bg-primary-50 !text-primary-700 !rounded-none !border-transparent',
+  day_range_end: 'rdp-day_range_end',
+  day_selected: 'rdp-day_selected !bg-primary-600 !text-white font-bold shadow-sm shadow-primary-500/25',
   day_disabled: 'opacity-40 cursor-not-allowed hover:bg-transparent hover:border-transparent text-gray-300',
 };
 
