@@ -60,6 +60,7 @@ model User {
   updatedAt      DateTime            @updatedAt
 
   tokens         VerificationToken[]
+  refreshTokens  RefreshToken[]
   properties     Property[]          @relation("TenantProperties")
   categories     PropertyCategory[]  @relation("TenantCategories")
   bookings       Booking[]           @relation("UserBookings")
@@ -82,6 +83,22 @@ model VerificationToken {
 
   @@index([token, type, isUsed])
   @@map("verification_tokens")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 model PropertyCategory {

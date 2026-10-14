@@ -18,6 +18,12 @@ vi.mock('../shared/services/prisma.service', () => ({
       findFirst: vi.fn(),
       update: vi.fn()
     },
+    refreshToken: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn()
+    },
     $transaction: vi.fn()
   }
 }));
@@ -167,5 +173,18 @@ describe('Identity HTTP Integration Tests', () => {
     const res = await request(app).get('/api/v1/identity/me');
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
+  });
+
+  it('POST /api/v1/identity/refresh should rotate token and return 200', async () => {
+    vi.mocked(prisma.refreshToken.findUnique).mockResolvedValue({
+      id: 'rt-1', userId: 'u1', token: 'valid-rt', isRevoked: false,
+      expiresAt: new Date(Date.now() + 100000),
+      user: { id: 'u1', email: 'u1@test.com', role: Role.USER },
+    } as any);
+    vi.mocked(prisma.refreshToken.updateMany).mockResolvedValue({ count: 1 });
+    vi.mocked(prisma.refreshToken.create).mockResolvedValue({ id: 'rt-2' } as any);
+    const res = await request(app).post('/api/v1/identity/refresh').set('Cookie', ['refreshToken=valid-rt']);
+    expect(res.status).toBe(200);
+    expect(res.body.data.user.email).toBe('u1@test.com');
   });
 });

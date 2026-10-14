@@ -36,6 +36,7 @@ router.post(
 );
 
 router.post('/logout', identityController.logout);
+router.post('/refresh', identityController.refresh);
 
 router.get('/me', authenticate, identityController.getMe);
 

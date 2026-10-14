@@ -1,87 +1,63 @@
 import { Request, Response, NextFunction } from 'express';
 import * as identityService from './identity.service';
 import * as profileService from './profile.service';
+import { createRefreshToken, rotateRefreshToken, revokeRefreshToken } from './refresh-token.service';
+import { setAuthCookies, clearAuthCookies, extractRefreshToken } from './auth-cookie.util';
 import { sendSuccess } from '../../shared/utils/response.util';
 import { AppError } from '../../shared/utils/app-error';
 
-function setAuthCookie(req: Request, res: Response, token: string): void {
-  const isSecure =
-    process.env.COOKIE_SECURE === 'true' ||
-    req.secure ||
-    req.headers['x-forwarded-proto'] === 'https';
-
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: Boolean(isSecure),
-    sameSite: 'lax',
-    maxAge: 24 * 60 * 60 * 1000,
-    path: '/'
-  });
-}
-
-function clearAuthCookie(req: Request, res: Response): void {
-  const isSecure =
-    process.env.COOKIE_SECURE === 'true' ||
-    req.secure ||
-    req.headers['x-forwarded-proto'] === 'https';
-
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: Boolean(isSecure),
-    sameSite: 'lax',
-    path: '/'
-  });
-}
-
-export async function register(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function register(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const data = await identityService.register(req.body);
-    sendSuccess(
-      res,
-      data,
-      'Tautan verifikasi akun telah dikirimkan ke email Anda (berlaku 1 jam).',
-      201
-    );
+    sendSuccess(res, data, 'Tautan verifikasi akun telah dikirimkan ke email Anda (berlaku 1 jam).', 201);
   } catch (error) {
     next(error);
   }
 }
 
-export async function verify(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function verify(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await identityService.verifyAccount(req.body);
-    setAuthCookie(req, res, result.token);
+    const refreshToken = await createRefreshToken(result.user.id);
+    setAuthCookies(req, res, { accessToken: result.token, refreshToken });
     sendSuccess(res, { user: result.user }, 'Akun berhasil diverifikasi.');
   } catch (error) {
     next(error);
   }
 }
 
-export async function login(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await identityService.login(req.body);
-    setAuthCookie(req, res, result.token);
+    const refreshToken = await createRefreshToken(result.user.id);
+    setAuthCookies(req, res, { accessToken: result.token, refreshToken });
     sendSuccess(res, { user: result.user }, 'Login berhasil.');
   } catch (error) {
     next(error);
   }
 }
 
-export function logout(req: Request, res: Response): void {
-  clearAuthCookie(req, res);
-  sendSuccess(res, null, 'Logout berhasil.');
+export async function refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const token = extractRefreshToken(req);
+    if (!token) throw AppError.unauthorized('Sesi login tidak valid atau telah berakhir.');
+    const result = await rotateRefreshToken(token);
+    setAuthCookies(req, res, { accessToken: result.accessToken, refreshToken: result.refreshToken });
+    sendSuccess(res, { user: result.user }, 'Sesi berhasil diperbarui.');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function logout(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const token = extractRefreshToken(req);
+    if (token) await revokeRefreshToken(token);
+    clearAuthCookies(req, res);
+    sendSuccess(res, null, 'Logout berhasil.');
+  } catch (error) {
+    next(error);
+  }
 }
 
 export async function getMe(

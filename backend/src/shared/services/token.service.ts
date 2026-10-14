@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { JwtPayload } from '../types/auth.types';
 import { AppError } from '../utils/app-error';
@@ -5,12 +6,20 @@ import { AppError } from '../utils/app-error';
 const JWT_SECRET =
   process.env.JWT_SECRET ||
   'singgahin-super-secret-jwt-key-change-in-production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
+const JWT_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN || process.env.JWT_EXPIRES_IN || '15m';
 
 export function signToken(payload: JwtPayload): string {
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn']
   });
+}
+
+export function signAccessToken(payload: JwtPayload): string {
+  return signToken(payload);
+}
+
+export function generateRefreshTokenString(): string {
+  return crypto.randomBytes(40).toString('hex');
 }
 
 export function verifyToken(token: string): JwtPayload {
