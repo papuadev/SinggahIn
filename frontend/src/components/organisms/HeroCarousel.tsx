@@ -20,7 +20,7 @@ export const HERO_SLIDES: CarouselSlide[] = [
     subtitle: 'Temukan penginapan terbaik untuk rehat sejenak dari rutinitas dengan harga bersahabat.',
     ctaText: 'Jelajahi Sekarang',
     category: 'hotel',
-    imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=960&q=75',
   },
   {
     id: 'villa-keluarga',
@@ -29,7 +29,7 @@ export const HERO_SLIDES: CarouselSlide[] = [
     subtitle: 'Nikmati momen hangat bersama keluarga di villa privat eksklusif berfasilitas lengkap.',
     ctaText: 'Lihat Villa',
     category: 'villa',
-    imageUrl: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=960&q=75',
   },
   {
     id: 'unik-nusantara',
@@ -38,7 +38,7 @@ export const HERO_SLIDES: CarouselSlide[] = [
     subtitle: 'Dari kabin pegunungan hingga resort tropis, nikmati pengalaman menginap otentik.',
     ctaText: 'Temukan Penginapan',
     category: 'others',
-    imageUrl: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=960&q=75',
   },
 ];
 
@@ -117,12 +117,13 @@ function NavArrows({ onPrev, onNext }: { onPrev: () => void; onNext: () => void 
 function SlideBackgroundImage({ slide, isCurrent, isFirst }: { slide: CarouselSlide; isCurrent: boolean; isFirst: boolean }) {
   const loading = isFirst ? 'eager' : 'lazy';
   const opacity = isCurrent ? 'opacity-100' : 'opacity-0 pointer-events-none';
-  const fetchPriority = isFirst ? 'high' : undefined;
   return (
     <div className={`absolute inset-0 transition-opacity duration-700 ${opacity}`}>
       <img
-        src={slide.imageUrl} alt={slide.title} loading={loading}
-        {...(fetchPriority ? { fetchPriority } : {})}
+        src={slide.imageUrl}
+        alt={slide.title}
+        loading={loading}
+        {...(isFirst ? { fetchpriority: 'high' } : {})}
         className="absolute inset-0 w-full h-full object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-r from-gray-950/80 via-gray-950/50 to-transparent" />

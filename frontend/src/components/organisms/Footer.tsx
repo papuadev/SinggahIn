@@ -36,7 +36,7 @@ function BrandColumn({ onRoute }: { onRoute: () => void }) {
   return (
     <div className="lg:col-span-2 space-y-5">
       <Link to="/" onClick={onRoute} className="inline-flex items-center gap-2.5">
-        <img src="/logo.webp" alt="SinggahIn" className="h-9 w-auto brightness-110" />
+        <img src="/logo.webp" alt="SinggahIn" width={141} height={36} className="h-9 w-auto brightness-110" />
       </Link>
       <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
         Platform reservasi hotel, villa, apartemen, dan penginapan terkurasi di seluruh Indonesia. Hadir dengan kalender tarif transparan tanpa biaya tersembunyi untuk kepastian singgah Anda.
