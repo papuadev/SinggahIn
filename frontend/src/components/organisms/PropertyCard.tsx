@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MapPin, Star, Building } from 'lucide-react';
 import { CatalogPropertyItem } from '../../modules/property/property.types';
 import { formatRupiah } from '../../libs/formatters';
+import { optimizeImageUrl } from '../../libs/image';
 
 export interface PropertyCardProps {
   property: CatalogPropertyItem;
@@ -41,9 +42,10 @@ function CardImageBadge({ categoryName }: { categoryName: string }): React.JSX.E
 
 function CardImageContent({ coverImage, title }: { coverImage: string | null; title: string }): React.JSX.Element {
   if (!coverImage) return <CardImagePlaceholder title={title} />;
+  const src = optimizeImageUrl(coverImage, 480, 360);
   return (
     <img
-      src={coverImage}
+      src={src}
       alt={title}
       loading="lazy"
       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

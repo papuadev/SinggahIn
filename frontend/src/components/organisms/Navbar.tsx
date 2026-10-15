@@ -17,7 +17,7 @@ function GuestButtons(): React.JSX.Element {
 function BrandLogo({ isTenant }: { isTenant: boolean }): React.JSX.Element {
   return (
     <Link to={isTenant ? "/tenant/dashboard" : "/"} className="flex items-center gap-2.5">
-      <img src="/logo.webp" alt="SinggahIn" className="h-8 w-auto object-contain" />
+      <img src="/logo.webp" alt="SinggahIn" width={126} height={32} className="h-8 w-auto object-contain" />
       <span className="text-2xl font-black tracking-tight text-primary-600 sr-only">SinggahIn</span>
       {isTenant && (
         <span className="hidden sm:inline-block px-2 py-0.5 text-xs font-semibold bg-primary-50 text-primary-700 rounded-md border border-primary-100">

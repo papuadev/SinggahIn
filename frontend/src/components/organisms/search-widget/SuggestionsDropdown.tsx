@@ -1,6 +1,7 @@
 import React from 'react';
 import { MapPin, Building, ChevronRight, LucideIcon } from 'lucide-react';
 import { GeocodeSuggestion, CatalogPropertyItem } from '../../../modules/property/property.types';
+import { optimizeImageUrl } from '../../../libs/image';
 
 export function cleanDisplayCity(city?: string, formatted?: string): string {
   const raw = (city || (formatted ? formatted.split(',')[0] : '')).trim();
@@ -24,7 +25,7 @@ function PropertySuggestionItem({ prop, onSelect }: { prop: CatalogPropertyItem;
       <button type="button" onClick={() => onSelect(prop)} className="w-full text-left p-2.5 rounded-xl hover:bg-primary-50/60 text-xs sm:text-sm text-gray-800 flex items-center justify-between gap-3 transition-all duration-150 group cursor-pointer">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {prop.coverImage ? (
-            <img src={prop.coverImage} alt={prop.title} className="w-10 h-10 rounded-xl object-cover shrink-0 border border-gray-100 shadow-2xs" />
+            <img src={optimizeImageUrl(prop.coverImage, 80, 80)} alt={prop.title} className="w-10 h-10 rounded-xl object-cover shrink-0 border border-gray-100 shadow-2xs" />
           ) : (
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100/70 text-primary-600 flex items-center justify-center shrink-0 border border-primary-200/40">
               <Building className="w-4 h-4" />
