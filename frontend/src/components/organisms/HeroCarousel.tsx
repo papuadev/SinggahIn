@@ -20,7 +20,7 @@ export const HERO_SLIDES: CarouselSlide[] = [
     subtitle: 'Temukan penginapan terbaik untuk rehat sejenak dari rutinitas dengan harga bersahabat.',
     ctaText: 'Jelajahi Sekarang',
     category: 'hotel',
-    imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=960&q=75',
+    imageUrl: '/banners/banner-a.webp',
   },
   {
     id: 'villa-keluarga',
@@ -29,7 +29,7 @@ export const HERO_SLIDES: CarouselSlide[] = [
     subtitle: 'Nikmati momen hangat bersama keluarga di villa privat eksklusif berfasilitas lengkap.',
     ctaText: 'Lihat Villa',
     category: 'villa',
-    imageUrl: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=960&q=75',
+    imageUrl: '/banners/banner-b.webp',
   },
   {
     id: 'unik-nusantara',
@@ -38,7 +38,7 @@ export const HERO_SLIDES: CarouselSlide[] = [
     subtitle: 'Dari kabin pegunungan hingga resort tropis, nikmati pengalaman menginap otentik.',
     ctaText: 'Temukan Penginapan',
     category: 'others',
-    imageUrl: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=960&q=75',
+    imageUrl: '/banners/banner-c.webp',
   },
 ];
 
