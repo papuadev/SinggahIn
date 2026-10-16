@@ -79,10 +79,7 @@ function SlideBadge({ tag }: { tag: string }) {
 
 function SlideCtaButton({ text, onClick }: { text: string; onClick: () => void }) {
   return (
-    <button
-      type="button" onClick={onClick}
-      className="px-6 py-3 bg-white text-primary-700 hover:bg-primary-50 active:bg-primary-100 font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5"
-    >
+    <button type="button" onClick={onClick} className="px-6 py-3 bg-white text-primary-700 hover:bg-primary-50 active:bg-primary-100 font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5">
       {text}
     </button>
   );
