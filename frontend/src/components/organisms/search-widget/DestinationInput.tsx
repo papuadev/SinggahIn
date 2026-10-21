@@ -24,22 +24,20 @@ function useDropdownDismiss(ref: React.RefObject<HTMLElement | null>, isOpen: bo
   }, [ref, isOpen, onDismiss]);
 }
 
-async function fetchSuggestions(
-  query: string, setCities: (s: GeocodeSuggestion[]) => void,
-  setProps: (p: CatalogPropertyItem[]) => void, setLoading: (b: boolean) => void
-) {
-  setLoading(true);
+type SuggestionSetters = { setCities: (s: GeocodeSuggestion[]) => void; setProps: (p: CatalogPropertyItem[]) => void; setLoading: (b: boolean) => void };
+
+async function fetchSuggestions(query: string, s: SuggestionSetters) {
+  s.setLoading(true);
   try {
-    const cityP = Promise.resolve().then(() => propertyApi.searchGeocode(query, 5)).catch(() => ({ data: [] }));
-    const propP = Promise.resolve().then(() => propertyApi.getCatalog?.({ name: query, limit: 4 })).catch(() => ({ data: [] }));
-    const [cityRes, propRes] = await Promise.all([cityP, propP]);
-    setCities(Array.isArray(cityRes?.data) ? cityRes.data : []);
-    setProps(Array.isArray(propRes?.data) ? propRes.data : []);
+    const [cityRes, propRes] = await Promise.all([
+      propertyApi.searchGeocode(query, 5).catch(() => ({ data: [] })),
+      Promise.resolve(propertyApi.getCatalog?.({ name: query, limit: 4 })).catch(() => ({ data: [] })),
+    ]);
+    s.setCities(Array.isArray(cityRes?.data) ? cityRes.data : []);
+    s.setProps(Array.isArray(propRes?.data) ? propRes.data : []);
   } catch {
-    setCities([]); setProps([]);
-  } finally {
-    setLoading(false);
-  }
+    s.setCities([]); s.setProps([]);
+  } finally { s.setLoading(false); }
 }
 
 function useDestinationSearch(value: string) {
@@ -51,7 +49,7 @@ function useDestinationSearch(value: string) {
       setCities([]); setProperties([]);
       return;
     }
-    const timer = setTimeout(() => fetchSuggestions(value, setCities, setProperties, setIsLoading), 300);
+    const timer = setTimeout(() => fetchSuggestions(value, { setCities, setProps: setProperties, setLoading: setIsLoading }), 300);
     return () => clearTimeout(timer);
   }, [value]);
   return { cities, properties, isLoading };
@@ -69,11 +67,9 @@ function SearchInputIcon({ isLoading, value, onClear }: { isLoading: boolean; va
   return null;
 }
 
-function SearchInputField({
-  value, onChange, isLoading, onFocus, onKeyDown,
-}: {
-  value: string; onChange: (v: string) => void; isLoading: boolean; onFocus: () => void; onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-}) {
+type SearchInputProps = { value: string; onChange: (v: string) => void; isLoading: boolean; onFocus: () => void; onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void };
+
+function SearchInputField({ value, onChange, isLoading, onFocus, onKeyDown }: SearchInputProps) {
   return (
     <div className="relative">
       <input
@@ -105,17 +101,14 @@ function useDestinationInputState(onChange: (city: string) => void, onSelectProp
 export function DestinationInput(p: DestinationInputProps): React.JSX.Element {
   const { cities, properties, isLoading } = useDestinationSearch(p.value);
   const s = useDestinationInputState(p.onChange, p.onSelectProperty);
-  const onValChange = (v: string) => { p.onChange(v); s.setShowDropdown(true); };
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Escape') s.setShowDropdown(false); };
   return (
     <div ref={s.containerRef} className="relative flex flex-col w-full">
       <span className="h-5 mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-600">
         <MapPin className="w-3.5 h-3.5 text-primary-600" /> Kota atau Destinasi
       </span>
-      <SearchInputField value={p.value} onChange={onValChange} isLoading={isLoading} onFocus={() => s.setShowDropdown(true)} onKeyDown={onKeyDown} />
-      {s.showDropdown && (
-        <SuggestionsDropdown cities={cities} properties={properties} onSelectCity={s.onSelectCity} onSelectProp={s.onSelectProperty} />
-      )}
+      <SearchInputField value={p.value} onChange={(v) => { p.onChange(v); s.setShowDropdown(true); }} isLoading={isLoading} onFocus={() => s.setShowDropdown(true)} onKeyDown={onKeyDown} />
+      {s.showDropdown && <SuggestionsDropdown cities={cities} properties={properties} onSelectCity={s.onSelectCity} onSelectProp={s.onSelectProperty} />}
     </div>
   );
 }

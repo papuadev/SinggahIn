@@ -63,21 +63,19 @@ function checkDoubleExtension(nameWithoutExt: string): string | null {
   return null;
 }
 
+function checkExtensionAndDouble(lowerName: string): string | null {
+  const ext = path.extname(lowerName);
+  const extErr = checkExtension(ext);
+  return extErr || checkDoubleExtension(lowerName.slice(0, -ext.length));
+}
+
 export function validateFilename(filename: string): string | null {
-  if (!filename || filename.trim().length === 0) {
-    return 'Nama file tidak boleh kosong.';
-  }
+  if (!filename || filename.trim().length === 0) return 'Nama file tidak boleh kosong.';
   const xssErr = checkFilenameXss(filename);
   if (xssErr) return xssErr;
   const pathErr = checkPathAndNull(filename);
   if (pathErr) return pathErr;
-
-  const lowerName = filename.toLowerCase();
-  const ext = path.extname(lowerName);
-  const extErr = checkExtension(ext);
-  if (extErr) return extErr;
-
-  return checkDoubleExtension(lowerName.slice(0, -ext.length));
+  return checkExtensionAndDouble(filename.toLowerCase());
 }
 
 function isJpeg(b: Buffer): boolean {

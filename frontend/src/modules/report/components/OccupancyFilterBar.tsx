@@ -56,14 +56,10 @@ export function OccupancyFilterBar(props: OccupancyFilterBarProps): React.JSX.El
   return (
     <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-3">
       <div className="flex items-center gap-2 text-xs font-semibold text-gray-700">
-        <Calendar className="w-4 h-4 text-primary-600" />
-        <span>Periode Kalender Matriks Okupansi</span>
+        <Calendar className="w-4 h-4 text-primary-600" /><span>Periode Kalender Matriks Okupansi</span>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <MonthSelector m={props.month} onM={props.onMonthChange} />
-          <YearSelector y={props.year} onY={props.onYearChange} />
-        </div>
+        <div className="flex items-center gap-2"><MonthSelector m={props.month} onM={props.onMonthChange} /><YearSelector y={props.year} onY={props.onYearChange} /></div>
         <PropertyFilterSelect p={props.propertyId} propsList={props.properties} onP={props.onPropertyChange} />
       </div>
     </div>

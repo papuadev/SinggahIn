@@ -11,25 +11,20 @@ export interface FormFieldProps {
   className?: string;
 }
 
+function FieldHelpText({ error, hint }: { error?: string; hint?: string }) {
+  if (error) return <p className="text-xs text-red-600 font-medium mt-1">{error}</p>;
+  if (hint) return <p className="text-xs text-gray-500 mt-1">{hint}</p>;
+  return null;
+}
+
 export function FormField({
-  label,
-  required,
-  error,
-  hint,
-  htmlFor,
-  children,
-  className = '',
+  label, required, error, hint, htmlFor, children, className = '',
 }: FormFieldProps): React.JSX.Element {
   return (
     <div className={`w-full space-y-1 ${className}`}>
-      {label && (
-        <Label htmlFor={htmlFor} required={required}>
-          {label}
-        </Label>
-      )}
+      {label && <Label htmlFor={htmlFor} required={required}>{label}</Label>}
       {children}
-      {error && <p className="text-xs text-red-600 font-medium mt-1">{error}</p>}
-      {!error && hint && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
+      <FieldHelpText error={error} hint={hint} />
     </div>
   );
 }

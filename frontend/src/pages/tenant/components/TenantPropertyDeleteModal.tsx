@@ -13,19 +13,12 @@ function DeleteFooter({ onClose, onConfirm, isDeleting }: { onClose: () => void;
   );
 }
 
-export function TenantPropertyDeleteModal({
-  target, isDeleting, error, onClose, onConfirm,
-}: {
-  target: Property | null; isDeleting: boolean; error?: string | null; onClose: () => void; onConfirm: () => void;
-}): React.JSX.Element {
+type DeleteModalProps = { target: Property | null; isDeleting: boolean; error?: string | null; onClose: () => void; onConfirm: () => void };
+
+export function TenantPropertyDeleteModal({ target, isDeleting, error, onClose, onConfirm }: DeleteModalProps): React.JSX.Element {
+  const footer = <DeleteFooter onClose={onClose} onConfirm={onConfirm} isDeleting={isDeleting} />;
   return (
-    <Modal
-      isOpen={Boolean(target)}
-      onClose={onClose}
-      title="Hapus Properti"
-      description={`Yakin ingin menghapus properti "${target?.title}"?`}
-      footer={<DeleteFooter onClose={onClose} onConfirm={onConfirm} isDeleting={isDeleting} />}
-    >
+    <Modal isOpen={Boolean(target)} onClose={onClose} title="Hapus Properti" description={`Yakin ingin menghapus properti "${target?.title}"?`} footer={footer}>
       {error && <Alert variant="error" className="mb-3">{error}</Alert>}
       <p className="text-sm text-gray-600">Seluruh data kamar dan konfigurasi tarif properti ini akan terhapus secara permanen.</p>
     </Modal>

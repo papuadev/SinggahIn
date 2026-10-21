@@ -115,15 +115,9 @@ export function SalesBreakdownTable({ groupBy, data, isLoading }: SalesBreakdown
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs">
       <div className="p-4 border-b border-gray-100 flex items-center gap-2">
-        <Receipt className="w-4 h-4 text-primary-600" />
-        <h4 className="text-sm font-bold text-gray-900">Rincian Data ({data.length} baris)</h4>
+        <Receipt className="w-4 h-4 text-primary-600" /><h4 className="text-sm font-bold text-gray-900">Rincian Data ({data.length} baris)</h4>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead><TableHeader groupBy={groupBy} /></thead>
-          <TableBody groupBy={groupBy} data={data} />
-        </table>
-      </div>
+      <div className="overflow-x-auto"><table className="w-full text-sm"><thead><TableHeader groupBy={groupBy} /></thead><TableBody groupBy={groupBy} data={data} /></table></div>
     </div>
   );
 }

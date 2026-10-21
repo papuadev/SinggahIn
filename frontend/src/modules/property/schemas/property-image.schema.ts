@@ -103,33 +103,26 @@ function readFileSampleText(slice: Blob): Promise<string> {
   });
 }
 
+function hasScriptInjection(text: string): boolean {
+  const clean = text.replace(/\0/g, '');
+  return SCRIPT_INJECTION_PATTERNS.some((p) => p.test(clean));
+}
+
 export async function validateImageContentSecurity(file: File): Promise<string | null> {
   const syncErr = validateImageFile(file);
   if (syncErr) return syncErr;
   try {
-    const rawText = await readFileSampleText(file.slice(0, 8192));
-    const text = rawText.replace(/\0/g, '');
-    for (const pattern of SCRIPT_INJECTION_PATTERNS) {
-      if (pattern.test(text)) {
-        return 'File terindikasi membahayakan keamanan (terdeteksi potensi injeksi skrip / XSS).';
-      }
-    }
+    const raw = await readFileSampleText(file.slice(0, 8192));
+    if (hasScriptInjection(raw)) return 'File terindikasi membahayakan keamanan (terdeteksi potensi injeksi skrip / XSS).';
   } catch {
     // Fallback: let backend perform deep binary inspection
   }
   return null;
 }
 
-export function validateImageBatch(
-  files: File[],
-  currentCount: number
-): string | null {
-  if (files.length === 0) {
-    return 'Pilih minimal 1 file gambar.';
-  }
-  if (currentCount + files.length > MAX_PROPERTY_IMAGES) {
-    return `Maksimal total ${MAX_PROPERTY_IMAGES} foto per properti.`;
-  }
+export function validateImageBatch(files: File[], currentCount: number): string | null {
+  if (files.length === 0) return 'Pilih minimal 1 file gambar.';
+  if (currentCount + files.length > MAX_PROPERTY_IMAGES) return `Maksimal total ${MAX_PROPERTY_IMAGES} foto per properti.`;
   for (const file of files) {
     const error = validateImageFile(file);
     if (error) return `${file.name}: ${error}`;

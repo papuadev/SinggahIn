@@ -32,21 +32,9 @@ export function SalesSummaryCards({ totalRevenue, totalBookings }: SalesSummaryC
   const avg = totalBookings > 0 ? Math.round(totalRevenue / totalBookings) : 0;
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <StatCard
-        title="Total Pendapatan" value={formatRupiah(totalRevenue)}
-        subtitle="Dari seluruh transaksi selesai"
-        icon={<TrendingUp className="w-6 h-6 text-emerald-600" />} color="bg-emerald-50"
-      />
-      <StatCard
-        title="Total Transaksi" value={`${totalBookings} Pesanan`}
-        subtitle="Pesanan berhasil & diproses"
-        icon={<ShoppingBag className="w-6 h-6 text-primary-600" />} color="bg-primary-50"
-      />
-      <StatCard
-        title="Rata-rata Transaksi" value={formatRupiah(avg)}
-        subtitle="Nilai per transaksi booking"
-        icon={<CreditCard className="w-6 h-6 text-indigo-600" />} color="bg-indigo-50"
-      />
+      <StatCard title="Total Pendapatan" value={formatRupiah(totalRevenue)} subtitle="Dari seluruh transaksi selesai" icon={<TrendingUp className="w-6 h-6 text-emerald-600" />} color="bg-emerald-50" />
+      <StatCard title="Total Transaksi" value={`${totalBookings} Pesanan`} subtitle="Pesanan berhasil & diproses" icon={<ShoppingBag className="w-6 h-6 text-primary-600" />} color="bg-primary-50" />
+      <StatCard title="Rata-rata Transaksi" value={formatRupiah(avg)} subtitle="Nilai per transaksi booking" icon={<CreditCard className="w-6 h-6 text-indigo-600" />} color="bg-indigo-50" />
     </div>
   );
 }

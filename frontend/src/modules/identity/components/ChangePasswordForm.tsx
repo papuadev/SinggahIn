@@ -37,49 +37,40 @@ function usePasswordRedirect(isSuccess: boolean) {
   }, [isSuccess, logout, navigate]);
 }
 
-export function ChangePasswordForm({ onChangePassword, isLoading = false }: ChangePasswordFormProps): React.JSX.Element {
+function useChangePasswordState(onChangePassword: (data: ChangePasswordFormData) => Promise<void>) {
   const [isSuccess, setIsSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<ChangePasswordFormData>({
-    resolver: zodResolver(changePasswordSchema),
-    defaultValues: { currentPassword: '', newPassword: '', confirmPassword: '' },
-  });
-
+  const form = useForm<ChangePasswordFormData>({ resolver: zodResolver(changePasswordSchema), defaultValues: { currentPassword: '', newPassword: '', confirmPassword: '' } });
   usePasswordRedirect(isSuccess);
-
   const onSubmit = async (data: ChangePasswordFormData) => {
     setServerError(null);
-    try {
-      await onChangePassword(data);
-      setIsSuccess(true);
-      reset();
-    } catch (err: any) {
-      setServerError(err.message || 'Gagal memperbarui kata sandi.');
-    }
+    try { await onChangePassword(data); setIsSuccess(true); form.reset(); }
+    catch (err: any) { setServerError(err.message || 'Gagal memperbarui kata sandi.'); }
   };
+  return { isSuccess, serverError, form, onSubmit };
+}
 
+function PasswordFieldsGroup({ form, isLoading }: { form: any; isLoading: boolean }) {
+  const { register, formState: { errors } } = form;
+  return (
+    <>
+      <PasswordFieldInput id="current-password" label="Kata Sandi Saat Ini" placeholder="Masukkan kata sandi saat ini" error={errors.currentPassword?.message} disabled={isLoading} registration={register('currentPassword')} autoComplete="current-password" />
+      <PasswordFieldInput id="new-password" label="Kata Sandi Baru" placeholder="Minimal 8 karakter" error={errors.newPassword?.message} disabled={isLoading} registration={register('newPassword')} autoComplete="new-password" />
+      <PasswordFieldInput id="confirm-password" label="Konfirmasi Kata Sandi Baru" placeholder="Ulangi kata sandi baru" error={errors.confirmPassword?.message} disabled={isLoading} registration={register('confirmPassword')} autoComplete="new-password" />
+    </>
+  );
+}
+
+export function ChangePasswordForm({ onChangePassword, isLoading = false }: ChangePasswordFormProps): React.JSX.Element {
+  const { isSuccess, serverError, form, onSubmit } = useChangePasswordState(onChangePassword);
   if (isSuccess) return <MinimalistLoadingTransition />;
-
   return (
     <div className="space-y-5">
       <PasswordPolicyNotice />
       {serverError && <Alert variant="error">{serverError}</Alert>}
-      <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <PasswordFieldInput
-          id="current-password" label="Kata Sandi Saat Ini" placeholder="Masukkan kata sandi saat ini"
-          error={errors.currentPassword?.message} disabled={isLoading} registration={register('currentPassword')} autoComplete="current-password"
-        />
-        <PasswordFieldInput
-          id="new-password" label="Kata Sandi Baru" placeholder="Minimal 8 karakter"
-          error={errors.newPassword?.message} disabled={isLoading} registration={register('newPassword')} autoComplete="new-password"
-        />
-        <PasswordFieldInput
-          id="confirm-password" label="Konfirmasi Kata Sandi Baru" placeholder="Ulangi kata sandi baru"
-          error={errors.confirmPassword?.message} disabled={isLoading} registration={register('confirmPassword')} autoComplete="new-password"
-        />
-        <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full mt-2">
-          Perbarui Kata Sandi
-        </Button>
+      <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <PasswordFieldsGroup form={form} isLoading={isLoading} />
+        <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full mt-2">Perbarui Kata Sandi</Button>
       </form>
     </div>
   );

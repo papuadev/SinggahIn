@@ -42,8 +42,7 @@ export function SidebarPriceHeader({ price, roomName, nights = 0 }: PriceHeaderP
       <div>
         <span className="text-xs text-gray-500 font-medium block">{label}</span>
         <div className="text-xl sm:text-2xl font-black text-primary-600">
-          {priceText}
-          {price && <span className="text-xs font-normal text-gray-500 ml-1">/ malam</span>}
+          {priceText}{price && <span className="text-xs font-normal text-gray-500 ml-1">/ malam</span>}
         </div>
       </div>
       <RoomBadge roomName={roomName} />

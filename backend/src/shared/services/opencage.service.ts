@@ -86,6 +86,15 @@ export async function reverseGeocode(
   return parseReverseResult(data?.results?.[0]);
 }
 
+function mapGeocodeSuggestion(item: OpenCageItem): GeocodeSuggestion {
+  return {
+    latitude: item.geometry.lat,
+    longitude: item.geometry.lng,
+    formattedAddress: item.formatted || '',
+    city: extractCity(item.components),
+  };
+}
+
 export async function searchAddress(
   query: string,
   limit = 5
@@ -94,11 +103,5 @@ export async function searchAddress(
   if (!key || !query?.trim()) return [];
   const url = buildGeocodeUrl(query.trim(), key, limit);
   const data = await fetchOpenCage(url);
-  if (!data?.results) return [];
-  return data.results.map((item) => ({
-    latitude: item.geometry.lat,
-    longitude: item.geometry.lng,
-    formattedAddress: item.formatted || '',
-    city: extractCity(item.components),
-  }));
+  return data?.results ? data.results.map(mapGeocodeSuggestion) : [];
 }

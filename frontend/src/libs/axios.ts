@@ -17,7 +17,7 @@ function processQueue(error: any) {
 function shouldSkipRefresh(error: AxiosError, config?: ExtendedConfig): boolean {
   if (error.response?.status !== 401 || !config || config._retry) return true;
   const url = config.url || '';
-  return url.includes('/identity/refresh') || url.includes('/identity/login');
+  return url.includes('/identity/refresh') || url.includes('/identity/login') || url.includes('/identity/me');
 }
 
 function queueFailedRequest(config: ExtendedConfig) {

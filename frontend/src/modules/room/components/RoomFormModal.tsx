@@ -31,27 +31,15 @@ function RoomNameField({ register, errors }: FieldsProps): React.JSX.Element {
   );
 }
 
-function RoomPriceField({
-  control, errors,
-}: {
-  control: Control<RoomFormData>;
-  errors: FieldErrors<RoomFormData>;
-}): React.JSX.Element {
+type PriceFieldProps = { control: Control<RoomFormData>; errors: FieldErrors<RoomFormData> };
+
+function RoomPriceField({ control, errors }: PriceFieldProps): React.JSX.Element {
   return (
     <FormField label="Harga Dasar (Rp)" required error={errors.basePrice?.message}>
       <Controller
-        name="basePrice"
-        control={control}
+        name="basePrice" control={control}
         render={({ field }) => (
-          <CurrencyInput
-            id="room-base-price"
-            aria-label="Harga Dasar"
-            placeholder="Contoh: 350.000"
-            hasError={Boolean(errors.basePrice)}
-            value={field.value}
-            onValueChange={field.onChange}
-            onBlur={field.onBlur}
-          />
+          <CurrencyInput id="room-base-price" aria-label="Harga Dasar" placeholder="Contoh: 350.000" hasError={Boolean(errors.basePrice)} value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} />
         )}
       />
     </FormField>
@@ -116,71 +104,61 @@ function RoomModalFooter({ onClose, isLoading }: { onClose: () => void; isLoadin
   );
 }
 
-function RoomFormBody({ register, control, errors, onSubmit }: {
-  register: UseFormRegister<RoomFormData>;
-  control: Control<RoomFormData>;
-  errors: FieldErrors<RoomFormData>;
-  onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
-}): React.JSX.Element {
+function RoomRateGrid({ register, errors }: FieldsProps) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <RoomWeekendRateField register={register} errors={errors} />
+      <RoomHolidayRateField register={register} errors={errors} />
+    </div>
+  );
+}
+
+function RoomCapacityGrid({ register, errors }: FieldsProps) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <RoomCapacityField register={register} errors={errors} />
+      <RoomUnitsField register={register} errors={errors} />
+    </div>
+  );
+}
+
+type FormBodyProps = { register: UseFormRegister<RoomFormData>; control: Control<RoomFormData>; errors: FieldErrors<RoomFormData>; onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void> };
+
+function RoomFormBody({ register, control, errors, onSubmit }: FormBodyProps): React.JSX.Element {
   return (
     <form id="room-form" onSubmit={onSubmit} className="space-y-4">
       <RoomNameField register={register} errors={errors} />
       <RoomPriceField control={control} errors={errors} />
-      <div className="grid grid-cols-2 gap-3">
-        <RoomWeekendRateField register={register} errors={errors} />
-        <RoomHolidayRateField register={register} errors={errors} />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <RoomCapacityField register={register} errors={errors} />
-        <RoomUnitsField register={register} errors={errors} />
-      </div>
+      <RoomRateGrid register={register} errors={errors} />
+      <RoomCapacityGrid register={register} errors={errors} />
       <RoomDescriptionField register={register} errors={errors} />
     </form>
   );
 }
 
-function useRoomFormReset(
-  isOpen: boolean,
-  initialData: Partial<RoomFormData> | Partial<Room> | null | undefined,
-  reset: (v: RoomFormData) => void
-) {
+const getResetValues = (init?: Partial<RoomFormData> | Partial<Room> | null): RoomFormData => ({
+  name: init?.name ?? '', basePrice: init?.basePrice ?? 100000,
+  weekendRatePercent: init?.weekendRatePercent ?? 0, holidayRatePercent: init?.holidayRatePercent ?? 0,
+  capacity: init?.capacity ?? 2, totalUnits: init?.totalUnits ?? 1, description: init?.description ?? '',
+});
+
+function useRoomFormReset(isOpen: boolean, init: Partial<RoomFormData> | Partial<Room> | null | undefined, reset: (v: RoomFormData) => void) {
   useEffect(() => {
-    if (isOpen) {
-      reset({
-        name: initialData?.name ?? '',
-        basePrice: initialData?.basePrice ?? 100000,
-        weekendRatePercent: initialData?.weekendRatePercent ?? 0,
-        holidayRatePercent: initialData?.holidayRatePercent ?? 0,
-        capacity: initialData?.capacity ?? 2,
-        totalUnits: initialData?.totalUnits ?? 1,
-        description: initialData?.description ?? '',
-      });
-    }
-  }, [isOpen, initialData, reset]);
+    if (isOpen) reset(getResetValues(init));
+  }, [isOpen, init, reset]);
 }
 
-export function RoomFormModal({
-  isOpen,
-  onClose,
-  onSubmit,
-  initialData,
-  isLoading = false,
-  title = 'Tambah Tipe Kamar',
-}: RoomFormModalProps): React.JSX.Element {
+const DEFAULT_ROOM_VALUES: RoomFormData = { name: '', basePrice: 100000, weekendRatePercent: 0, holidayRatePercent: 0, capacity: 2, totalUnits: 1, description: '' };
+
+export function RoomFormModal({ isOpen, onClose, onSubmit, initialData, isLoading = false, title = 'Tambah Tipe Kamar' }: RoomFormModalProps): React.JSX.Element {
   const { register, control, handleSubmit, reset, formState: { errors } } = useForm<RoomFormData>({
     resolver: zodResolver(roomFormSchema) as any,
-    defaultValues: { name: '', basePrice: 100000, weekendRatePercent: 0, holidayRatePercent: 0, capacity: 2, totalUnits: 1, description: '' },
+    defaultValues: DEFAULT_ROOM_VALUES,
   });
   useRoomFormReset(isOpen, initialData, reset);
-
+  const footer = <RoomModalFooter onClose={onClose} isLoading={isLoading} />;
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={title}
-      description="Lengkapi detail tipe kamar, harga dasar per malam, dan unit yang tersedia."
-      footer={<RoomModalFooter onClose={onClose} isLoading={isLoading} />}
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title={title} description="Lengkapi detail tipe kamar, harga dasar per malam, dan unit yang tersedia." footer={footer}>
       <RoomFormBody register={register} control={control} errors={errors} onSubmit={handleSubmit(onSubmit)} />
     </Modal>
   );

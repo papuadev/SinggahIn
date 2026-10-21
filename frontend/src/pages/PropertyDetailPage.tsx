@@ -48,11 +48,9 @@ function PropertyDetailSEO({ property: p, lowestPrice }: { property: NonNullable
   });
   return (
     <SEOHead
-      title={`${p.title} - Sewa Penginapan Murah di ${p.city}`}
-      description={p.description.slice(0, 160)}
-      canonicalUrl={`https://singgahin.biz.id/properties/${p.id}`}
-      ogImage={p.coverImage || p.images?.[0]?.imageUrl} ogType="hotel"
-      ogPriceAmount={lowestPrice} jsonLd={jsonLd}
+      title={`${p.title} - Sewa Penginapan Murah di ${p.city}`} description={p.description.slice(0, 160)}
+      canonicalUrl={`https://singgahin.biz.id/properties/${p.id}`} ogImage={p.coverImage || p.images?.[0]?.imageUrl}
+      ogType="hotel" ogPriceAmount={lowestPrice} jsonLd={jsonLd}
     />
   );
 }

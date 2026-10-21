@@ -21,23 +21,13 @@ interface CalendarHeaderProps {
 }
 
 function MonthNavButtons({ onPrev, onNext, canPrev }: { onPrev: () => void; onNext: () => void; canPrev: boolean }) {
+  const btnCls = "p-1 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95";
   return (
     <div className="flex items-center gap-1">
-      <button
-        type="button"
-        onClick={onPrev}
-        disabled={!canPrev}
-        aria-label="Bulan Sebelumnya"
-        className="p-1 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
-      >
+      <button type="button" onClick={onPrev} disabled={!canPrev} aria-label="Bulan Sebelumnya" className={btnCls}>
         <ChevronLeft className="w-3.5 h-3.5" />
       </button>
-      <button
-        type="button"
-        onClick={onNext}
-        aria-label="Bulan Berikutnya"
-        className="p-1 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 transition-all active:scale-95"
-      >
+      <button type="button" onClick={onNext} aria-label="Bulan Berikutnya" className={btnCls}>
         <ChevronRight className="w-3.5 h-3.5" />
       </button>
     </div>
@@ -49,41 +39,19 @@ function RoomSelector({ rooms, selectedId, onChange }: { rooms: RoomOption[]; se
   return (
     <div className="flex items-center gap-1.5">
       <BedDouble className="w-3.5 h-3.5 text-primary-600 shrink-0" />
-      <Select
-        size="sm"
-        value={selectedId || rooms[0]?.id}
-        onChange={(e) => onChange?.(e.target.value)}
-        aria-label="Pilih Tipe Kamar untuk Kalender"
-        wrapperClassName="w-auto"
-        className="font-semibold text-gray-800 bg-gray-50 border-gray-200"
-      >
-        {rooms.map((room) => (
-          <option key={room.id} value={room.id}>
-            {room.name}
-          </option>
-        ))}
+      <Select size="sm" value={selectedId || rooms[0]?.id} onChange={(e) => onChange?.(e.target.value)} aria-label="Pilih Tipe Kamar untuk Kalender" wrapperClassName="w-auto" className="font-semibold text-gray-800 bg-gray-50 border-gray-200">
+        {rooms.map((room) => (<option key={room.id} value={room.id}>{room.name}</option>))}
       </Select>
     </div>
   );
 }
 
-export function CalendarHeader({
-  month,
-  year,
-  onNext,
-  onPrev,
-  canPrev,
-  rooms = [],
-  selectedRoomId,
-  onRoomChange,
-}: CalendarHeaderProps): React.JSX.Element {
+export function CalendarHeader({ month, year, onNext, onPrev, canPrev, rooms = [], selectedRoomId, onRoomChange }: CalendarHeaderProps): React.JSX.Element {
   const monthTitle = formatDateID(new Date(year, month - 1, 1), 'MMMM yyyy');
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-1.5 mb-0.5 border-b border-gray-100">
       <div className="flex items-center justify-between sm:justify-start gap-2.5">
-        <h3 className="text-sm font-extrabold text-gray-900 capitalize tracking-tight">
-          {monthTitle}
-        </h3>
+        <h3 className="text-sm font-extrabold text-gray-900 capitalize tracking-tight">{monthTitle}</h3>
         <MonthNavButtons onPrev={onPrev} onNext={onNext} canPrev={canPrev} />
       </div>
       <RoomSelector rooms={rooms} selectedId={selectedRoomId} onChange={onRoomChange} />
