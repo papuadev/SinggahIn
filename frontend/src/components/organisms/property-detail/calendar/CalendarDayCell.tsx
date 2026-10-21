@@ -29,6 +29,22 @@ function SoldOutBadge({ isSelected, isRangeMiddle }: { isSelected?: boolean; isR
   );
 }
 
+function ClosedBadge({ reason, isSelected, isRangeMiddle }: { reason?: string | null; isSelected?: boolean; isRangeMiddle?: boolean }) {
+  const textCls = isSelected && !isRangeMiddle ? 'text-white' : 'text-slate-500 font-bold';
+  return (
+    <span title={reason || 'Tutup (Tidak Tersedia)'} className={`text-[9px] sm:text-[10px] font-bold block leading-none mt-0.5 ${textCls}`}>
+      Tutup
+    </span>
+  );
+}
+
+function UnavailableBadge({ item, isSelected, isRangeMiddle }: { item: CalendarDayItem; isSelected?: boolean; isRangeMiddle?: boolean }) {
+  if (item.reason === 'Sold Out') {
+    return <SoldOutBadge isSelected={isSelected} isRangeMiddle={isRangeMiddle} />;
+  }
+  return <ClosedBadge reason={item.reason} isSelected={isSelected} isRangeMiddle={isRangeMiddle} />;
+}
+
 export function CalendarDayCell({ dayNumber, item, isSelected, isRangeMiddle }: CellContentProps) {
   const numCls = isSelected && !isRangeMiddle ? 'text-white' : isRangeMiddle ? 'text-primary-900' : 'text-gray-900';
   return (
@@ -38,7 +54,7 @@ export function CalendarDayCell({ dayNumber, item, isSelected, isRangeMiddle }: 
         item.isAvailable ? (
           <AvailableBadge price={item.price} isSelected={isSelected} isRangeMiddle={isRangeMiddle} />
         ) : (
-          <SoldOutBadge isSelected={isSelected} isRangeMiddle={isRangeMiddle} />
+          <UnavailableBadge item={item} isSelected={isSelected} isRangeMiddle={isRangeMiddle} />
         )
       )}
     </div>

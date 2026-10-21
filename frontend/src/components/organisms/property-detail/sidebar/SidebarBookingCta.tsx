@@ -15,26 +15,13 @@ function LoginPrompt() {
   );
 }
 
-export function SidebarBookingCta({
-  onClick,
-  hasDates,
-  isAuthenticated,
-}: {
-  onClick: () => void;
-  hasDates: boolean;
-  isAuthenticated: boolean;
-}) {
+interface SidebarBookingCtaProps { onClick: () => void; hasDates: boolean; isAuthenticated: boolean; }
+
+export function SidebarBookingCta({ onClick, hasDates, isAuthenticated }: SidebarBookingCtaProps) {
   const buttonText = !isAuthenticated || hasDates ? 'Pesan Sekarang' : 'Pilih Tanggal Menginap';
   return (
     <div className="mt-4 space-y-2">
-      <Button
-        type="button"
-        variant="primary"
-        size="lg"
-        onClick={onClick}
-        disabled={!isAuthenticated}
-        className="w-full font-bold shadow-md shadow-primary-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-      >
+      <Button type="button" variant="primary" size="lg" onClick={onClick} disabled={!isAuthenticated} className="w-full font-bold shadow-md shadow-primary-500/20 disabled:cursor-not-allowed disabled:opacity-50">
         {buttonText}
       </Button>
       {!isAuthenticated && <LoginPrompt />}

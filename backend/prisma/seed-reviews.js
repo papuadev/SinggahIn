@@ -56,11 +56,8 @@ function generateSeedBookingCode(date, idx) {
     const rand = (Math.random().toString(36).substring(2, 5) + (idx % 10)).toUpperCase();
     return `SGH-${y}${m}${d}-${rand.padEnd(4, 'X')}`;
 }
-function buildBookingPayload(prop, userId, code, daysAgo) {
-    const room = prop.rooms[0];
-    const { checkIn, checkOut } = buildPastDates(daysAgo);
-    const totalPrice = room.basePrice * 2;
-    const payment = {
+function buildPaymentNestedCreate(totalPrice, checkIn, code) {
+    return {
         create: {
             paymentMethod: client_1.PaymentMethod.PAYMENT_GATEWAY,
             amount: totalPrice,
@@ -69,12 +66,18 @@ function buildBookingPayload(prop, userId, code, daysAgo) {
             confirmedAt: checkIn,
             createdAt: checkIn,
             gatewayOrderId: code,
-        }
+        },
     };
+}
+function buildBookingPayload(prop, userId, code, daysAgo) {
+    const room = prop.rooms[0];
+    const { checkIn, checkOut } = buildPastDates(daysAgo);
+    const totalPrice = room.basePrice * 2;
+    const payment = buildPaymentNestedCreate(totalPrice, checkIn, code);
     return {
         bookingCode: code, userId, propertyId: prop.id, roomId: room.id,
         checkInDate: checkIn, checkOutDate: checkOut, totalNights: 2, guestCount: 2,
-        totalPrice, status: client_1.BookingStatus.COMPLETED, expiresAt: checkIn, createdAt: checkIn, payment
+        totalPrice, status: client_1.BookingStatus.COMPLETED, expiresAt: checkIn, createdAt: checkIn, payment,
     };
 }
 async function createReviewBooking(prisma, prop, userId, code, daysAgo) {

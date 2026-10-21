@@ -31,12 +31,15 @@ interface AuthState {
   clearError: () => void;
 }
 
+type SetAuth = (partial: Partial<AuthState> | ((state: AuthState) => Partial<AuthState>)) => void;
+type GetAuth = () => AuthState;
+
 function extractErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   return 'Terjadi kesalahan pada sistem.';
 }
 
-async function runAuthAction<T>(set: any, fn: () => Promise<T>): Promise<T> {
+async function runAuthAction<T>(set: SetAuth, fn: () => Promise<T>): Promise<T> {
   set({ isLoading: true, error: null });
   try {
     const res = await fn();
@@ -48,91 +51,88 @@ async function runAuthAction<T>(set: any, fn: () => Promise<T>): Promise<T> {
   }
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  isInitialized: false,
-  error: null,
-  conflict: null,
+async function handleCheckAuth(set: SetAuth, get: GetAuth) {
+  if (get().isInitialized && get().isAuthenticated) return;
+  set({ isLoading: true });
+  try {
+    const res = await identityApi.getMe();
+    set({ user: res.data.user, isAuthenticated: true, isInitialized: true, isLoading: false });
+  } catch {
+    set({ user: null, isAuthenticated: false, isInitialized: true, isLoading: false });
+  }
+}
 
-  clearError: () => set({ error: null }),
-  setConflict: (conflict) => set({ conflict }),
+function createSessionActions(set: SetAuth, get: GetAuth) {
+  return {
+    logout: async () => {
+      set({ isLoading: true });
+      try { await identityApi.logout(); } finally {
+        set({ user: null, isAuthenticated: false, isLoading: false, conflict: null });
+      }
+    },
+    checkAuth: () => handleCheckAuth(set, get),
+  };
+}
 
-  login: async (input) => {
-    return runAuthAction(set, async () => {
+function createAuthMutationActions(set: SetAuth) {
+  return {
+    login: (input: LoginInput) => runAuthAction(set, async () => {
       const res = await identityApi.login(input);
       set({ user: res.data.user, isAuthenticated: true });
       return res.data.user;
-    });
-  },
-
-  register: async (input) => {
-    return runAuthAction(set, async () => {
-      const res = await identityApi.register(input);
-      return res.data;
-    });
-  },
-
-  verify: async (input) => {
-    return runAuthAction(set, async () => {
+    }),
+    register: (input: RegisterInput) => runAuthAction(set, async () => (await identityApi.register(input)).data),
+    verify: (input: VerifyInput) => runAuthAction(set, async () => {
       const res = await identityApi.verify(input);
       set({ user: res.data.user, isAuthenticated: true });
       return res.data.user;
-    });
-  },
+    }),
+  };
+}
 
-  logout: async () => {
-    set({ isLoading: true });
-    try {
-      await identityApi.logout();
-    } finally {
-      set({ user: null, isAuthenticated: false, isLoading: false, conflict: null });
-    }
-  },
+async function handleUploadAvatar(set: SetAuth, get: GetAuth, file: File) {
+  set({ error: null });
+  try {
+    const res = await identityApi.uploadAvatar(file);
+    const currentUser = get().user;
+    if (currentUser) set({ user: { ...currentUser, avatarUrl: res.data.avatarUrl } });
+    return res.data.avatarUrl;
+  } catch (err) { set({ error: extractErrorMessage(err) }); throw err; }
+}
 
-  checkAuth: async () => {
-    if (get().isInitialized && get().isAuthenticated) return;
-    set({ isLoading: true });
-    try {
-      const res = await identityApi.getMe();
-      set({ user: res.data.user, isAuthenticated: true, isInitialized: true, isLoading: false });
-    } catch {
-      set({ user: null, isAuthenticated: false, isInitialized: true, isLoading: false });
-    }
-  },
-
-  uploadAvatar: async (file: File) => {
-    set({ error: null });
-    try {
-      const res = await identityApi.uploadAvatar(file);
-      const currentUser = get().user;
-      if (currentUser) set({ user: { ...currentUser, avatarUrl: res.data.avatarUrl } });
-      return res.data.avatarUrl;
-    } catch (err) {
-      set({ error: extractErrorMessage(err) });
-      throw err;
-    }
-  },
-
-  updateProfile: async (input: UpdateProfileInput) => {
-    return runAuthAction(set, async () => {
+function createProfileActions(set: SetAuth, get: GetAuth) {
+  return {
+    uploadAvatar: (file: File) => handleUploadAvatar(set, get, file),
+    updateProfile: (input: UpdateProfileInput) => runAuthAction(set, async () => {
       const res = await identityApi.updateProfile(input);
       set({ user: res.data.user });
       return res.data.user;
-    });
-  },
+    }),
+  };
+}
 
-  forgotPassword: (email) => runAuthAction(set, () => identityApi.forgotPassword({ email }).then(r => r.message)),
-  resetPassword: (input) => runAuthAction(set, () => identityApi.resetPassword(input).then(r => r.message)),
-  changePassword: (input) => runAuthAction(set, () => identityApi.changePassword(input).then(r => r.message)),
-  requestEmailChange: (input) => runAuthAction(set, () => identityApi.requestEmailChange(input).then(r => r.message)),
-
-  verifyEmailChange: async (token: string) => {
-    return runAuthAction(set, async () => {
+function createPasswordEmailActions(set: SetAuth) {
+  return {
+    forgotPassword: (email: string) => runAuthAction(set, () => identityApi.forgotPassword({ email }).then(r => r.message)),
+    resetPassword: (i: any) => runAuthAction(set, () => identityApi.resetPassword(i).then(r => r.message)),
+    changePassword: (i: any) => runAuthAction(set, () => identityApi.changePassword(i).then(r => r.message)),
+    requestEmailChange: (i: any) => runAuthAction(set, () => identityApi.requestEmailChange(i).then(r => r.message)),
+    verifyEmailChange: (token: string) => runAuthAction(set, async () => {
       const res = await identityApi.verifyEmailChange(token);
       set({ user: res.data.user, isAuthenticated: true });
       return res.data.user;
-    });
-  },
+    }),
+  };
+}
+
+const INITIAL_STATE = { user: null, isAuthenticated: false, isLoading: false, isInitialized: false, error: null, conflict: null };
+
+export const useAuthStore = create<AuthState>((set, get) => ({
+  ...INITIAL_STATE,
+  clearError: () => set({ error: null }),
+  setConflict: (conflict) => set({ conflict }),
+  ...createSessionActions(set, get),
+  ...createAuthMutationActions(set),
+  ...createProfileActions(set, get),
+  ...createPasswordEmailActions(set),
 }));

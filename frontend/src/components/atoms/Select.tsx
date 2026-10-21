@@ -43,72 +43,79 @@ function useClickOutside(ref: React.RefObject<HTMLDivElement | null>, isOpen: bo
   }, [isOpen, ref, onClose]);
 }
 
+function getOptions(el: HTMLSelectElement | null, children: React.ReactNode): ExtractedOption[] {
+  if (el && el.options.length > 0) {
+    return Array.from(el.options).map((o) => ({ value: o.value, label: o.text, disabled: o.disabled }));
+  }
+  return extractOptions(children);
+}
+
+function dispatchSelectValue(el: HTMLSelectElement, optVal: string): void {
+  const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')?.set;
+  if (nativeSetter) nativeSetter.call(el, optVal);
+  else el.value = optVal;
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function useForwardedRef<T>(ref: React.ForwardedRef<T>) {
+  const innerRef = useRef<T | null>(null);
+  const setRef = (el: T | null) => {
+    innerRef.current = el;
+    if (typeof ref === 'function') ref(el);
+    else if (ref) (ref as React.MutableRefObject<T | null>).current = el;
+  };
+  return [innerRef, setRef] as const;
+}
+
+function useSelectDropdown(propsVal: unknown, defaultVal: unknown, children: React.ReactNode, selectEl: React.RefObject<HTMLSelectElement | null>) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [optionsList, setOptionsList] = useState<ExtractedOption[]>([]);
+  const [currentVal, setCurrentVal] = useState<string>(() => (propsVal !== undefined ? String(propsVal) : (defaultVal !== undefined ? String(defaultVal) : '')));
+  useEffect(() => { if (propsVal !== undefined) setCurrentVal(String(propsVal)); }, [propsVal]);
+  const refresh = () => setOptionsList(getOptions(selectEl.current, children));
+  useEffect(() => { refresh(); }, [children]);
+  const selectOption = (optVal: string) => {
+    setCurrentVal(optVal);
+    if (selectEl.current) dispatchSelectValue(selectEl.current, optVal);
+    setIsOpen(false);
+  };
+  return { isOpen, setIsOpen, optionsList, currentVal, setCurrentVal, refresh, selectOption };
+}
+
+function useSelectMouseDown(disabled: boolean | undefined, selectRef: React.RefObject<HTMLSelectElement | null>, refresh: () => void, setIsOpen: React.Dispatch<React.SetStateAction<boolean>>) {
+  return (e: React.MouseEvent<HTMLSelectElement>) => {
+    if (disabled) return;
+    e.preventDefault();
+    selectRef.current?.focus();
+    refresh();
+    setIsOpen((p) => !p);
+  };
+}
+
+function SelectRightIcon({ rightIcon, size, isOpen }: { rightIcon?: React.ReactNode; size: SelectSize; isOpen: boolean }) {
+  if (rightIcon) return <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">{rightIcon}</div>;
+  return <DefaultArrow size={size} isOpen={isOpen} />;
+}
+
+function useSelectState(ref: React.ForwardedRef<HTMLSelectElement>, props: SelectProps, children: React.ReactNode) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [selectRef, setRefs] = useForwardedRef(ref);
+  const drop = useSelectDropdown(props.value, props.defaultValue, children, selectRef);
+  useClickOutside(containerRef, drop.isOpen, () => drop.setIsOpen(false));
+  const onMouseDown = useSelectMouseDown(props.disabled, selectRef, drop.refresh, drop.setIsOpen);
+  return { containerRef, setRefs, onMouseDown, ...drop };
+}
+
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  function Select(
-    { hasError = false, size = 'md', leftIcon, rightIcon, wrapperClassName, className = '', children, ...props },
-    ref
-  ): React.JSX.Element {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const internalSelectRef = useRef<HTMLSelectElement | null>(null);
-    const [isOpen, setIsOpen] = useState(false);
-    const [optionsList, setOptionsList] = useState<ExtractedOption[]>([]);
-    const [currentVal, setCurrentVal] = useState<string>(
-      props.value !== undefined ? String(props.value) : (props.defaultValue !== undefined ? String(props.defaultValue) : '')
-    );
-
-    const setRefs = (el: HTMLSelectElement | null) => {
-      internalSelectRef.current = el;
-      if (typeof ref === 'function') ref(el);
-      else if (ref) (ref as React.MutableRefObject<HTMLSelectElement | null>).current = el;
-    };
-
-    const refreshOptions = () => {
-      if (internalSelectRef.current && internalSelectRef.current.options.length > 0) {
-        const opts: ExtractedOption[] = [];
-        for (let i = 0; i < internalSelectRef.current.options.length; i++) {
-          const o = internalSelectRef.current.options[i];
-          opts.push({ value: o.value, label: o.text, disabled: o.disabled });
-        }
-        setOptionsList(opts);
-        return;
-      }
-      setOptionsList(extractOptions(children));
-    };
-
-    useEffect(() => { if (props.value !== undefined) setCurrentVal(String(props.value)); }, [props.value]);
-    useEffect(() => { refreshOptions(); }, [children]);
-    useClickOutside(containerRef, isOpen, () => setIsOpen(false));
-
-    const handleSelectOption = (optVal: string) => {
-      setCurrentVal(optVal);
-      if (internalSelectRef.current) {
-        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')?.set;
-        if (nativeSetter) nativeSetter.call(internalSelectRef.current, optVal);
-        else internalSelectRef.current.value = optVal;
-        internalSelectRef.current.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      setIsOpen(false);
-    };
-
-    const handleNativeMouseDown = (e: React.MouseEvent<HTMLSelectElement>) => {
-      if (props.disabled) return;
-      e.preventDefault();
-      internalSelectRef.current?.focus();
-      refreshOptions();
-      setIsOpen((prev) => !prev);
-    };
-
+  function Select({ hasError = false, size = 'md', leftIcon, rightIcon, wrapperClassName, className = '', children, ...props }, ref): React.JSX.Element {
+    const s = useSelectState(ref, props, children);
     const selectClass = getSelectClasses(hasError, size, Boolean(leftIcon), className);
-    const wrapperCls = wrapperClassName ? `relative ${wrapperClassName}` : 'relative w-full';
-
     return (
-      <div ref={containerRef} className={wrapperCls}>
+      <div ref={s.containerRef} className={wrapperClassName ? `relative ${wrapperClassName}` : 'relative w-full'}>
         {leftIcon && <LeftIconWrapper icon={leftIcon} />}
-        <select ref={setRefs} className={selectClass} onMouseDown={handleNativeMouseDown} onChange={(e) => { setCurrentVal(e.target.value); props.onChange?.(e); }} {...props}>
-          {children}
-        </select>
-        {rightIcon ? <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">{rightIcon}</div> : <DefaultArrow size={size} isOpen={isOpen} />}
-        {isOpen && optionsList.length > 0 && <SelectOptionsList options={optionsList} currentVal={currentVal} onSelect={handleSelectOption} />}
+        <select ref={s.setRefs} className={selectClass} onMouseDown={s.onMouseDown} onChange={(e) => { s.setCurrentVal(e.target.value); props.onChange?.(e); }} {...props}>{children}</select>
+        <SelectRightIcon rightIcon={rightIcon} size={size} isOpen={s.isOpen} />
+        {s.isOpen && s.optionsList.length > 0 && <SelectOptionsList options={s.optionsList} currentVal={s.currentVal} onSelect={s.selectOption} />}
       </div>
     );
   }

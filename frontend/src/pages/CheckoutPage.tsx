@@ -74,15 +74,21 @@ function CheckoutLeftCol({ c }: { c: ReturnType<typeof useCheckout> }) {
   );
 }
 
+function CheckoutHeader({ propertyId }: { propertyId: string }) {
+  return (
+    <div>
+      <BackButton fallbackUrl={`/properties/${propertyId}`} className="mb-2" />
+      <h1 className="text-2xl font-bold text-gray-900">Checkout & Konfirmasi Pemesanan</h1>
+    </div>
+  );
+}
+
 export function CheckoutPage(): React.JSX.Element {
   const c = useCheckout();
   if (c.isLoading || !c.property || !c.room) return <CheckoutLoading />;
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 space-y-6">
-      <div>
-        <BackButton fallbackUrl={`/properties/${c.property.id}`} className="mb-2" />
-        <h1 className="text-2xl font-bold text-gray-900">Checkout & Konfirmasi Pemesanan</h1>
-      </div>
+      <CheckoutHeader propertyId={c.property.id} />
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <CheckoutLeftCol c={c} />
         <div className="lg:col-span-5">

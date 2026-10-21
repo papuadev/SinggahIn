@@ -22,12 +22,7 @@ function GatewayBadges(): React.JSX.Element {
       <p className="text-xs text-gray-500 font-medium">Metode pembayaran yang didukung:</p>
       <div className="flex flex-wrap gap-2">
         {CHANNELS.map((name) => (
-          <span
-            key={name}
-            className="text-xs bg-gray-100 text-gray-600 font-medium px-3 py-1.5 rounded-lg border border-gray-200 select-none cursor-default"
-          >
-            {name}
-          </span>
+          <span key={name} className="text-xs bg-gray-100 text-gray-600 font-medium px-3 py-1.5 rounded-lg border border-gray-200 select-none cursor-default">{name}</span>
         ))}
       </div>
     </div>
@@ -36,19 +31,12 @@ function GatewayBadges(): React.JSX.Element {
 
 function PendingVaBox({ pending }: { pending: any }) {
   const [copied, setCopied] = React.useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(pending.vaNumber || '');
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const handleCopy = () => { navigator.clipboard.writeText(pending.vaNumber || ''); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   return (
     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
       <p className="text-xs text-amber-800 font-semibold uppercase">Menunggu Pembayaran Virtual Account ({pending.bank || 'VA'})</p>
       <div className="flex justify-between items-center">
-        <div>
-          <p className="text-xs text-gray-500">Nomor Virtual Account:</p>
-          <p className="font-mono text-base font-bold text-gray-900">{pending.vaNumber}</p>
-        </div>
+        <div><p className="text-xs text-gray-500">Nomor Virtual Account:</p><p className="font-mono text-base font-bold text-gray-900">{pending.vaNumber}</p></div>
         <Button size="sm" variant="outline" onClick={handleCopy}>{copied ? 'Tersalin!' : 'Salin'}</Button>
       </div>
     </div>
@@ -121,13 +109,7 @@ function SnapErrorAlert({ error }: { error: string }) {
 function ResolvingPaymentState(): React.JSX.Element {
   return (
     <div className="space-y-2 pt-1" aria-live="polite">
-      <Button
-        variant="primary"
-        className="w-full cursor-not-allowed opacity-85"
-        disabled={true}
-        isLoading={true}
-        leftIcon={<ShieldCheck className="w-4 h-4 shrink-0" />}
-      >
+      <Button variant="primary" className="w-full cursor-not-allowed opacity-85" disabled isLoading leftIcon={<ShieldCheck className="w-4 h-4 shrink-0" />}>
         Memverifikasi Pembayaran...
       </Button>
       <div className="flex items-center justify-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 py-2 px-3 rounded-lg animate-pulse">
@@ -138,25 +120,21 @@ function ResolvingPaymentState(): React.JSX.Element {
   );
 }
 
+function PendingActionButtons({ isPaying, onPay, isResetting, onReset }: any) {
+  return (
+    <div className="space-y-2 pt-1">
+      <Button variant="primary" className="w-full" leftIcon={<ShieldCheck className="w-4 h-4 shrink-0" />} isLoading={isPaying} onClick={onPay}>Buka Rincian Pembayaran</Button>
+      <Button variant="outline" size="sm" className="w-full text-xs" leftIcon={<RotateCcw className="w-3.5 h-3.5 shrink-0" />} isLoading={isResetting} onClick={onReset}>Pilih Ulang Metode Pembayaran Otomatis</Button>
+    </div>
+  );
+}
+
 function GatewayActionButtons(p: any) {
   if (p.isResolving) return <ResolvingPaymentState />;
   if (!p.pending) {
-    return (
-      <Button variant="primary" className="w-full" leftIcon={<ShieldCheck className="w-4 h-4 shrink-0" />} isLoading={p.isPaying} onClick={p.onPay}>
-        Bayar Sekarang
-      </Button>
-    );
+    return <Button variant="primary" className="w-full" leftIcon={<ShieldCheck className="w-4 h-4 shrink-0" />} isLoading={p.isPaying} onClick={p.onPay}>Bayar Sekarang</Button>;
   }
-  return (
-    <div className="space-y-2 pt-1">
-      <Button variant="primary" className="w-full" leftIcon={<ShieldCheck className="w-4 h-4 shrink-0" />} isLoading={p.isPaying} onClick={p.onPay}>
-        Buka Rincian Pembayaran
-      </Button>
-      <Button variant="outline" size="sm" className="w-full text-xs" leftIcon={<RotateCcw className="w-3.5 h-3.5 shrink-0" />} isLoading={p.isResetting} onClick={p.onReset}>
-        Pilih Ulang Metode Pembayaran Otomatis
-      </Button>
-    </div>
-  );
+  return <PendingActionButtons {...p} />;
 }
 
 export function MidtransPaymentSection(props: MidtransPaymentSectionProps): React.JSX.Element {

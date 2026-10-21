@@ -32,70 +32,45 @@ function buildSyntheticEvent(
   } as React.ChangeEvent<HTMLInputElement>;
 }
 
+function restoreCursor(input: HTMLInputElement | null, raw: string, next: string, prevCursor: number): void {
+  if (typeof window !== 'undefined' && input?.setSelectionRange) {
+    const nextCursor = computeCursor(raw, next, prevCursor);
+    requestAnimationFrame(() => input?.setSelectionRange(nextCursor, nextCursor));
+  }
+}
+
+function useCurrencyInputState(value: number | string | null | undefined, allowNegative: boolean) {
+  const [displayValue, setDisplayValue] = useState<string>(() => formatCurrencyInput(value, allowNegative));
+  useEffect(() => {
+    const formatted = formatCurrencyInput(value, allowNegative);
+    setDisplayValue((prev) => (prev !== formatted ? formatted : prev));
+  }, [value, allowNegative]);
+  return [displayValue, setDisplayValue] as const;
+}
+
+type CurrencyChangeOpts = { allowNegative: boolean; name?: string; onValueChange?: (v?: number) => void; onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void };
+
+function useCurrencyChangeHandler(inputRef: React.RefObject<HTMLInputElement | null>, setDisplayValue: React.Dispatch<React.SetStateAction<string>>, opts: CurrencyChangeOpts) {
+  return (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    const prevCursor = e.target.selectionStart || 0;
+    const next = formatCurrencyInput(raw, opts.allowNegative);
+    const num = parseCurrencyInput(next, opts.allowNegative);
+    setDisplayValue(next);
+    restoreCursor(inputRef.current, raw, next, prevCursor);
+    opts.onValueChange?.(num);
+    if (opts.onChange) opts.onChange(buildSyntheticEvent(e, opts.name || '', next, num));
+  };
+}
+
 export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
-  function CurrencyInput(
-    {
-      value,
-      onValueChange,
-      onChange,
-      allowNegative = false,
-      prefix,
-      leftIcon,
-      placeholder = 'Contoh: 100.000',
-      ...rest
-    },
-    ref
-  ): React.JSX.Element {
+  function CurrencyInput(props, ref): React.JSX.Element {
+    const { value, onValueChange, onChange, allowNegative = false, prefix, leftIcon, placeholder = 'Contoh: 100.000', ...rest } = props;
     const inputRef = useRef<HTMLInputElement | null>(null);
     useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
-
-    const [displayValue, setDisplayValue] = useState<string>(() =>
-      formatCurrencyInput(value, allowNegative)
-    );
-
-    useEffect(() => {
-      const formatted = formatCurrencyInput(value, allowNegative);
-      setDisplayValue((prev) => (prev !== formatted ? formatted : prev));
-    }, [value, allowNegative]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const raw = e.target.value;
-      const prevCursor = e.target.selectionStart || 0;
-      const nextFormatted = formatCurrencyInput(raw, allowNegative);
-      const numeric = parseCurrencyInput(nextFormatted, allowNegative);
-
-      setDisplayValue(nextFormatted);
-
-      if (typeof window !== 'undefined' && inputRef.current?.setSelectionRange) {
-        const nextCursor = computeCursor(raw, nextFormatted, prevCursor);
-        requestAnimationFrame(() => {
-          inputRef.current?.setSelectionRange(nextCursor, nextCursor);
-        });
-      }
-
-      onValueChange?.(numeric);
-      if (onChange) {
-        onChange(buildSyntheticEvent(e, rest.name || '', nextFormatted, numeric));
-      }
-    };
-
-    const icon = prefix ? (
-      <span className="text-xs font-semibold text-gray-500 select-none">{prefix}</span>
-    ) : (
-      leftIcon
-    );
-
-    return (
-      <Input
-        ref={inputRef}
-        type="text"
-        inputMode="numeric"
-        value={displayValue}
-        onChange={handleChange}
-        placeholder={placeholder}
-        leftIcon={icon}
-        {...rest}
-      />
-    );
+    const [displayValue, setDisplayValue] = useCurrencyInputState(value, allowNegative);
+    const handleChange = useCurrencyChangeHandler(inputRef, setDisplayValue, { allowNegative, name: rest.name, onValueChange, onChange });
+    const icon = prefix ? <span className="text-xs font-semibold text-gray-500 select-none">{prefix}</span> : leftIcon;
+    return <Input ref={inputRef} type="text" inputMode="numeric" value={displayValue} onChange={handleChange} placeholder={placeholder} leftIcon={icon} {...rest} />;
   }
 );

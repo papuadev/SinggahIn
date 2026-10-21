@@ -71,11 +71,8 @@ function generateSeedBookingCode(date: Date, idx: number): string {
   return `SGH-${y}${m}${d}-${rand.padEnd(4, 'X')}`;
 }
 
-function buildBookingPayload(prop: SeedPropertyRef, userId: string, code: string, daysAgo: number) {
-  const room = prop.rooms[0];
-  const { checkIn, checkOut } = buildPastDates(daysAgo);
-  const totalPrice = room.basePrice * 2;
-  const payment = {
+function buildPaymentNestedCreate(totalPrice: number, checkIn: Date, code: string) {
+  return {
     create: {
       paymentMethod: PaymentMethod.PAYMENT_GATEWAY,
       amount: totalPrice,
@@ -84,12 +81,19 @@ function buildBookingPayload(prop: SeedPropertyRef, userId: string, code: string
       confirmedAt: checkIn,
       createdAt: checkIn,
       gatewayOrderId: code,
-    }
+    },
   };
+}
+
+function buildBookingPayload(prop: SeedPropertyRef, userId: string, code: string, daysAgo: number) {
+  const room = prop.rooms[0];
+  const { checkIn, checkOut } = buildPastDates(daysAgo);
+  const totalPrice = room.basePrice * 2;
+  const payment = buildPaymentNestedCreate(totalPrice, checkIn, code);
   return {
     bookingCode: code, userId, propertyId: prop.id, roomId: room.id,
     checkInDate: checkIn, checkOutDate: checkOut, totalNights: 2, guestCount: 2,
-    totalPrice, status: BookingStatus.COMPLETED, expiresAt: checkIn, createdAt: checkIn, payment
+    totalPrice, status: BookingStatus.COMPLETED, expiresAt: checkIn, createdAt: checkIn, payment,
   };
 }
 

@@ -17,17 +17,10 @@ type PageBtnProps = { p: number; current: number; onSelect: (p: number) => void 
 
 function PageButton({ p, current, onSelect }: PageBtnProps) {
   const isActive = p === current;
-  const cls = isActive
-    ? 'bg-primary-600 text-white font-bold shadow-xs hover:bg-primary-700'
-    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-medium';
+  const cls = isActive ? 'bg-primary-600 text-white font-bold shadow-xs hover:bg-primary-700' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-medium';
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(p)}
-      aria-label={`Halaman ${p}`}
-      aria-current={isActive ? 'page' : undefined}
-      className={`w-9 h-9 rounded-xl text-xs sm:text-sm flex items-center justify-center transition-all cursor-pointer ${cls}`}
-    >
+    <button type="button" onClick={() => onSelect(p)} aria-label={`Halaman ${p}`} aria-current={isActive ? 'page' : undefined}
+      className={`w-9 h-9 rounded-xl text-xs sm:text-sm flex items-center justify-center transition-all cursor-pointer ${cls}`}>
       {p}
     </button>
   );
@@ -35,11 +28,7 @@ function PageButton({ p, current, onSelect }: PageBtnProps) {
 
 function EllipsisItem() {
   return (
-    <span
-      data-testid="pagination-ellipsis"
-      aria-hidden="true"
-      className="w-9 h-9 flex items-center justify-center text-xs sm:text-sm text-gray-400 font-bold select-none"
-    >
+    <span data-testid="pagination-ellipsis" aria-hidden="true" className="w-9 h-9 flex items-center justify-center text-xs sm:text-sm text-gray-400 font-bold select-none">
       ...
     </span>
   );
@@ -77,13 +66,8 @@ type NavBtnProps = { disabled: boolean; onClick: () => void; label: string; icon
 
 function NavButton({ disabled, onClick, label, icon: Icon, iconRight }: NavBtnProps) {
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      aria-label={label}
-      className="h-9 px-3 rounded-xl border border-gray-200 bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white flex items-center gap-1 transition-colors cursor-pointer disabled:cursor-not-allowed"
-    >
+    <button type="button" disabled={disabled} onClick={onClick} aria-label={label}
+      className="h-9 px-3 rounded-xl border border-gray-200 bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white flex items-center gap-1 transition-colors cursor-pointer disabled:cursor-not-allowed">
       {!iconRight && <Icon className="w-4 h-4" />}
       <span className="hidden sm:inline">{label}</span>
       {iconRight && <Icon className="w-4 h-4" />}
@@ -101,67 +85,41 @@ function PaginationNavControls({ page, totalPages, onPageChange }: { page: numbe
   );
 }
 
-function PaginationInfoText({
-  page,
-  totalPages,
-  totalItems,
-  pageSize,
-  itemLabel,
-}: {
-  page: number;
-  totalPages: number;
-  totalItems?: number;
-  pageSize?: number;
-  itemLabel: string;
-}) {
-  if (pageSize !== undefined && totalItems !== undefined) {
-    const start = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
-    const end = Math.min(page * pageSize, totalItems);
-    return (
-      <span className="text-xs sm:text-sm text-gray-500">
-        Menampilkan <strong className="text-gray-900">{start} - {end}</strong> dari{' '}
-        <strong className="text-gray-900">{totalItems}</strong> {itemLabel}
-      </span>
-    );
-  }
-
+function RangeInfoText({ page, pageSize, totalItems, label }: { page: number; pageSize: number; totalItems: number; label: string }) {
+  const start = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, totalItems);
   return (
     <span className="text-xs sm:text-sm text-gray-500">
-      Menampilkan halaman <strong className="text-gray-900">{page}</strong> dari{' '}
-      <strong className="text-gray-900">{totalPages}</strong>
-      {totalItems !== undefined ? ` (${totalItems} total ${itemLabel})` : ''}
+      Menampilkan <strong className="text-gray-900">{start} - {end}</strong> dari <strong className="text-gray-900">{totalItems}</strong> {label}
     </span>
   );
 }
 
-export function Pagination({
-  page,
-  totalPages,
-  totalItems,
-  pageSize,
-  itemLabel = 'item',
-  ariaLabel,
-  onPageChange,
-  className = '',
-  showItemCount = true,
-}: PaginationProps): React.JSX.Element | null {
+function PageOnlyInfoText({ page, totalPages, totalItems, label }: { page: number; totalPages: number; totalItems?: number; label: string }) {
+  const total = totalItems !== undefined ? ` (${totalItems} total ${label})` : '';
+  return (
+    <span className="text-xs sm:text-sm text-gray-500">
+      Menampilkan halaman <strong className="text-gray-900">{page}</strong> dari <strong className="text-gray-900">{totalPages}</strong>{total}
+    </span>
+  );
+}
+
+function PaginationInfoText(p: { page: number; totalPages: number; totalItems?: number; pageSize?: number; itemLabel: string }) {
+  if (p.pageSize !== undefined && p.totalItems !== undefined) {
+    return <RangeInfoText page={p.page} pageSize={p.pageSize} totalItems={p.totalItems} label={p.itemLabel} />;
+  }
+  return <PageOnlyInfoText page={p.page} totalPages={p.totalPages} totalItems={p.totalItems} label={p.itemLabel} />;
+}
+
+export function Pagination(props: PaginationProps): React.JSX.Element | null {
+  const { page, totalPages, itemLabel = 'item', onPageChange, className = '', showItemCount = true } = props;
   if (totalPages <= 1) return null;
-  const navAriaLabel = ariaLabel || (itemLabel ? `Navigasi halaman ${itemLabel}` : 'Navigasi halaman');
+  const navAriaLabel = props.ariaLabel || (itemLabel ? `Navigasi halaman ${itemLabel}` : 'Navigasi halaman');
+  const cls = `pt-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 ${className}`;
 
   return (
-    <nav
-      aria-label={navAriaLabel}
-      className={`pt-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 ${className}`}
-    >
-      {showItemCount && (
-        <PaginationInfoText
-          page={page}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          pageSize={pageSize}
-          itemLabel={itemLabel}
-        />
-      )}
+    <nav aria-label={navAriaLabel} className={cls}>
+      {showItemCount && <PaginationInfoText {...props} itemLabel={itemLabel} />}
       <PaginationNavControls page={page} totalPages={totalPages} onPageChange={onPageChange} />
     </nav>
   );

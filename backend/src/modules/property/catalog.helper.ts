@@ -59,6 +59,14 @@ export function isRoomAvailableForDates(room: RawRoomRecord): boolean {
   return room.totalUnits > room.bookings.length;
 }
 
+function computeStayBreakdown(room: RawRoomRecord, checkIn: string, checkOut: string) {
+  const dates = generateDateRange(toUtcDate(checkIn), toUtcDate(checkOut));
+  return dates.map((d) => {
+    const mod = resolveModifierForDate(room.modifiers, d, room.basePrice);
+    return buildDailyPrice(d, room.basePrice, mod, room.weekendRatePercent, room.holidayRatePercent);
+  });
+}
+
 export function computeRoomPricing(
   room: RawRoomRecord,
   checkIn?: string,
@@ -67,11 +75,7 @@ export function computeRoomPricing(
   if (!checkIn || !checkOut) {
     return { averageNightRate: room.basePrice, totalStayPrice: room.basePrice, totalNights: 1 };
   }
-  const dates = generateDateRange(toUtcDate(checkIn), toUtcDate(checkOut));
-  const breakdown = dates.map((d) => {
-    const mod = resolveModifierForDate(room.modifiers, d, room.basePrice);
-    return buildDailyPrice(d, room.basePrice, mod, room.weekendRatePercent, room.holidayRatePercent);
-  });
+  const breakdown = computeStayBreakdown(room, checkIn, checkOut);
   const res = aggregateStayPricing(room.id, checkIn, checkOut, room.basePrice, breakdown);
   return { averageNightRate: res.averageNightRate, totalStayPrice: res.totalStayPrice, totalNights: res.totalNights };
 }

@@ -126,10 +126,7 @@ function RoomListAlerts({ actionError, error }: { actionError: string | null; er
 export function RoomListSection({ propertyId }: RoomListSectionProps): React.JSX.Element {
   const filter = useServerRoomListFilter(propertyId, { pageSize: 5 });
   const actions = useRoomActions(propertyId);
-  if (filter.isLoading && filter.paginatedRooms.length === 0) {
-    return <div className="flex justify-center items-center py-12"><Spinner size="md" /></div>;
-  }
-
+  if (filter.isLoading && filter.paginatedRooms.length === 0) return <div className="flex justify-center items-center py-12"><Spinner size="md" /></div>;
   return (
     <div className="space-y-4">
       <RoomListHeader onAdd={actions.openCreate} count={filter.totalFiltered} />

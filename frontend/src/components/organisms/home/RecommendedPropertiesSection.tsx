@@ -158,19 +158,25 @@ function getSectionClass(isHigh?: boolean) {
     : 'my-10 sm:my-14';
 }
 
+function SectionWrapper({ id, title, isHigh, children }: { id?: string; title: string; isHigh: boolean; children: React.ReactNode }) {
+  return (
+    <section id={id} aria-label={title} className={`${getSectionClass(isHigh)} ${id ? 'scroll-mt-28' : ''}`}>
+      {isHigh && <AmbientGlowOrbs />}
+      <div className={isHigh ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10' : ''}>{children}</div>
+    </section>
+  );
+}
+
 export function RecommendedPropertiesSection(props: RecommendedSectionProps): React.JSX.Element | null {
   const { properties, isLoading: queryLoading } = useSectionData(props.queryParams);
   const isLoading = Boolean(props.isLoading || queryLoading);
   const { scrollRef, scrollLeft, scrollRight, onScroll, progress } = useHorizontalScroll();
-  if (!isLoading && properties.length === 0 && (!props.showEmptyIfFiltered || !props.queryParams.category)) return null;
   const isHigh = props.variant === 'highlighted';
+  if (!isLoading && properties.length === 0 && (!props.showEmptyIfFiltered || !props.queryParams.category)) return null;
   return (
-    <section id={props.id} aria-label={props.title} className={`${getSectionClass(isHigh)} ${props.id ? 'scroll-mt-28' : ''}`}>
-      {isHigh && <AmbientGlowOrbs />}
-      <div className={isHigh ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10' : ''}>
-        <SectionHeader {...props} onLeft={scrollLeft} onRight={scrollRight} viewAllUrl={props.viewAllUrl || '/search'} isHighlighted={isHigh} />
-        <SectionContent isLoading={isLoading} properties={properties} showEmpty={props.showEmptyIfFiltered} category={props.queryParams.category} onReset={props.onResetCategory} scrollRef={scrollRef} isHighlighted={isHigh} onScroll={onScroll} progress={progress} />
-      </div>
-    </section>
+    <SectionWrapper id={props.id} title={props.title} isHigh={isHigh}>
+      <SectionHeader {...props} onLeft={scrollLeft} onRight={scrollRight} viewAllUrl={props.viewAllUrl || '/search'} isHighlighted={isHigh} />
+      <SectionContent isLoading={isLoading} properties={properties} showEmpty={props.showEmptyIfFiltered} category={props.queryParams.category} onReset={props.onResetCategory} scrollRef={scrollRef} isHighlighted={isHigh} onScroll={onScroll} progress={progress} />
+    </SectionWrapper>
   );
 }

@@ -54,14 +54,10 @@ function GuestNotFoundActions(): React.JSX.Element {
   return (
     <div className="flex flex-col sm:flex-row gap-3 justify-center w-full">
       <Link to="/" className="w-full sm:w-auto">
-        <Button variant="primary" size="md" className="w-full" leftIcon={<Home className="w-4 h-4" />}>
-          Kembali ke Beranda
-        </Button>
+        <Button variant="primary" size="md" className="w-full" leftIcon={<Home className="w-4 h-4" />}>Kembali ke Beranda</Button>
       </Link>
       <Link to="/search" className="w-full sm:w-auto">
-        <Button variant="outline" size="md" className="w-full" leftIcon={<Search className="w-4 h-4" />}>
-          Cari Penginapan
-        </Button>
+        <Button variant="outline" size="md" className="w-full" leftIcon={<Search className="w-4 h-4" />}>Cari Penginapan</Button>
       </Link>
     </div>
   );

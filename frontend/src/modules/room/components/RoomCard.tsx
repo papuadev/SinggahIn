@@ -28,24 +28,13 @@ function RoomMetaBadges({ capacity, totalUnits }: { capacity: number; totalUnits
   );
 }
 
-function RoomPricingButtons({ room, onRates, onUnavail, disabled }: {
-  room: Room;
-  onRates?: (r: Room) => void;
-  onUnavail?: (r: Room) => void;
-  disabled?: boolean;
-}): React.JSX.Element {
+type PricingBtnProps = { room: Room; onRates?: (r: Room) => void; onUnavail?: (r: Room) => void; disabled?: boolean };
+
+function RoomPricingButtons({ room, onRates, onUnavail, disabled }: PricingBtnProps): React.JSX.Element {
   return (
     <>
-      {onRates && (
-        <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => onRates(room)} leftIcon={<TrendingUp className="w-3.5 h-3.5 text-primary-600" />}>
-          Tarif
-        </Button>
-      )}
-      {onUnavail && (
-        <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => onUnavail(room)} leftIcon={<CalendarOff className="w-3.5 h-3.5 text-rose-600" />}>
-          Blokir
-        </Button>
-      )}
+      {onRates && <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => onRates(room)} leftIcon={<TrendingUp className="w-3.5 h-3.5 text-primary-600" />}>Tarif</Button>}
+      {onUnavail && <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => onUnavail(room)} leftIcon={<CalendarOff className="w-3.5 h-3.5 text-rose-600" />}>Blokir</Button>}
     </>
   );
 }
@@ -66,25 +55,18 @@ function RoomCardActions({
   );
 }
 
+function SpecialRateBadge({ label, percent, borderCls, textCls }: { label: string; percent?: number | null; borderCls: string; textCls: string }) {
+  if (!percent || percent <= 0) return null;
+  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-md shrink-0 border ${textCls} ${borderCls}`}>{label}: +{percent}%</span>;
+}
+
 function RoomRateBadges({ room }: { room: Room }) {
-  const weekend = room.weekendRatePercent && room.weekendRatePercent > 0;
-  const holiday = room.holidayRatePercent && room.holidayRatePercent > 0;
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <h4 className="font-bold text-gray-900 text-base">{room.name}</h4>
-      <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md shrink-0">
-        {formatRupiah(room.basePrice)} / malam
-      </span>
-      {weekend ? (
-        <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md shrink-0 border border-primary-200">
-          Weekend: +{room.weekendRatePercent}%
-        </span>
-      ) : null}
-      {holiday ? (
-        <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md shrink-0 border border-amber-200">
-          Libur Nasional: +{room.holidayRatePercent}%
-        </span>
-      ) : null}
+      <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md shrink-0">{formatRupiah(room.basePrice)} / malam</span>
+      <SpecialRateBadge label="Weekend" percent={room.weekendRatePercent} borderCls="border-primary-200" textCls="text-primary-700 bg-primary-50" />
+      <SpecialRateBadge label="Libur Nasional" percent={room.holidayRatePercent} borderCls="border-amber-200" textCls="text-amber-700 bg-amber-50" />
     </div>
   );
 }

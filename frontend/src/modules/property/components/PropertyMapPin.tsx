@@ -54,28 +54,17 @@ async function onGeoSuccess(
 }
 
 function requestCurrentLocation(
-  onSelect: (lat: number, lng: number) => void,
-  setLoading: (l: boolean) => void,
-  setError: (e: string | null) => void,
-  onLocationDetected?: (lat: number, lng: number) => Promise<void> | void
+  onSelect: (lat: number, lng: number) => void, setLoading: (l: boolean) => void,
+  setError: (e: string | null) => void, onLocationDetected?: (lat: number, lng: number) => Promise<void> | void
 ): void {
   if (!navigator.geolocation) return setError('Browser tidak mendukung geolokasi GPS.');
   setLoading(true);
   setError(null);
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
-      try {
-        await onGeoSuccess(pos, onSelect, onLocationDetected);
-      } catch {
-        // handled
-      } finally {
-        setLoading(false);
-      }
+      try { await onGeoSuccess(pos, onSelect, onLocationDetected); } finally { setLoading(false); }
     },
-    (err) => {
-      setLoading(false);
-      setError(`Gagal mengambil lokasi: ${err.message}`);
-    }
+    (err) => { setLoading(false); setError(`Gagal mengambil lokasi: ${err.message}`); }
   );
 }
 
@@ -91,86 +80,69 @@ export interface PropertyMapPinProps {
 
 const DEFAULT_CENTER: [number, number] = [-6.2088, 106.8456]; // Jakarta pusat default
 
-export function PropertyMapPin({
-  latitude,
-  longitude,
-  onChange,
-  onLocationDetected,
-  readonly = false,
-  height = '320px',
-  className = '',
-}: PropertyMapPinProps): React.JSX.Element {
+function MapHeaderRow({ hasCoords, lat, lng, readonly, onChange, onDetect, loading }: any) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-xs font-medium text-gray-600 flex items-center gap-1">
+        <MapPin className="w-3.5 h-3.5 text-primary-600" />
+        {hasCoords ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : 'Geser pin atau klik peta'}
+      </span>
+      {!readonly && onChange && (
+        <Button type="button" variant="outline" size="sm" onClick={onDetect} disabled={loading} leftIcon={loading ? <Spinner size="sm" /> : <Navigation className="w-3.5 h-3.5" />}>
+          Lokasi Saya
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function MapCanvas({ center, hasCoords, height, readonly, onChange, eventHandlers, markerRef }: any) {
+  return (
+    <div className="rounded-lg overflow-hidden border border-gray-300 shadow-sm relative z-0" style={{ height }}>
+      <MapContainer center={center} zoom={hasCoords ? 14 : 11} style={{ height: '100%', width: '100%' }}>
+        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <MapRecenter center={center} />
+        <MapClickHandler onSelect={onChange} readonly={readonly} />
+        <Marker position={center} draggable={!readonly} eventHandlers={eventHandlers} ref={markerRef} />
+      </MapContainer>
+    </div>
+  );
+}
+
+function useMarkerDrag(markerRef: React.RefObject<L.Marker | null>, onChange?: (lat: number, lng: number) => void) {
+  return useMemo(() => ({
+    dragend() {
+      const marker = markerRef.current;
+      if (marker && onChange) {
+        const pos = marker.getLatLng();
+        onChange(Number(pos.lat.toFixed(6)), Number(pos.lng.toFixed(6)));
+      }
+    },
+  }), [onChange, markerRef]);
+}
+
+function usePropertyPinLocation(
+  onChange?: (lat: number, lng: number) => void,
+  onLocationDetected?: (lat: number, lng: number) => Promise<void> | void
+) {
   const [loading, setLoading] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
-  const markerRef = useRef<L.Marker | null>(null);
+  const detect = () => requestCurrentLocation(onChange!, setLoading, setGeoError, onLocationDetected);
+  return { loading, geoError, detect };
+}
 
+export function PropertyMapPin({ latitude, longitude, onChange, onLocationDetected, readonly = false, height = '320px', className = '' }: PropertyMapPinProps): React.JSX.Element {
+  const { loading, geoError, detect } = usePropertyPinLocation(onChange, onLocationDetected);
+  const markerRef = useRef<L.Marker | null>(null);
   const hasCoords = Boolean(latitude && longitude);
   const center: [number, number] = hasCoords ? [latitude, longitude] : DEFAULT_CENTER;
-
-  const eventHandlers = useMemo(
-    () => ({
-      dragend() {
-        const marker = markerRef.current;
-        if (marker && onChange) {
-          const pos = marker.getLatLng();
-          onChange(Number(pos.lat.toFixed(6)), Number(pos.lng.toFixed(6)));
-        }
-      },
-    }),
-    [onChange]
-  );
-
+  const eventHandlers = useMarkerDrag(markerRef, onChange);
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-gray-600 flex items-center gap-1">
-          <MapPin className="w-3.5 h-3.5 text-primary-600" />
-          {hasCoords ? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` : 'Geser pin atau klik peta'}
-        </span>
-        {!readonly && onChange && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => requestCurrentLocation(onChange, setLoading, setGeoError, onLocationDetected)}
-            disabled={loading}
-            leftIcon={loading ? <Spinner size="sm" /> : <Navigation className="w-3.5 h-3.5" />}
-          >
-            Lokasi Saya
-          </Button>
-        )}
-      </div>
-
+      <MapHeaderRow hasCoords={hasCoords} lat={latitude} lng={longitude} readonly={readonly} onChange={onChange} onDetect={detect} loading={loading} />
       {geoError && <p className="text-xs text-red-600">{geoError}</p>}
-
-      <div
-        className="rounded-lg overflow-hidden border border-gray-300 shadow-sm relative z-0"
-        style={{ height }}
-      >
-        <MapContainer
-          center={center}
-          zoom={hasCoords ? 14 : 11}
-          style={{ height: '100%', width: '100%' }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <MapRecenter center={center} />
-          <MapClickHandler onSelect={onChange} readonly={readonly} />
-          <Marker
-            position={center}
-            draggable={!readonly}
-            eventHandlers={eventHandlers}
-            ref={markerRef}
-          />
-        </MapContainer>
-      </div>
-      {!readonly && (
-        <p className="text-xs text-gray-500 italic">
-          * Klik pada peta atau seret penanda pin untuk menentukan lokasi yang tepat.
-        </p>
-      )}
+      <MapCanvas center={center} hasCoords={hasCoords} height={height} readonly={readonly} onChange={onChange} eventHandlers={eventHandlers} markerRef={markerRef} />
+      {!readonly && <p className="text-xs text-gray-500 italic">* Klik pada peta atau seret penanda pin untuk menentukan lokasi yang tepat.</p>}
     </div>
   );
 }

@@ -32,20 +32,26 @@ function ReviewAvatar({ name, avatarUrl }: { name?: string; avatarUrl?: string |
   );
 }
 
+function ReviewHeader({ authorName, avatarUrl, createdAt, rating }: { authorName: string; avatarUrl?: string | null; createdAt: string | Date; rating: number }) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <ReviewAvatar name={authorName} avatarUrl={avatarUrl} />
+        <div>
+          <h5 className="font-semibold text-gray-900 text-sm">{authorName}</h5>
+          <span className="text-xs text-gray-400">{formatDateID(createdAt, 'dd MMMM yyyy')}</span>
+        </div>
+      </div>
+      <StarRatingDisplay rating={rating} size="sm" />
+    </div>
+  );
+}
+
 function ReviewItemCard({ review }: { review: Review }) {
   const authorName = review.user?.name || 'Tamu SinggahIn';
   return (
     <div className="p-4 bg-white rounded-xl border border-gray-100 space-y-2.5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <ReviewAvatar name={authorName} avatarUrl={review.user?.avatarUrl} />
-          <div>
-            <h5 className="font-semibold text-gray-900 text-sm">{authorName}</h5>
-            <span className="text-xs text-gray-400">{formatDateID(review.createdAt, 'dd MMMM yyyy')}</span>
-          </div>
-        </div>
-        <StarRatingDisplay rating={review.rating} size="sm" />
-      </div>
+      <ReviewHeader authorName={authorName} avatarUrl={review.user?.avatarUrl} createdAt={review.createdAt} rating={review.rating} />
       <p className="text-sm text-gray-700 leading-relaxed pl-13">{review.comment}</p>
     </div>
   );

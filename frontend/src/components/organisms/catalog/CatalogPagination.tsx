@@ -8,20 +8,6 @@ export interface CatalogPaginationProps {
   onPageChange: (newPage: number) => void;
 }
 
-export function CatalogPagination({
-  page,
-  totalPages,
-  totalItems,
-  onPageChange,
-}: CatalogPaginationProps): React.JSX.Element | null {
-  return (
-    <Pagination
-      page={page}
-      totalPages={totalPages}
-      totalItems={totalItems}
-      itemLabel="properti"
-      onPageChange={onPageChange}
-      className="mt-10"
-    />
-  );
+export function CatalogPagination({ page, totalPages, totalItems, onPageChange }: CatalogPaginationProps): React.JSX.Element | null {
+  return <Pagination page={page} totalPages={totalPages} totalItems={totalItems} itemLabel="properti" onPageChange={onPageChange} className="mt-10" />;
 }
