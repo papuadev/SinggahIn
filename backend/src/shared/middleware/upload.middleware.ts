@@ -10,24 +10,16 @@ import {
 export const MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024; // 1MB (CON-004)
 export { ALLOWED_MIME_TYPES };
 
-function fileFilter(
-  _req: Request,
-  file: Express.Multer.File,
-  cb: multer.FileFilterCallback
-): void {
-  const filenameErr = validateFilename(file.originalname);
-  if (filenameErr) {
-    cb(AppError.badRequest(filenameErr));
-    return;
+function checkFileMime(mimetype: string): string | null {
+  if (!ALLOWED_MIME_TYPES.has(mimetype)) {
+    return 'Hanya file gambar (.jpg, .jpeg, .png, .gif, .webp) yang diperbolehkan.';
   }
-  if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
-    cb(
-      AppError.badRequest(
-        'Hanya file gambar (.jpg, .jpeg, .png, .gif, .webp) yang diperbolehkan.'
-      )
-    );
-    return;
-  }
+  return null;
+}
+
+function fileFilter(_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback): void {
+  const err = validateFilename(file.originalname) || checkFileMime(file.mimetype);
+  if (err) return cb(AppError.badRequest(err));
   cb(null, true);
 }
 
@@ -37,21 +29,18 @@ const uploader = multer({
   fileFilter,
 });
 
-function handleMulterError(
-  err: unknown,
-  next: NextFunction,
-  maxCount?: number
-): void {
+function resolveMulterMessage(code: string, maxCount?: number): string | null {
+  if (code === 'LIMIT_FILE_SIZE') return 'Ukuran file maksimal 1MB.';
+  if (code === 'LIMIT_UNEXPECTED_FILE') {
+    return maxCount ? `Maksimal ${maxCount} file gambar yang dapat diunggah.` : 'Jumlah file melebihi batas.';
+  }
+  return null;
+}
+
+function handleMulterError(err: unknown, next: NextFunction, maxCount?: number): void {
   if (!(err instanceof MulterError)) return next(err);
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    return next(AppError.badRequest('Ukuran file maksimal 1MB.'));
-  }
-  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-    const msg = maxCount
-      ? `Maksimal ${maxCount} file gambar yang dapat diunggah.`
-      : 'Jumlah file melebihi batas.';
-    return next(AppError.badRequest(msg));
-  }
+  const msg = resolveMulterMessage(err.code, maxCount);
+  if (msg) return next(AppError.badRequest(msg));
   next(err);
 }
 

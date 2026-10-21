@@ -33,24 +33,26 @@ function CancelledPaymentInfo({ price }: { price: number }) {
   );
 }
 
+function CancelledActions() {
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+      <Link to="/orders" className="w-full sm:w-auto">
+        <Button variant="outline" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />} className="w-full">Kembali ke Riwayat Pesanan</Button>
+      </Link>
+      <Link to="/search" className="w-full sm:w-auto">
+        <Button variant="primary" size="sm" leftIcon={<Search className="w-4 h-4" />} className="w-full">Cari Penginapan Lain</Button>
+      </Link>
+    </div>
+  );
+}
+
 export function CancelledStaySection({ booking }: { booking: Booking }): React.JSX.Element {
   const isRejected = booking.status === 'REJECTED';
   return (
     <div className="space-y-5">
       <CancelledBanner isRejected={isRejected} reason={booking.cancellationReason} />
       <CancelledPaymentInfo price={booking.totalPrice} />
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-        <Link to="/orders" className="w-full sm:w-auto">
-          <Button variant="outline" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />} className="w-full">
-            Kembali ke Riwayat Pesanan
-          </Button>
-        </Link>
-        <Link to="/search" className="w-full sm:w-auto">
-          <Button variant="primary" size="sm" leftIcon={<Search className="w-4 h-4" />} className="w-full">
-            Cari Penginapan Lain
-          </Button>
-        </Link>
-      </div>
+      <CancelledActions />
     </div>
   );
 }

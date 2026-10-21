@@ -20,7 +20,7 @@ export const HERO_SLIDES: CarouselSlide[] = [
     subtitle: 'Temukan penginapan terbaik untuk rehat sejenak dari rutinitas dengan harga bersahabat.',
     ctaText: 'Jelajahi Sekarang',
     category: 'hotel',
-    imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/banners/banner-a.webp',
   },
   {
     id: 'villa-keluarga',
@@ -29,7 +29,7 @@ export const HERO_SLIDES: CarouselSlide[] = [
     subtitle: 'Nikmati momen hangat bersama keluarga di villa privat eksklusif berfasilitas lengkap.',
     ctaText: 'Lihat Villa',
     category: 'villa',
-    imageUrl: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/banners/banner-b.webp',
   },
   {
     id: 'unik-nusantara',
@@ -38,7 +38,7 @@ export const HERO_SLIDES: CarouselSlide[] = [
     subtitle: 'Dari kabin pegunungan hingga resort tropis, nikmati pengalaman menginap otentik.',
     ctaText: 'Temukan Penginapan',
     category: 'others',
-    imageUrl: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/banners/banner-c.webp',
   },
 ];
 
@@ -79,23 +79,37 @@ function SlideBadge({ tag }: { tag: string }) {
 
 function SlideCtaButton({ text, onClick }: { text: string; onClick: () => void }) {
   return (
-    <button
-      type="button" onClick={onClick}
-      className="px-6 py-3 bg-white text-primary-700 hover:bg-primary-50 active:bg-primary-100 font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5"
-    >
+    <button type="button" onClick={onClick} className="px-6 py-3 bg-white text-primary-700 hover:bg-primary-50 active:bg-primary-100 font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5">
       {text}
     </button>
   );
 }
 
-function SlideContent({ slide, onCta }: { slide: CarouselSlide; onCta: (cat?: string) => void }) {
+interface SlideContentProps {
+  slide: CarouselSlide;
+  onCta: (cat?: string) => void;
+  isCurrent: boolean;
+}
+
+function SlideContent({ slide, onCta, isCurrent }: SlideContentProps) {
+  const opacity = isCurrent ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0';
   return (
-    <div className="relative z-10 h-full flex flex-col justify-center px-6 sm:px-12 md:px-16 max-w-3xl text-white">
+    <div className={`absolute inset-0 flex flex-col justify-center px-6 sm:px-12 md:px-16 max-w-3xl text-white transition-opacity duration-700 ${opacity}`}>
       <SlideBadge tag={slide.tag} />
       <h1 className="text-2xl sm:text-4xl md:text-5xl font-black leading-tight mb-3">{slide.title}</h1>
       <p className="text-sm sm:text-base md:text-lg text-white/90 mb-6">{slide.subtitle}</p>
       <div><SlideCtaButton text={slide.ctaText} onClick={() => onCta(slide.category)} /></div>
     </div>
+  );
+}
+
+function HeroSlideContents({ slides, activeIndex, onCta }: { slides: CarouselSlide[]; activeIndex: number; onCta: (cat?: string) => void }) {
+  return (
+    <>
+      {slides.map((s, idx) => (
+        <SlideContent key={s.id} slide={s} onCta={onCta} isCurrent={idx === activeIndex} />
+      ))}
+    </>
   );
 }
 
@@ -117,14 +131,10 @@ function NavArrows({ onPrev, onNext }: { onPrev: () => void; onNext: () => void 
 function SlideBackgroundImage({ slide, isCurrent, isFirst }: { slide: CarouselSlide; isCurrent: boolean; isFirst: boolean }) {
   const loading = isFirst ? 'eager' : 'lazy';
   const opacity = isCurrent ? 'opacity-100' : 'opacity-0 pointer-events-none';
-  const fetchPriority = isFirst ? 'high' : undefined;
+  const extra = isFirst ? { fetchpriority: 'high' } : {};
   return (
     <div className={`absolute inset-0 transition-opacity duration-700 ${opacity}`}>
-      <img
-        src={slide.imageUrl} alt={slide.title} loading={loading}
-        {...(fetchPriority ? { fetchPriority } : {})}
-        className="absolute inset-0 w-full h-full object-cover"
-      />
+      <img src={slide.imageUrl} alt={slide.title} loading={loading} {...extra} className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-r from-gray-950/80 via-gray-950/50 to-transparent" />
     </div>
   );
@@ -172,11 +182,10 @@ export function HeroCarousel({ slides = HERO_SLIDES, onCtaClick }: HeroCarouselP
   const swipe = useSwipe(next, prev);
   const nav = useNavigate();
   const handleCta = (cat?: string) => (onCtaClick ? onCtaClick(cat) : nav(cat ? `/search?category=${cat}` : '/search'));
-  const curr = slides[index];
   return (
     <section aria-label="Promosi Unggulan SinggahIn" onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)} {...swipe} className="relative w-full h-[360px] sm:h-[420px] md:h-[480px] rounded-3xl overflow-hidden shadow-xl bg-gray-900 select-none">
       <HeroSlideBackgrounds slides={slides} activeIndex={index} />
-      <SlideContent slide={curr} onCta={handleCta} />
+      <HeroSlideContents slides={slides} activeIndex={index} onCta={handleCta} />
       <NavArrows onPrev={prev} onNext={next} />
       <SlideIndicators count={slides.length} active={index} onSelect={setIndex} />
     </section>

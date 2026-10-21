@@ -7,27 +7,35 @@ interface StarRatingInputProps {
   disabled?: boolean;
 }
 
+interface StarButtonProps {
+  star: number;
+  isFilled: boolean;
+  disabled?: boolean;
+  onClick: (star: number) => void;
+  onHover: (star: number) => void;
+}
+
+function StarRatingBtn({ star, isFilled, disabled, onClick, onHover }: StarButtonProps) {
+  const iconCls = `w-6 h-6 transition-colors ${isFilled ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`;
+  return (
+    <button
+      type="button" disabled={disabled} onClick={() => onClick(star)}
+      onMouseEnter={() => onHover(star)} onMouseLeave={() => onHover(0)}
+      className="p-1 cursor-pointer transition-transform hover:scale-110 disabled:cursor-not-allowed focus:outline-none"
+      aria-label={`${star} bintang`}
+    >
+      <Star className={iconCls} />
+    </button>
+  );
+}
+
 export function StarRatingInput({ value, onChange, disabled }: StarRatingInputProps): React.JSX.Element {
   const [hover, setHover] = useState(0);
   return (
     <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Rating bintang">
-      {[1, 2, 3, 4, 5].map((star) => {
-        const isFilled = (hover || value) >= star;
-        return (
-          <button
-            key={star}
-            type="button"
-            disabled={disabled}
-            onClick={() => onChange(star)}
-            onMouseEnter={() => setHover(star)}
-            onMouseLeave={() => setHover(0)}
-            className="p-1 cursor-pointer transition-transform hover:scale-110 disabled:cursor-not-allowed focus:outline-none"
-            aria-label={`${star} bintang`}
-          >
-            <Star className={`w-6 h-6 transition-colors ${isFilled ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
-          </button>
-        );
-      })}
+      {[1, 2, 3, 4, 5].map((star) => (
+        <StarRatingBtn key={star} star={star} isFilled={(hover || value) >= star} disabled={disabled} onClick={onChange} onHover={setHover} />
+      ))}
     </div>
   );
 }

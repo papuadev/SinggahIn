@@ -32,20 +32,27 @@ import { OrderHistoryPage } from "./pages/OrderHistoryPage";
 import { Footer } from "./components/organisms/Footer";
 import { ScrollToTop } from "./components/atoms/ScrollToTop";
 
-function GuestRoutes(): React.JSX.Element {
+function GuestPublicRoutes(): React.JSX.Element {
   return (
     <>
       <Route path="/" element={<ProtectedRoute disallowedRole="TENANT"><HomePage /></ProtectedRoute>} />
       <Route path="/about" element={<AboutUsPage />} />
       <Route path="/search" element={<ProtectedRoute disallowedRole="TENANT"><CatalogSearchPage /></ProtectedRoute>} />
       <Route path="/properties/:id" element={<ProtectedRoute disallowedRole="TENANT"><PropertyDetailPage /></ProtectedRoute>} />
+      <Route path="/forbidden" element={<ForbiddenPage />} />
+    </>
+  );
+}
+
+function GuestAuthRoutes(): React.JSX.Element {
+  return (
+    <>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/verify" element={<VerifyTokenPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify-email-change" element={<VerifyEmailChangePage />} />
-      <Route path="/forbidden" element={<ForbiddenPage />} />
     </>
   );
 }
@@ -80,7 +87,8 @@ function TenantRoutes(): React.JSX.Element {
 function AppRoutes(): React.JSX.Element {
   return (
     <Routes>
-      {GuestRoutes()}
+      {GuestPublicRoutes()}
+      {GuestAuthRoutes()}
       {UserOrderRoutes()}
       {TenantRoutes()}
       <Route path="*" element={<NotFoundPage />} />
@@ -88,24 +96,24 @@ function AppRoutes(): React.JSX.Element {
   );
 }
 
+function MainContent({ isAuthPage }: { isAuthPage: boolean }): React.JSX.Element {
+  const cls = `flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 ${isAuthPage ? 'flex flex-col justify-center' : ''}`;
+  return (
+    <main className={cls}>
+      <AppRoutes />
+    </main>
+  );
+}
+
 export function AppLayout(): React.JSX.Element {
   const location = useLocation();
   const isAuthPage = ['/login', '/register'].includes(location.pathname);
+  const pbCls = isAuthPage ? 'pb-0' : 'pb-16 md:pb-0';
 
   return (
-    <div
-      className={`min-h-screen flex flex-col justify-between bg-gray-50 text-gray-900 ${
-        isAuthPage ? 'pb-0' : 'pb-16 md:pb-0'
-      }`}
-    >
+    <div className={`min-h-screen flex flex-col justify-between bg-gray-50 text-gray-900 ${pbCls}`}>
       {!isAuthPage && <Navbar />}
-      <main
-        className={`flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 ${
-          isAuthPage ? 'flex flex-col justify-center' : ''
-        }`}
-      >
-        <AppRoutes />
-      </main>
+      <MainContent isAuthPage={isAuthPage} />
       {!isAuthPage && <Footer />}
       {!isAuthPage && <MobileBottomNav />}
     </div>

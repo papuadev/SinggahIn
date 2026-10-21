@@ -39,10 +39,7 @@ function PaymentDetailCard({ booking }: { booking: Booking }) {
   const methodLabel = isGateway ? 'Pembayaran Otomatis (Midtrans)' : 'Transfer Bank Manual';
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs space-y-3">
-      <div className="flex items-center gap-2 pb-2 border-b border-gray-100 text-primary-700">
-        <CreditCard className="w-4 h-4" />
-        <h5 className="font-bold text-gray-900 text-sm">Informasi Pembayaran</h5>
-      </div>
+      <div className="flex items-center gap-2 pb-2 border-b border-gray-100 text-primary-700"><CreditCard className="w-4 h-4" /><h5 className="font-bold text-gray-900 text-sm">Informasi Pembayaran</h5></div>
       <div>
         <PaymentDetailRow label="Status Pembayaran" value={<span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Lunas / Terverifikasi</span>} />
         <PaymentDetailRow label="Metode" value={methodLabel} />
@@ -56,14 +53,10 @@ function ReviewedCard({ review }: { review: NonNullable<Booking['review']> }) {
   return (
     <div className="bg-white border border-amber-200 rounded-2xl p-5 shadow-xs space-y-2.5">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
-          <Star className="w-4 h-4 fill-amber-400 text-amber-400" /> Ulasan Anda
-        </span>
+        <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5"><Star className="w-4 h-4 fill-amber-400 text-amber-400" /> Ulasan Anda</span>
         <StarRatingDisplay rating={review.rating} size="sm" />
       </div>
-      <p className="text-xs sm:text-sm text-gray-700 italic bg-amber-50/50 p-3 rounded-xl border border-amber-100">
-        "{review.comment}"
-      </p>
+      <p className="text-xs sm:text-sm text-gray-700 italic bg-amber-50/50 p-3 rounded-xl border border-amber-100">"{review.comment}"</p>
       <span className="text-xs text-emerald-700 font-medium block">✓ Ulasan Anda telah dipublikasikan di halaman properti.</span>
     </div>
   );

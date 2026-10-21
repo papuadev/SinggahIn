@@ -20,20 +20,10 @@ export const QUICK_CATEGORIES: CategoryOption[] = [
   { label: 'Others', slug: 'others', isProtected: true },
 ];
 
-function CategoryChip({
-  cat, isActive, onSelect,
-}: {
-  cat: CategoryOption; isActive: boolean; onSelect: (slug: string) => void;
-}) {
-  const cls = isActive
-    ? 'bg-primary-600 text-white font-semibold shadow-sm'
-    : 'bg-gray-100 text-gray-700 hover:bg-gray-200';
+function CategoryChip({ cat, isActive, onSelect }: { cat: CategoryOption; isActive: boolean; onSelect: (slug: string) => void }) {
+  const cls = isActive ? 'bg-primary-600 text-white font-semibold shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200';
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(cat.slug)}
-      className={`px-3.5 py-1.5 rounded-full text-xs transition-colors shrink-0 ${cls}`}
-    >
+    <button type="button" onClick={() => onSelect(cat.slug)} className={`px-3.5 py-1.5 rounded-full text-xs transition-colors shrink-0 ${cls}`}>
       {cat.label}
     </button>
   );

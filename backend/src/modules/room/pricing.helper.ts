@@ -85,6 +85,30 @@ function resolveWeekendPrice(basePrice: number, rate: number) {
   };
 }
 
+function resolveModifierPrice(basePrice: number, mod: RoomPriceModifierDto) {
+  return {
+    price: computeAdjustedPrice(basePrice, mod.adjustmentType, mod.adjustmentValue),
+    type: mod.adjustmentType,
+    value: mod.adjustmentValue,
+    reason: mod.reason,
+  };
+}
+
+function resolveSpecialOrWeekend(
+  basePrice: number,
+  isWeekend: boolean,
+  wRate?: number | null,
+  hRate?: number | null,
+  date?: Date
+) {
+  if (date && hRate && hRate > 0) {
+    const hol = resolveHolidayPrice(basePrice, hRate, date);
+    if (hol) return hol;
+  }
+  if (isWeekend && wRate && wRate > 0) return resolveWeekendPrice(basePrice, wRate);
+  return null;
+}
+
 function resolveEffectivePrice(
   basePrice: number,
   mod: RoomPriceModifierDto | null,
@@ -93,17 +117,9 @@ function resolveEffectivePrice(
   holidayRatePercent?: number | null,
   date?: Date
 ) {
-  if (mod) {
-    return { price: computeAdjustedPrice(basePrice, mod.adjustmentType, mod.adjustmentValue), type: mod.adjustmentType, value: mod.adjustmentValue, reason: mod.reason };
-  }
-  if (date && holidayRatePercent && holidayRatePercent > 0) {
-    const hol = resolveHolidayPrice(basePrice, holidayRatePercent, date);
-    if (hol) return hol;
-  }
-  if (isWeekend && weekendRatePercent && weekendRatePercent > 0) {
-    return resolveWeekendPrice(basePrice, weekendRatePercent);
-  }
-  return { price: basePrice, type: null, value: null, reason: null };
+  if (mod) return resolveModifierPrice(basePrice, mod);
+  const special = resolveSpecialOrWeekend(basePrice, isWeekend, weekendRatePercent, holidayRatePercent, date);
+  return special || { price: basePrice, type: null, value: null, reason: null };
 }
 
 export function buildDailyPrice(
@@ -114,15 +130,11 @@ export function buildDailyPrice(
   holidayRatePercent?: number | null
 ): DailyPriceDto {
   const isWeekend = isWeekendDay(date);
-  const resolved = resolveEffectivePrice(basePrice, mod, isWeekend, weekendRatePercent, holidayRatePercent, date);
+  const res = resolveEffectivePrice(basePrice, mod, isWeekend, weekendRatePercent, holidayRatePercent, date);
   return {
     date: toUtcDate(date).toISOString().slice(0, 10),
-    basePrice,
-    effectivePrice: resolved.price,
-    modifierId: mod?.id ?? null,
-    adjustmentType: resolved.type,
-    adjustmentValue: resolved.value,
-    reason: resolved.reason,
+    basePrice, effectivePrice: res.price, modifierId: mod?.id ?? null,
+    adjustmentType: res.type, adjustmentValue: res.value, reason: res.reason,
   };
 }
 

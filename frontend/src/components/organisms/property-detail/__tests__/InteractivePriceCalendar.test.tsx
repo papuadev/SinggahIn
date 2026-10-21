@@ -17,6 +17,7 @@ const mockCalendarData = {
     { date: '2026-10-12', price: 0, isAvailable: false, reason: 'Sold Out' },
     { date: '2026-10-13', price: 500000, isAvailable: true, reason: null },
     { date: '2026-10-14', price: 500000, isAvailable: true, reason: null },
+    { date: '2026-10-15', price: 0, isAvailable: false, reason: 'Maintenance' },
   ],
 };
 
@@ -40,6 +41,13 @@ function renderCalendar(props: Partial<Parameters<typeof InteractivePriceCalenda
   );
 }
 
+function getDayButtonByBadge(text: string): HTMLButtonElement {
+  const elements = screen.getAllByText(text);
+  const btn = elements.map((el) => el.closest('button')).find(Boolean);
+  if (!btn) throw new Error(`Button with badge ${text} not found`);
+  return btn as HTMLButtonElement;
+}
+
 describe('InteractivePriceCalendar Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -56,8 +64,9 @@ describe('InteractivePriceCalendar Component', () => {
   it('renders section title, room selector options, and legend chips', async () => {
     renderCalendar();
     expect(screen.getByRole('heading', { name: /Kalender Ketersediaan & Tarif Harian/i })).toBeInTheDocument();
-    expect(screen.getByText('Tersedia (Tarif Harian)')).toBeInTheDocument();
-    expect(screen.getByText('Penuh / Sold Out')).toBeInTheDocument();
+    expect(screen.getByText('Tersedia')).toBeInTheDocument();
+    expect(screen.getByText('Tutup (Tidak Tersedia)')).toBeInTheDocument();
+    expect(screen.getAllByText('Penuh').length).toBeGreaterThan(0);
     expect(screen.getByRole('combobox', { name: /Pilih Tipe Kamar/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Deluxe Suite' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Executive Suite' })).toBeInTheDocument();
@@ -70,23 +79,28 @@ describe('InteractivePriceCalendar Component', () => {
     });
   });
 
-  it('renders daily price and sold out badge when data is loaded', async () => {
+  it('renders daily price, sold out, and closed badge when data is loaded', async () => {
     renderCalendar();
     await waitFor(() => {
-      expect(screen.getByText('Penuh')).toBeInTheDocument();
+      expect(getDayButtonByBadge('Penuh')).toBeInTheDocument();
+      expect(getDayButtonByBadge('Tutup')).toBeInTheDocument();
     });
     expect(screen.getAllByText('500K').length).toBeGreaterThan(0);
     expect(screen.getByText('650K')).toBeInTheDocument();
   });
 
-  it('disables date cell that is Sold Out', async () => {
+  it('disables date cell that is Sold Out or Closed', async () => {
     renderCalendar();
     await waitFor(() => {
-      expect(screen.getByText('Penuh')).toBeInTheDocument();
+      expect(getDayButtonByBadge('Penuh')).toBeInTheDocument();
+      expect(getDayButtonByBadge('Tutup')).toBeInTheDocument();
     });
-    const soldOutDayBtn = screen.getByText('Penuh').closest('button');
+    const soldOutDayBtn = getDayButtonByBadge('Penuh');
     expect(soldOutDayBtn).toHaveAttribute('aria-disabled', 'true');
     expect(soldOutDayBtn).toBeDisabled();
+    const closedDayBtn = getDayButtonByBadge('Tutup');
+    expect(closedDayBtn).toHaveAttribute('aria-disabled', 'true');
+    expect(closedDayBtn).toBeDisabled();
   });
 
   it('navigates to next month when clicking next button', async () => {
@@ -133,7 +147,7 @@ describe('InteractivePriceCalendar Component', () => {
     const handleSelectDates = vi.fn();
     renderCalendar({ checkIn: '2026-10-10', onSelectDates: handleSelectDates });
     await waitFor(() => {
-      expect(screen.getByText('Penuh')).toBeInTheDocument();
+      expect(getDayButtonByBadge('Penuh')).toBeInTheDocument();
     });
     const day14Btn = screen.getAllByText('14')[0].closest('button')!;
     fireEvent.click(day14Btn);
@@ -144,9 +158,9 @@ describe('InteractivePriceCalendar Component', () => {
     const handleSelectDates = vi.fn();
     renderCalendar({ checkIn: '2026-10-11', onSelectDates: handleSelectDates });
     await waitFor(() => {
-      expect(screen.getByText('Penuh')).toBeInTheDocument();
+      expect(getDayButtonByBadge('Penuh')).toBeInTheDocument();
     });
-    const soldOutDayBtn = screen.getByText('Penuh').closest('button')!;
+    const soldOutDayBtn = getDayButtonByBadge('Penuh');
     expect(soldOutDayBtn).not.toBeDisabled();
     fireEvent.click(soldOutDayBtn);
     expect(handleSelectDates).toHaveBeenCalledWith('2026-10-11', '2026-10-12');

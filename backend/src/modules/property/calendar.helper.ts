@@ -44,6 +44,20 @@ export function isDateWeekend(dateStr: string): boolean {
   return day === 0 || day === 6;
 }
 
+function checkHolidayOrWeekendPrice(
+  dateStr: string, basePrice: number, weekendPercent?: number | null, holidayPercent?: number | null
+): { price: number; reason: string | null } | null {
+  const holiday = getIndonesianNationalHoliday(dateStr);
+  if (holiday.isHoliday && holidayPercent && holidayPercent > 0) {
+    const reason = holiday.name ? `Libur Nasional: ${holiday.name}` : 'Libur Nasional';
+    return { price: computeAdjustedPrice(basePrice, AdjustmentType.PERCENTAGE, holidayPercent), reason };
+  }
+  if (isDateWeekend(dateStr) && weekendPercent && weekendPercent > 0) {
+    return { price: computeAdjustedPrice(basePrice, AdjustmentType.PERCENTAGE, weekendPercent), reason: 'Weekend Rate' };
+  }
+  return null;
+}
+
 export function calculateDayPrice(
   dateStr: string,
   basePrice: number,
@@ -55,14 +69,7 @@ export function calculateDayPrice(
   if (mod) {
     return { price: computeAdjustedPrice(basePrice, mod.adjustmentType, mod.adjustmentValue), reason: mod.reason || 'Peak Season Rate' };
   }
-  const holiday = getIndonesianNationalHoliday(dateStr);
-  if (holiday.isHoliday && holidayPercent && holidayPercent > 0) {
-    return { price: computeAdjustedPrice(basePrice, AdjustmentType.PERCENTAGE, holidayPercent), reason: holiday.name ? `Libur Nasional: ${holiday.name}` : 'Libur Nasional' };
-  }
-  if (isDateWeekend(dateStr) && weekendPercent && weekendPercent > 0) {
-    return { price: computeAdjustedPrice(basePrice, AdjustmentType.PERCENTAGE, weekendPercent), reason: 'Weekend Rate' };
-  }
-  return { price: basePrice, reason: null };
+  return checkHolidayOrWeekendPrice(dateStr, basePrice, weekendPercent, holidayPercent) || { price: basePrice, reason: null };
 }
 
 export function buildCalendarDay(

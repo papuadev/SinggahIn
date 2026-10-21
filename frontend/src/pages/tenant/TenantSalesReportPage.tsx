@@ -58,19 +58,25 @@ function buildQueryParams(s: ReturnType<typeof getInitialState>) {
   };
 }
 
+function SalesFilterBarWrapper({ s, properties }: any) {
+  return (
+    <SalesFilterBar
+      {...s.state} properties={properties}
+      onStartDateChange={s.onStart} onEndDateChange={s.onEnd}
+      onMonthChange={s.onMonth} onYearChange={s.onYear}
+      onToggleAllData={s.toggleAll} onReset={s.reset}
+      onGroupByChange={(groupBy) => s.setState((p: any) => ({ ...p, groupBy }))}
+      onPropertyIdChange={(propertyId) => s.setState((p: any) => ({ ...p, propertyId }))}
+      onSortByChange={(sortBy) => s.setState((p: any) => ({ ...p, sortBy }))}
+    />
+  );
+}
+
 function SalesContentSection({ s, data, props, isLoading }: any) {
   return (
     <>
       <SalesSummaryCards totalRevenue={data?.totalRevenue || 0} totalBookings={data?.totalBookings || 0} />
-      <SalesFilterBar
-        {...s.state} properties={props}
-        onStartDateChange={s.onStart} onEndDateChange={s.onEnd}
-        onMonthChange={s.onMonth} onYearChange={s.onYear}
-        onToggleAllData={s.toggleAll} onReset={s.reset}
-        onGroupByChange={(groupBy) => s.setState((p: any) => ({ ...p, groupBy }))}
-        onPropertyIdChange={(propertyId) => s.setState((p: any) => ({ ...p, propertyId }))}
-        onSortByChange={(sortBy) => s.setState((p: any) => ({ ...p, sortBy }))}
-      />
+      <SalesFilterBarWrapper s={s} properties={props} />
       <SalesBreakdownTable groupBy={s.state.groupBy} data={data?.breakdown || []} isLoading={isLoading} />
     </>
   );

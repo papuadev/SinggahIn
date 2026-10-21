@@ -30,30 +30,30 @@ function ProofPreview({ preview, onClear }: { preview: string; onClear: () => vo
   return (
     <div className="relative border rounded-xl overflow-hidden bg-gray-100 max-h-48 flex items-center justify-center">
       <img src={preview} alt="Pratinjau Bukti" className="object-contain max-h-48 w-full" />
-      <button
-        type="button"
-        onClick={onClear}
-        className="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white p-2 rounded-lg shadow-md transition-colors cursor-pointer"
-        title="Hapus Bukti Transfer"
-        aria-label="Hapus Bukti Transfer"
-      >
+      <button type="button" onClick={onClear} className="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white p-2 rounded-lg shadow-md transition-colors cursor-pointer" title="Hapus Bukti Transfer" aria-label="Hapus Bukti Transfer">
         <Trash2 className="w-4 h-4" />
       </button>
     </div>
   );
 }
 
-function DropzonePrompt({ onClick, onDropFile }: { onClick: () => void; onDropFile: (f: File) => void }) {
+function useDragDrop(onDropFile: (f: File) => void) {
   const [isDrag, setIsDrag] = useState(false);
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault(); setIsDrag(false);
     const file = e.dataTransfer.files?.[0];
     if (file) onDropFile(file);
   };
+  return { isDrag, setIsDrag, onDrop };
+}
+
+function DropzonePrompt({ onClick, onDropFile }: { onClick: () => void; onDropFile: (f: File) => void }) {
+  const { isDrag, setIsDrag, onDrop } = useDragDrop(onDropFile);
   const cls = isDrag ? 'border-primary-600 bg-primary-50 ring-2 ring-primary-200' : 'border-gray-300 hover:border-primary-500 bg-gray-50/50';
+  const iconCls = `w-8 h-8 mx-auto mb-2 transition-colors ${isDrag ? 'text-primary-600' : 'text-gray-400'}`;
   return (
     <div onClick={onClick} onDragOver={(e) => { e.preventDefault(); setIsDrag(true); }} onDragLeave={() => setIsDrag(false)} onDrop={onDrop} className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${cls}`}>
-      <UploadCloud className={`w-8 h-8 mx-auto mb-2 transition-colors ${isDrag ? 'text-primary-600' : 'text-gray-400'}`} />
+      <UploadCloud className={iconCls} />
       <p className="text-sm font-medium text-gray-700">Pilih atau Seret Foto Bukti Transfer</p>
       <p className="text-xs text-gray-400 mt-1">Format JPG atau PNG (Maksimal 1MB)</p>
     </div>

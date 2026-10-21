@@ -65,49 +65,45 @@ function ConfirmedPaymentCard({ booking }: { booking: Booking }) {
   );
 }
 
-export function ConfirmedStaySection({ booking }: { booking: Booking }): React.JSX.Element {
+function useInvoiceDownload(id: string, code: string) {
   const [isDownloading, setIsDownloading] = React.useState(false);
   const [downloadError, setDownloadError] = React.useState<string | null>(null);
-
-  const handleDownloadInvoice = async () => {
+  const download = async () => {
+    setIsDownloading(true);
+    setDownloadError(null);
     try {
-      setIsDownloading(true);
-      setDownloadError(null);
-      await bookingApi.downloadInvoice(booking.id, booking.bookingCode);
+      await bookingApi.downloadInvoice(id, code);
     } catch (err: any) {
       setDownloadError(err?.message || 'Gagal mengunduh invoice PDF.');
-    } finally {
-      setIsDownloading(false);
-    }
+    } finally { setIsDownloading(false); }
   };
+  return { isDownloading, downloadError, download };
+}
 
+function InvoiceButtons({ onDownload, isDownloading }: { onDownload: () => void; isDownloading: boolean }) {
+  return (
+    <div className="pt-2 space-y-2">
+      <Button variant="primary" size="md" className="w-full" onClick={onDownload} isLoading={isDownloading} leftIcon={<Download className="w-4 h-4 shrink-0" />}>
+        Download Invoice
+      </Button>
+      <Link to="/orders" className="block">
+        <Button variant="ghost" size="sm" className="w-full text-gray-500 hover:text-gray-800">
+          Kembali ke Riwayat Pesanan
+        </Button>
+      </Link>
+    </div>
+  );
+}
+
+export function ConfirmedStaySection({ booking }: { booking: Booking }): React.JSX.Element {
+  const { isDownloading, downloadError, download } = useInvoiceDownload(booking.id, booking.bookingCode);
   return (
     <div className="space-y-5">
       <ConfirmedBanner code={booking.bookingCode} />
       <CheckInInstructionCard booking={booking} />
       <ConfirmedPaymentCard booking={booking} />
-      {downloadError && (
-        <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-2.5 text-center">
-          {downloadError}
-        </p>
-      )}
-      <div className="pt-2 space-y-2">
-        <Button
-          variant="primary"
-          size="md"
-          className="w-full"
-          onClick={handleDownloadInvoice}
-          isLoading={isDownloading}
-          leftIcon={<Download className="w-4 h-4 shrink-0" />}
-        >
-          Download Invoice
-        </Button>
-        <Link to="/orders" className="block">
-          <Button variant="ghost" size="sm" className="w-full text-gray-500 hover:text-gray-800">
-            Kembali ke Riwayat Pesanan
-          </Button>
-        </Link>
-      </div>
+      {downloadError && <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-2.5 text-center">{downloadError}</p>}
+      <InvoiceButtons onDownload={download} isDownloading={isDownloading} />
     </div>
   );
 }

@@ -83,21 +83,21 @@ export async function approvePaymentProof(tenantId: string, bookingId: string): 
   return mapActionResponse(updated);
 }
 
+function buildRejectData(reason?: string) {
+  return {
+    status: BookingStatus.WAITING_PAYMENT,
+    expiresAt: calculateGraceExpiry(1),
+    cancellationReason: reason || 'Bukti transfer ditolak oleh tenant',
+    payment: {
+      update: { status: PaymentStatus.REJECTED, proofImageUrl: null, proofPublicId: null },
+    },
+  };
+}
+
 async function executeRejectTx(tx: Prisma.TransactionClient, bookingId: string, reason?: string) {
   return tx.booking.update({
     where: { id: bookingId },
-    data: {
-      status: BookingStatus.WAITING_PAYMENT,
-      expiresAt: calculateGraceExpiry(1),
-      cancellationReason: reason || 'Bukti transfer ditolak oleh tenant',
-      payment: {
-        update: {
-          status: PaymentStatus.REJECTED,
-          proofImageUrl: null,
-          proofPublicId: null,
-        },
-      },
-    },
+    data: buildRejectData(reason),
     include: { payment: true },
   });
 }

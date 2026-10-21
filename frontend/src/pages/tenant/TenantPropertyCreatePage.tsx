@@ -16,20 +16,24 @@ function CreatePageHeader(): React.JSX.Element {
   );
 }
 
-export function TenantPropertyCreatePage(): React.JSX.Element {
+function usePropertyCreateSubmit() {
   const navigate = useNavigate();
-  const createMutation = useCreateProperty();
-
-  const handleSubmit = async (data: PropertyFormData) => {
-    await createMutation.mutateAsync(data);
+  const mut = useCreateProperty();
+  const onSubmit = async (data: PropertyFormData) => {
+    await mut.mutateAsync(data);
     navigate('/tenant/properties');
   };
+  return { mut, onSubmit };
+}
 
+export function TenantPropertyCreatePage(): React.JSX.Element {
+  const { mut, onSubmit } = usePropertyCreateSubmit();
+  const errorMsg = (mut.error as Error)?.message || 'Gagal menyimpan properti.';
   return (
     <div className="max-w-4xl mx-auto py-4">
       <CreatePageHeader />
-      {createMutation.isError && <Alert variant="error" className="mb-6">{(createMutation.error as Error).message || 'Gagal menyimpan properti.'}</Alert>}
-      <PropertyForm onSubmit={handleSubmit} isLoading={createMutation.isPending} submitText="Simpan & Publikasikan Properti" />
+      {mut.isError && <Alert variant="error" className="mb-6">{errorMsg}</Alert>}
+      <PropertyForm onSubmit={onSubmit} isLoading={mut.isPending} submitText="Simpan & Publikasikan Properti" />
     </div>
   );
 }

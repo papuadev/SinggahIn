@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Image as ImageIcon, Building } from 'lucide-react';
 import { PropertyImage } from '../../../modules/property/property.types';
 import { PropertyDetailLightbox } from './PropertyDetailLightbox';
+import { optimizeImageUrl } from '../../../libs/image';
 
 export interface PropertyDetailGalleryProps {
   images?: PropertyImage[];
@@ -42,17 +43,19 @@ function ViewAllButton({ total, onClick }: { total: number; onClick: () => void 
 
 function MainCoverImage({ img, title, onClick, hasOthers }: MainCoverProps) {
   const colSpan = hasOthers ? 'md:col-span-2' : 'md:col-span-4';
+  const src = optimizeImageUrl(img.imageUrl, 800, 600);
   return (
     <div className={`${colSpan} relative aspect-[4/3] md:aspect-auto md:h-[420px] cursor-pointer overflow-hidden group`} onClick={onClick}>
-      <img src={img.imageUrl} alt={`${title} - Foto Utama`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+      <img src={src} alt={`${title} - Foto Utama`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
     </div>
   );
 }
 
 function ThumbnailItem({ img, title, index, onSelect }: { img: PropertyImage; title: string; index: number; onSelect: () => void }) {
+  const src = optimizeImageUrl(img.imageUrl, 400, 300);
   return (
     <div className="relative aspect-[4/3] h-[204px] cursor-pointer overflow-hidden group" onClick={onSelect}>
-      <img src={img.imageUrl} alt={`${title} - Foto ${index + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+      <img src={src} alt={`${title} - Foto ${index + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
     </div>
   );
 }

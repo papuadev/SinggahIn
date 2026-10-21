@@ -33,32 +33,45 @@ function validateAvatarFile(file: File): string | null {
   return null;
 }
 
+async function executeUpload(
+  file: File,
+  onUpload: (file: File) => Promise<string>,
+  setPreview: (url: string | null) => void,
+  setErr: (msg: string | null) => void,
+  setLoading: (l: boolean) => void
+) {
+  const objectUrl = URL.createObjectURL(file);
+  setPreview(objectUrl);
+  setLoading(true);
+  setErr(null);
+  try { await onUpload(file); setPreview(null); }
+  catch (err: any) { setErr(err.message || 'Gagal mengunggah foto.'); setPreview(null); }
+  finally { setLoading(false); URL.revokeObjectURL(objectUrl); }
+}
+
 function useAvatarUpload(onUpload: (file: File) => Promise<string>) {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const performUpload = async (file: File) => {
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
-    setIsUploading(true);
-    setErrorMessage(null);
-    try { await onUpload(file); setPreviewUrl(null); }
-    catch (err: any) { setErrorMessage(err.message || 'Gagal mengunggah foto.'); setPreviewUrl(null); }
-    finally { setIsUploading(false); URL.revokeObjectURL(objectUrl); }
-  };
-
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const err = validateAvatarFile(file);
-    if (err) { setErrorMessage(err); return; }
-    setErrorMessage(null);
-    performUpload(file);
+    if (err) return setErrorMessage(err);
+    executeUpload(file, onUpload, setPreviewUrl, setErrorMessage, setIsUploading);
     e.target.value = '';
   };
-
   return { isUploading, previewUrl, errorMessage, handleFileSelected };
+}
+
+function UploadButton({ onClick, disabled }: { onClick: () => void; disabled: boolean }) {
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} aria-label="Ubah foto profil"
+      className="absolute bottom-0 right-0 p-2 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 transition-colors">
+      <Camera className="w-4 h-4" />
+    </button>
+  );
 }
 
 function AvatarFrame({ displayUrl, userName, isUploading, triggerSelect, disabled, fileInputRef, onFileChange }: any) {
@@ -66,18 +79,9 @@ function AvatarFrame({ displayUrl, userName, isUploading, triggerSelect, disable
     <div className="relative group">
       <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-gray-200 bg-gray-100 flex items-center justify-center text-gray-500 shadow-sm">
         <AvatarVisual displayUrl={displayUrl} userName={userName} />
-        {isUploading && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <Spinner size="md" className="text-white" />
-          </div>
-        )}
+        {isUploading && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><Spinner size="md" className="text-white" /></div>}
       </div>
-      <button
-        type="button" onClick={triggerSelect} disabled={disabled || isUploading} aria-label="Ubah foto profil"
-        className="absolute bottom-0 right-0 p-2 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 transition-colors"
-      >
-        <Camera className="w-4 h-4" />
-      </button>
+      <UploadButton onClick={triggerSelect} disabled={disabled || isUploading} />
       <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={onFileChange} />
     </div>
   );
@@ -87,13 +91,9 @@ export function AvatarUploader({ currentAvatarUrl, userName, onUpload, disabled 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const u = useAvatarUpload(onUpload);
   const triggerSelect = () => { if (!disabled && !u.isUploading) fileInputRef.current?.click(); };
-  const displayUrl = u.previewUrl || currentAvatarUrl;
   return (
     <div className="flex flex-col items-center gap-2">
-      <AvatarFrame
-        displayUrl={displayUrl} userName={userName} isUploading={u.isUploading}
-        triggerSelect={triggerSelect} disabled={disabled} fileInputRef={fileInputRef} onFileChange={u.handleFileSelected}
-      />
+      <AvatarFrame displayUrl={u.previewUrl || currentAvatarUrl} userName={userName} isUploading={u.isUploading} triggerSelect={triggerSelect} disabled={disabled} fileInputRef={fileInputRef} onFileChange={u.handleFileSelected} />
       <p className="text-xs text-gray-500">Maks. 1MB (.jpg, .png, .webp)</p>
       {u.errorMessage && <p className="text-xs text-red-600 font-medium">{u.errorMessage}</p>}
     </div>

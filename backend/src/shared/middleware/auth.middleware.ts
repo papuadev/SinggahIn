@@ -12,15 +12,10 @@ function extractToken(req: Request): string | null {
   return null;
 }
 
-export function authenticate(
-  req: Request,
-  _res: Response,
-  next: NextFunction
-): void {
+export function authenticate(req: Request, _res: Response, next: NextFunction): void {
   const token = extractToken(req);
   if (!token) {
-    next(AppError.unauthorized('Sesi login tidak valid atau belum tersedia.'));
-    return;
+    return next(AppError.unauthorized('Sesi login tidak valid atau belum tersedia.'));
   }
   try {
     req.user = verifyToken(token);

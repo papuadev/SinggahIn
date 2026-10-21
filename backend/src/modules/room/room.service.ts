@@ -34,73 +34,48 @@ export async function createRoom(
   });
 }
 
+function buildRoomWhere(propertyId: string, search?: string): Prisma.RoomWhereInput {
+  const where: Prisma.RoomWhereInput = { propertyId };
+  if (!search?.trim()) return where;
+  const s = search.trim();
+  where.OR = [
+    { name: { contains: s, mode: 'insensitive' } },
+    { description: { contains: s, mode: 'insensitive' } },
+  ];
+  return where;
+}
+
+function buildRoomOrderBy(sortBy?: string): Prisma.RoomOrderByWithRelationInput {
+  switch (sortBy) {
+    case 'price_desc': return { basePrice: 'desc' };
+    case 'name_asc': return { name: 'asc' };
+    case 'name_desc': return { name: 'desc' };
+    case 'units_desc': return { totalUnits: 'desc' };
+    default: return { basePrice: 'asc' };
+  }
+}
+
+const ROOM_INCLUDE = { images: { orderBy: [{ order: 'asc' as const }, { createdAt: 'asc' as const }] } };
+
+async function fetchPaginatedRooms(where: Prisma.RoomWhereInput, orderBy: Prisma.RoomOrderByWithRelationInput, page = 1, limit = 5) {
+  const skip = (page - 1) * limit;
+  const [totalItems, data] = await Promise.all([
+    prisma.room.count({ where }),
+    prisma.room.findMany({ where, orderBy, skip, take: limit, include: ROOM_INCLUDE }),
+  ]);
+  return { data, meta: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) } };
+}
+
 export async function getRoomsByProperty(
   propertyId: string,
   query?: GetRoomsQueryInput
 ): Promise<{ data: RoomResponseDto[]; meta?: PaginationMeta }> {
-  const where: Prisma.RoomWhereInput = { propertyId };
-
-  if (query?.search?.trim()) {
-    const s = query.search.trim();
-    where.OR = [
-      { name: { contains: s, mode: 'insensitive' } },
-      { description: { contains: s, mode: 'insensitive' } },
-    ];
-  }
-
-  let orderBy: Prisma.RoomOrderByWithRelationInput = { basePrice: 'asc' };
-  switch (query?.sortBy) {
-    case 'price_desc':
-      orderBy = { basePrice: 'desc' };
-      break;
-    case 'name_asc':
-      orderBy = { name: 'asc' };
-      break;
-    case 'name_desc':
-      orderBy = { name: 'desc' };
-      break;
-    case 'units_desc':
-      orderBy = { totalUnits: 'desc' };
-      break;
-    case 'price_asc':
-    default:
-      orderBy = { basePrice: 'asc' };
-      break;
-  }
-
+  const where = buildRoomWhere(propertyId, query?.search);
+  const orderBy = buildRoomOrderBy(query?.sortBy);
   if (query?.page || query?.limit) {
-    const page = query.page || 1;
-    const limit = query.limit || 5;
-    const skip = (page - 1) * limit;
-
-    const [totalItems, data] = await Promise.all([
-      prisma.room.count({ where }),
-      prisma.room.findMany({
-        where,
-        orderBy,
-        skip,
-        take: limit,
-        include: { images: { orderBy: [{ order: 'asc' }, { createdAt: 'asc' }] } },
-      }),
-    ]);
-
-    const totalPages = Math.ceil(totalItems / limit);
-    return {
-      data,
-      meta: {
-        page,
-        limit,
-        totalItems,
-        totalPages,
-      },
-    };
+    return fetchPaginatedRooms(where, orderBy, query.page, query.limit);
   }
-
-  const data = await prisma.room.findMany({
-    where,
-    orderBy,
-    include: { images: { orderBy: [{ order: 'asc' }, { createdAt: 'asc' }] } },
-  });
+  const data = await prisma.room.findMany({ where, orderBy, include: ROOM_INCLUDE });
   return { data };
 }
 

@@ -83,9 +83,7 @@ export function VerifyForm(props: VerifyFormProps): React.JSX.Element {
       <VerifyNameField register={s.register} errors={s.errors} isLoading={isLoading} />
       <VerifyPasswordField register={s.register} errors={s.errors} isLoading={isLoading} showPassword={s.showPassword} togglePassword={s.togglePassword} />
       <VerifyConfirmPasswordField register={s.register} errors={s.errors} isLoading={isLoading} showPassword={s.showPassword} />
-      <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full mt-2">
-        Aktivasi Akun & Masuk
-      </Button>
+      <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full mt-2">Aktivasi Akun & Masuk</Button>
     </form>
   );
 }

@@ -87,21 +87,21 @@ function useSelectRoomFromCard(
   }, [setSelectedRoomId, setIsCalendarOpen, hasDates]);
 }
 
+function usePropertyDetailStates() {
+  const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(undefined);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  return { selectedRoomId, setSelectedRoomId, isCalendarOpen, setIsCalendarOpen };
+}
+
 export function usePropertyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const dates = useDateRangeParams();
   const dateModal = useMissingDatesModal();
   const { data: property, isLoading, isError } = usePropertyQuery(id);
   const { rooms, lowestPrice } = useRoomSelection(property?.rooms, id);
-  const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(undefined);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const states = usePropertyDetailStates();
   const handleBookRoom = usePropertyBooking(id, dates.checkIn, dates.checkOut, dateModal.openDateModal);
-  const hasDates = Boolean(dates.checkIn && dates.checkOut);
-  const handleSelectRoomFromCard = useSelectRoomFromCard(setSelectedRoomId, setIsCalendarOpen, hasDates);
-  return {
-    id, property, rooms, lowestPrice, selectedRoomId, setSelectedRoomId,
-    isCalendarOpen, setIsCalendarOpen,
-    isLoading, isError, scrollToRooms: useScrollToRooms(), handleBookRoom,
-    handleSelectRoomFromCard, ...dateModal, ...dates,
-  };
+  const handleSelectRoomFromCard = useSelectRoomFromCard(states.setSelectedRoomId, states.setIsCalendarOpen, Boolean(dates.checkIn && dates.checkOut));
+  const scrollToRooms = useScrollToRooms();
+  return { id, property, rooms, lowestPrice, ...states, isLoading, isError, scrollToRooms, handleBookRoom, handleSelectRoomFromCard, ...dateModal, ...dates };
 }

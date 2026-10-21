@@ -10,20 +10,26 @@ interface RateItemProps {
   isDeleting: boolean;
 }
 
-export function RateItem({ rate, onDelete, isDeleting }: RateItemProps): React.JSX.Element {
-  const badgeText = rate.adjustmentType === 'PERCENTAGE'
-    ? `${rate.adjustmentValue > 0 ? '+' : ''}${rate.adjustmentValue}%`
-    : `${rate.adjustmentValue > 0 ? '+' : ''}${formatRupiah(rate.adjustmentValue)}`;
+const getBadgeText = (type: string, val: number) =>
+  `${val > 0 ? '+' : ''}${type === 'PERCENTAGE' ? `${val}%` : formatRupiah(val)}`;
 
+function RateItemInfo({ badgeText, startDate, endDate, reason }: { badgeText: string; startDate: string | Date; endDate: string | Date; reason?: string | null }) {
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <span className="font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded border border-primary-100">{badgeText}</span>
+        <span className="font-medium text-gray-800">{formatDateID(startDate, 'dd MMM yyyy')} - {formatDateID(endDate, 'dd MMM yyyy')}</span>
+      </div>
+      {reason && <p className="text-gray-500 mt-1">{reason}</p>}
+    </div>
+  );
+}
+
+export function RateItem({ rate, onDelete, isDeleting }: RateItemProps): React.JSX.Element {
+  const badgeText = getBadgeText(rate.adjustmentType, rate.adjustmentValue);
   return (
     <div className="flex items-center justify-between p-2.5 rounded-lg border border-gray-200 bg-gray-50/50 text-xs">
-      <div>
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded border border-primary-100">{badgeText}</span>
-          <span className="font-medium text-gray-800">{formatDateID(rate.startDate, 'dd MMM yyyy')} - {formatDateID(rate.endDate, 'dd MMM yyyy')}</span>
-        </div>
-        {rate.reason && <p className="text-gray-500 mt-1">{rate.reason}</p>}
-      </div>
+      <RateItemInfo badgeText={badgeText} startDate={rate.startDate} endDate={rate.endDate} reason={rate.reason} />
       <button type="button" onClick={() => onDelete(rate.id)} disabled={isDeleting} aria-label="Hapus tarif" className="p-1 text-gray-400 hover:text-rose-600 transition-colors disabled:opacity-50">
         <Trash2 className="w-4 h-4" />
       </button>

@@ -41,18 +41,10 @@ function renderIcon(variant: AlertVariant): React.JSX.Element {
   return <Info className={iconClass} />;
 }
 
-export function Alert({
-  variant = 'info',
-  title,
-  children,
-  className = '',
-}: AlertProps): React.JSX.Element {
+export function Alert({ variant = 'info', title, children, className = '' }: AlertProps): React.JSX.Element {
   const styles = alertStyles[variant];
   return (
-    <div
-      role="alert"
-      className={`flex items-start gap-3 p-4 rounded-lg border text-sm ${styles.box} ${className}`}
-    >
+    <div role="alert" className={`flex items-start gap-3 p-4 rounded-lg border text-sm ${styles.box} ${className}`}>
       {renderIcon(variant)}
       <div className="flex-1">
         {title && <h5 className="font-semibold mb-0.5">{title}</h5>}

@@ -16,25 +16,20 @@ function getInputClasses(hasError: boolean, hasLeft: boolean, hasRight: boolean,
   return `${base} ${border} ${pl} ${pr} py-2.5 ${custom}`;
 }
 
+function InputAdornment({ icon, side }: { icon: React.ReactNode; side: 'left' | 'right' }) {
+  if (!icon) return null;
+  const pos = side === 'left' ? 'left-0 pl-3 pointer-events-none' : 'right-0 pr-3';
+  return <div className={`absolute inset-y-0 ${pos} flex items-center text-gray-400`}>{icon}</div>;
+}
+
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  function Input(
-    { hasError = false, leftIcon, rightIcon, className = '', ...props },
-    ref
-  ): React.JSX.Element {
+  function Input({ hasError = false, leftIcon, rightIcon, className = '', ...props }, ref): React.JSX.Element {
     const inputClass = getInputClasses(hasError, !!leftIcon, !!rightIcon, className);
     return (
       <div className="relative w-full">
-        {leftIcon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-            {leftIcon}
-          </div>
-        )}
+        <InputAdornment icon={leftIcon} side="left" />
         <input ref={ref} className={inputClass} {...props} />
-        {rightIcon && (
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400">
-            {rightIcon}
-          </div>
-        )}
+        <InputAdornment icon={rightIcon} side="right" />
       </div>
     );
   }

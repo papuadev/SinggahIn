@@ -37,34 +37,22 @@ function PasswordToggle({ showPassword, togglePassword }: any) {
   );
 }
 
+function PasswordLabelRow() {
+  return (
+    <div className="flex items-center justify-between">
+      <label htmlFor="login-password" className="text-sm font-medium text-gray-700">Password <span className="text-red-500">*</span></label>
+      <a href="/forgot-password" className="text-xs font-semibold text-primary-600 hover:text-primary-500 transition-colors">Lupa password?</a>
+    </div>
+  );
+}
+
 function PasswordField({ register, errors, isLoading, showPassword, togglePassword }: any) {
+  const icon = <PasswordToggle showPassword={showPassword} togglePassword={togglePassword} />;
   return (
     <div className="w-full space-y-1">
-      <div className="flex items-center justify-between">
-        <label htmlFor="login-password" className="text-sm font-medium text-gray-700">
-          Password <span className="text-red-500">*</span>
-        </label>
-        <a
-          href="/forgot-password"
-          className="text-xs font-semibold text-primary-600 hover:text-primary-500 transition-colors"
-        >
-          Lupa password?
-        </a>
-      </div>
-      <Input
-        id="login-password"
-        type={showPassword ? 'text' : 'password'}
-        autoComplete="current-password"
-        placeholder="Masukkan password Anda"
-        leftIcon={<Lock className="w-4 h-4" />}
-        rightIcon={<PasswordToggle showPassword={showPassword} togglePassword={togglePassword} />}
-        hasError={!!errors.password}
-        disabled={isLoading}
-        {...register('password')}
-      />
-      {errors.password?.message && (
-        <p className="text-xs text-red-600 font-medium mt-1">{errors.password.message}</p>
-      )}
+      <PasswordLabelRow />
+      <Input id="login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Masukkan password Anda" leftIcon={<Lock className="w-4 h-4" />} rightIcon={icon} hasError={!!errors.password} disabled={isLoading} {...register('password')} />
+      {errors.password?.message && <p className="text-xs text-red-600 font-medium mt-1">{errors.password.message}</p>}
     </div>
   );
 }
@@ -84,9 +72,9 @@ function useLoginFormState(initialRole: Role, onSubmit: (data: LoginFormData) =>
   };
 }
 
-export function LoginForm(props: LoginFormProps): React.JSX.Element {
-  const { initialRole = 'USER', onSubmit, isLoading = false, serverError } = props;
+export function LoginForm({ initialRole = 'USER', onSubmit, isLoading = false, serverError }: LoginFormProps): React.JSX.Element {
   const s = useLoginFormState(initialRole, onSubmit);
+  const btnLabel = `Masuk sebagai ${s.selectedRole === 'TENANT' ? 'Pemilik' : 'Penyewa'}`;
   return (
     <form onSubmit={s.handleSubmit} className="space-y-4">
       {serverError && <Alert variant="error">{serverError}</Alert>}
@@ -95,9 +83,7 @@ export function LoginForm(props: LoginFormProps): React.JSX.Element {
       </FormField>
       <EmailField register={s.register} errors={s.errors} isLoading={isLoading} />
       <PasswordField register={s.register} errors={s.errors} isLoading={isLoading} showPassword={s.showPassword} togglePassword={s.togglePassword} />
-      <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full mt-2">
-        Masuk sebagai {s.selectedRole === 'TENANT' ? 'Pemilik' : 'Penyewa'}
-      </Button>
+      <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full mt-2">{btnLabel}</Button>
     </form>
   );
 }

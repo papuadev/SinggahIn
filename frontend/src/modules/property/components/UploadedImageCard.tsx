@@ -97,12 +97,9 @@ function RoomSelectOptions({ rooms }: { rooms: Array<{ id: string; name: string 
   );
 }
 
-function RoomTagSelector({
-  roomId, rooms = [], disabled, onAssign,
-}: {
-  roomId?: string | null; rooms?: Array<{ id: string; name: string }>; disabled: boolean;
-  onAssign?: (roomId: string | null) => void;
-}): React.JSX.Element | null {
+type RoomTagProps = { roomId?: string | null; rooms?: Array<{ id: string; name: string }>; disabled: boolean; onAssign?: (roomId: string | null) => void };
+
+function RoomTagSelector({ roomId, rooms = [], disabled, onAssign }: RoomTagProps): React.JSX.Element | null {
   if (!rooms.length || !onAssign) return null;
   const cls = 'text-[11px] py-0.5 px-1.5 bg-white border border-gray-200 rounded text-gray-700 w-full focus:ring-1 focus:ring-primary-500 cursor-pointer disabled:cursor-not-allowed';
   return (
@@ -132,11 +129,7 @@ export function UploadedImageCard(props: UploadedImageCardProps): React.JSX.Elem
   const border = props.image.isCover ? 'border-primary-500 ring-2 ring-primary-100' : 'border-gray-200 hover:border-gray-300';
   const handleAssign = props.onAssignRoom ? (rId: string | null) => props.onAssignRoom!(props.image.id, rId) : undefined;
   return (
-    <div
-      draggable={!props.disabled} onDragStart={(e) => e.dataTransfer.setData('text/plain', `uploaded:${props.index}`)}
-      onDragOver={(e) => e.preventDefault()} onDrop={onDrop}
-      className={`group relative rounded-xl overflow-hidden border bg-white shadow-2xs transition-shadow ${border}`}
-    >
+    <div draggable={!props.disabled} onDragStart={(e) => e.dataTransfer.setData('text/plain', `uploaded:${props.index}`)} onDragOver={(e) => e.preventDefault()} onDrop={onDrop} className={`group relative rounded-xl overflow-hidden border bg-white shadow-2xs transition-shadow ${border}`}>
       <CardThumbnail image={props.image} index={props.index} />
       <RoomTagSelector roomId={props.image.roomId} rooms={props.rooms} disabled={props.disabled} onAssign={handleAssign} />
       <CardFooterActions {...props} />

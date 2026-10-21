@@ -9,21 +9,15 @@ export interface RoomPaginationProps {
   onPageChange: (newPage: number) => void;
 }
 
-export function RoomPagination({
-  page,
-  totalPages,
-  totalItems,
-  pageSize,
-  onPageChange,
-}: RoomPaginationProps): React.JSX.Element | null {
+export function RoomPagination(props: RoomPaginationProps): React.JSX.Element | null {
   return (
     <Pagination
-      page={page}
-      totalPages={totalPages}
-      totalItems={totalItems}
-      pageSize={pageSize}
+      page={props.page}
+      totalPages={props.totalPages}
+      totalItems={props.totalItems}
+      pageSize={props.pageSize}
       itemLabel="tipe kamar"
-      onPageChange={onPageChange}
+      onPageChange={props.onPageChange}
       className="pt-3 border-t border-gray-100"
     />
   );

@@ -22,12 +22,7 @@ function ShareButton({ title }: { title: string }): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
-        aria-label="Bagikan properti"
-      >
+      <button type="button" onClick={() => setIsOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:scale-95 transition-all shadow-sm" aria-label="Bagikan properti">
         <Share2 className="w-3.5 h-3.5 text-gray-500" />
         <span>Bagikan</span>
       </button>

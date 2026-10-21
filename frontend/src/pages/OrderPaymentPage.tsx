@@ -88,16 +88,17 @@ function PaymentActions({ isWaiting, onCancel }: { isWaiting: boolean; onCancel:
   );
 }
 
+function PaymentWarningAlert({ reason }: { reason?: string | null }) {
+  if (!reason) return null;
+  return <Alert variant="warning" title="Bukti Transfer Sebelumnya Ditolak">{reason}. Silakan unggah bukti transfer baru yang valid sebelum batas waktu berakhir.</Alert>;
+}
+
 function PaymentActiveFlow({ p, onCancel }: { p: ReturnType<typeof useOrderPayment>; onCancel: () => void }) {
   const b = p.booking!;
   const isWait = b.status === 'WAITING_PAYMENT';
   return (
     <div className="space-y-6">
-      {isWait && b.cancellationReason && (
-        <Alert variant="warning" title="Bukti Transfer Sebelumnya Ditolak">
-          {b.cancellationReason}. Silakan unggah bukti transfer baru yang valid sebelum batas waktu berakhir.
-        </Alert>
-      )}
+      {isWait && <PaymentWarningAlert reason={b.cancellationReason} />}
       {isWait && <CountdownTimerBadge timer={p.timer} />}
       {isWait && <PaymentMethodSwitcher currentMethod={b.payment?.paymentMethod || 'MANUAL_TRANSFER'} isSwitching={p.isSwitching} switchError={p.switchError} onSwitch={p.changeMethod} />}
       <PaymentMethodRenderer p={p} />
@@ -163,20 +164,33 @@ function useAutoRedirectOnUpload(uploadSuccess: string | null): void {
   }, [uploadSuccess, navigate]);
 }
 
-export function OrderPaymentPage(): React.JSX.Element {
-  const { id = '' } = useParams<{ id: string }>();
+function PaymentModals({ showCancel, setShowCancel, showReview, setShowReview, p }: any) {
+  return (
+    <>
+      <CancelOrderModal isOpen={showCancel} onClose={() => setShowCancel(false)} onConfirm={async (r) => { await p.cancelOrder(r); setShowCancel(false); }} isCancelling={p.isCancelling} />
+      <ReviewFormModal isOpen={showReview} onClose={() => { setShowReview(false); p.refetch(); }} bookingId={p.booking.id} propertyTitle={p.booking.property?.title} />
+    </>
+  );
+}
+
+function useOrderPaymentState(id: string) {
   const p = useOrderPayment(id);
   const [showCancel, setShowCancel] = useState(false);
   const [showReview, setShowReview] = useState(false);
   useAutoRedirectOnUpload(p.uploadSuccess);
-  if (p.isLoading) return <OrderPaymentLoading />;
-  if (p.isError || !p.booking) return <OrderPaymentError />;
+  return { p, showCancel, setShowCancel, showReview, setShowReview };
+}
+
+export function OrderPaymentPage(): React.JSX.Element {
+  const { id = '' } = useParams<{ id: string }>();
+  const s = useOrderPaymentState(id);
+  if (s.p.isLoading) return <OrderPaymentLoading />;
+  if (s.p.isError || !s.p.booking) return <OrderPaymentError />;
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 space-y-6">
-      <PaymentHeader code={p.booking.bookingCode} status={p.booking.status} />
-      <OrderPaymentGrid b={p.booking} p={p} onCancel={() => setShowCancel(true)} onReview={() => setShowReview(true)} />
-      <CancelOrderModal isOpen={showCancel} onClose={() => setShowCancel(false)} onConfirm={async (r) => { await p.cancelOrder(r); setShowCancel(false); }} isCancelling={p.isCancelling} />
-      <ReviewFormModal isOpen={showReview} onClose={() => { setShowReview(false); p.refetch(); }} bookingId={p.booking.id} propertyTitle={p.booking.property?.title} />
+      <PaymentHeader code={s.p.booking.bookingCode} status={s.p.booking.status} />
+      <OrderPaymentGrid b={s.p.booking} p={s.p} onCancel={() => s.setShowCancel(true)} onReview={() => s.setShowReview(true)} />
+      <PaymentModals showCancel={s.showCancel} setShowCancel={s.setShowCancel} showReview={s.showReview} setShowReview={s.setShowReview} p={s.p} />
     </div>
   );
 }

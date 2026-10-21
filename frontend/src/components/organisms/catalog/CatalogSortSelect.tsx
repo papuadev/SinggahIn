@@ -37,14 +37,7 @@ function SortLabel() {
 
 function SortDropdown({ val, onChange }: { val: SortValue; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void }) {
   return (
-    <Select
-      size="sm"
-      value={val}
-      onChange={onChange}
-      aria-label="Urutkan hasil pencarian"
-      wrapperClassName="w-auto"
-      className="font-medium border-gray-200 rounded-xl text-gray-800"
-    >
+    <Select size="sm" value={val} onChange={onChange} aria-label="Urutkan hasil pencarian" wrapperClassName="w-auto" className="font-medium border-gray-200 rounded-xl text-gray-800">
       {SORT_OPTIONS.map((opt) => (
         <option key={opt.value} value={opt.value}>{opt.label}</option>
       ))}

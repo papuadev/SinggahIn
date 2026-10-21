@@ -29,11 +29,11 @@ function NightsBadge({ nights }: { nights: number }) {
   );
 }
 
-function EmptySummaryHint() {
+function EmptyDateSummary() {
   return (
-    <p className="text-xs text-gray-500 italic">
-      Klik tanggal untuk memilih Check-in dan Check-out
-    </p>
+    <div className="py-1.5 px-2.5 bg-gray-50/70 rounded-lg border border-gray-100 my-1 text-center sm:text-left">
+      <p className="text-xs text-gray-500 italic">Klik tanggal untuk memilih Check-in dan Check-out</p>
+    </div>
   );
 }
 
@@ -51,13 +51,7 @@ function SummaryDetails({ checkIn, checkOut, nights }: { checkIn: string; checkO
 }
 
 export function CalendarDateSummary({ checkIn, checkOut, onReset }: DateSummaryProps): React.JSX.Element {
-  if (!checkIn) {
-    return (
-      <div className="py-1.5 px-2.5 bg-gray-50/70 rounded-lg border border-gray-100 my-1 text-center sm:text-left">
-        <EmptySummaryHint />
-      </div>
-    );
-  }
+  if (!checkIn) return <EmptyDateSummary />;
   const nights = calculateNights(checkIn, checkOut);
   return (
     <div className="flex flex-wrap items-center justify-between gap-1.5 py-1.5 px-2.5 bg-gray-50 rounded-lg border border-gray-100 my-1">
